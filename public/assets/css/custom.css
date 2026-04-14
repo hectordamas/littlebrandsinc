@@ -1,0 +1,19 @@
+.card-access {
+    text-decoration: none;
+    display: block;
+    transition: all 0.25s ease;
+    border-radius: 12px;
+}
+
+.card-access:hover {
+    text-decoration: none;
+    
+    transform: translateY(-6px); /* se eleva */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+}
+
+/* Para que tampoco subraye el texto interno */
+.card-access:hover h6 {
+    text-decoration: none;
+}

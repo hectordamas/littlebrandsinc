@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    <title>Adminty - Premium Admin Template by Colorlib </title>
+    @yield('title')
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -11,7 +11,7 @@
         content="Admin , Responsive, Landing, Bootstrap, App, Template, Mobile, iOS, Android, apple, creative app">
     <meta name="author" content="#">
     <!-- Favicon -->
-    <link rel="icon" href="{{ asset('assets/files/assets/images/favicon.ico') }}" type="image/x-icon">
+    <link rel="icon" href="{{ asset('assets/img/favicon.png') }}" type="image/x-icon">
 
     <!-- Google font -->
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,800" rel="stylesheet">
@@ -24,12 +24,20 @@
 
     <!-- Feather icons -->
     <link rel="stylesheet" href="{{ asset('assets/files/assets/icon/feather/css/feather.css') }}">
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+        integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
     <!-- Main style -->
     <link rel="stylesheet" href="{{ asset('assets/files/assets/css/style.css') }}">
 
+
+
     <!-- Scrollbar -->
     <link rel="stylesheet" href="{{ asset('assets/files/assets/css/jquery.mCustomScrollbar.css') }}">
+
+
+    <link rel="stylesheet" href="{{ asset('assets/css/custom.css') }}">
+
 </head>
 <!-- Menu sidebar static layout -->
 
@@ -84,9 +92,9 @@
                             <i class="feather icon-menu"></i>
                         </a>
 
-                        <a href="{{ url('/') }}" class="d-block mx-auto py-5">
-                            <img src="{{ asset('assets/img/logo-light.png') }}" alt="Theme-Logo"
-                                style="max-height: 45px;" />
+                        <a href="{{ url('/') }}" class="d-block mx-auto">
+                            <img src="{{ asset('assets/img/lbinc-admin.png') }}" alt="Little Brands Inc Logo"
+                                style="max-height: 50px;" />
                         </a>
 
                         <a class="mobile-options">
@@ -180,18 +188,10 @@
                                     </ul>
                                 </div>
                             </li>
-                            <li class="header-notification">
-                                <div class="dropdown-primary dropdown">
-                                    <div class="displayChatbox dropdown-toggle" data-bs-toggle="dropdown">
-                                        <i class="feather icon-message-square"></i>
-                                        <span class="badge bg-c-green">3</span>
-                                    </div>
-                                </div>
-                            </li>
                             <li class="user-profile header-notification">
                                 <div class="dropdown-primary dropdown">
                                     <div class="dropdown-toggle" data-bs-toggle="dropdown">
-                                        <img src="../files/assets/images/avatar-4.jpg" class="img-radius"
+                                        <img src="{{ asset('assets/img/user.png') }}" class="img-radius"
                                             alt="User-Profile-Image">
                                         <span>John Doe</span>
                                         <i class="feather icon-chevron-down"></i>
@@ -232,148 +232,18 @@
                 </div>
             </nav>
 
-            <!-- Sidebar chat start -->
-            <div id="sidebar" class="users p-chat-user showChat">
-                <div class="had-container">
-                    <div class="card card_main p-fixed users-main">
-                        <div class="user-box">
-                            <div class="chat-inner-header">
-                                <div class="back_chatBox">
-                                    <div class="right-icon-control">
-                                        <input type="text" class="form-control  search-text"
-                                            placeholder="Search Friend" id="search-friends">
-                                        <div class="form-icon">
-                                            <i class="icofont icofont-search"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="main-friend-list">
-                                <div class="media userlist-box" data-id="1" data-status="online"
-                                    data-username="Josephin Doe" data-bs-toggle="tooltip" data-placement="left"
-                                    title="Josephin Doe">
-                                    <a class="media-left" href="#!">
-                                        <img class="media-object img-radius img-radius"
-                                            src="../files/assets/images/avatar-3.jpg"
-                                            alt="Generic placeholder image ">
-                                        <div class="live-status bg-success"></div>
-                                    </a>
-                                    <div class="media-body">
-                                        <div class="f-13 chat-header">Josephin Doe</div>
-                                    </div>
-                                </div>
-                                <div class="media userlist-box" data-id="2" data-status="online"
-                                    data-username="Lary Doe" data-bs-toggle="tooltip" data-placement="left"
-                                    title="Lary Doe">
-                                    <a class="media-left" href="#!">
-                                        <img class="media-object img-radius" src="../files/assets/images/avatar-2.jpg"
-                                            alt="Generic placeholder image">
-                                        <div class="live-status bg-success"></div>
-                                    </a>
-                                    <div class="media-body">
-                                        <div class="f-13 chat-header">Lary Doe</div>
-                                    </div>
-                                </div>
-                                <div class="media userlist-box" data-id="3" data-status="online"
-                                    data-username="Alice" data-bs-toggle="tooltip" data-placement="left"
-                                    title="Alice">
-                                    <a class="media-left" href="#!">
-                                        <img class="media-object img-radius" src="../files/assets/images/avatar-4.jpg"
-                                            alt="Generic placeholder image">
-                                        <div class="live-status bg-success"></div>
-                                    </a>
-                                    <div class="media-body">
-                                        <div class="f-13 chat-header">Alice</div>
-                                    </div>
-                                </div>
-                                <div class="media userlist-box" data-id="4" data-status="online"
-                                    data-username="Alia" data-bs-toggle="tooltip" data-placement="left"
-                                    title="Alia">
-                                    <a class="media-left" href="#!">
-                                        <img class="media-object img-radius" src="../files/assets/images/avatar-3.jpg"
-                                            alt="Generic placeholder image">
-                                        <div class="live-status bg-success"></div>
-                                    </a>
-                                    <div class="media-body">
-                                        <div class="f-13 chat-header">Alia</div>
-                                    </div>
-                                </div>
-                                <div class="media userlist-box" data-id="5" data-status="online"
-                                    data-username="Suzen" data-bs-toggle="tooltip" data-placement="left"
-                                    title="Suzen">
-                                    <a class="media-left" href="#!">
-                                        <img class="media-object img-radius" src="../files/assets/images/avatar-2.jpg"
-                                            alt="Generic placeholder image">
-                                        <div class="live-status bg-success"></div>
-                                    </a>
-                                    <div class="media-body">
-                                        <div class="f-13 chat-header">Suzen</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- Sidebar inner chat start-->
-            <div class="showChat_inner">
-                <div class="media chat-inner-header">
-                    <a class="back_chatBox">
-                        <i class="feather icon-chevron-left"></i> Josephin Doe
-                    </a>
-                </div>
-                <div class="d-flex chat-messages">
-                    <div class="flex-shrink-0">
-                        <a class="media-left photo-table" href="#!">
-                            <img class="media-object img-radius img-radius m-t-5"
-                                src="../files/assets/images/avatar-3.jpg" alt="Generic placeholder image">
-                        </a>
-                    </div>
-                    <div class="flex-grow-1 chat-menu-content">
-                        <div class="">
-                            <p class="chat-cont">I'm just looking around. Will you tell me something about yourself?
-                            </p>
-                            <p class="chat-time">8:20 a.m.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="d-flex chat-messages">
-                    <div class="flex-grow-1 chat-menu-reply">
-                        <div class="">
-                            <p class="chat-cont">I'm just looking around. Will you tell me something about yourself?
-                            </p>
-                            <p class="chat-time">8:20 a.m.</p>
-                        </div>
-                    </div>
-                    <div class="flex-shrink-0">
-                        <div class="media-right photo-table">
-                            <a href="#!">
-                                <img class="media-object img-radius img-radius m-t-5"
-                                    src="../files/assets/images/avatar-4.jpg" alt="Generic placeholder image">
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                <div class="chat-reply-box p-b-20">
-                    <div class="right-icon-control">
-                        <input type="text" class="form-control search-text" placeholder="Share Your Thoughts">
-                        <div class="form-icon">
-                            <i class="feather icon-navigation"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
             <!-- Sidebar inner chat end-->
             <div class="pcoded-main-container">
                 <div class="pcoded-wrapper">
                     <nav class="pcoded-navbar">
                         <div class="pcoded-inner-navbar main-menu">
-                            <div class="pcoded-navigatio-lavel">Navigation</div>
+                            <div class="pcoded-navigatio-lavel">Menú</div>
                             <ul class="pcoded-item pcoded-left-item">
-                                <li class="pcoded-hasmenu active pcoded-trigger">
+                                <li class="pcoded-hasmenu">
                                     <a href="javascript:void(0)">
                                         <span class="pcoded-micon"><i class="feather icon-home"></i></span>
-                                        <span class="pcoded-mtext">Dashboard</span>
+                                        <span class="pcoded-mtext">Inicio</span>
                                     </a>
                                     <ul class="pcoded-submenu">
                                         <li class="">
@@ -395,8 +265,10 @@
                                 </li>
                                 <li class="pcoded-hasmenu">
                                     <a href="javascript:void(0)">
-                                        <span class="pcoded-micon"><i class="feather icon-sidebar"></i></span>
-                                        <span class="pcoded-mtext">Page layouts</span>
+                                        <span class="pcoded-micon">
+                                            <i class="fa-regular fa-address-book"></i>
+                                        </span>
+                                        <span class="pcoded-mtext">Inscripciones y Clientes</span>
                                     </a>
                                     <ul class="pcoded-submenu">
                                         <li class=" pcoded-hasmenu">
@@ -471,16 +343,37 @@
                                         </li>
                                     </ul>
                                 </li>
-                                <li class="">
-                                    <a href="navbar-light.html">
-                                        <span class="pcoded-micon"><i class="feather icon-menu"></i></span>
-                                        <span class="pcoded-mtext">Navigation</span>
-                                    </a>
-                                </li>
+
                                 <li class="pcoded-hasmenu">
                                     <a href="javascript:void(0)">
-                                        <span class="pcoded-micon"><i class="feather icon-layers"></i></span>
-                                        <span class="pcoded-mtext">Widget</span>
+                                        <span class="pcoded-micon"><i
+                                                class="fa-solid fa-file-invoice-dollar"></i></span>
+                                        <span class="pcoded-mtext">Finanzas y Facturacíón</span>
+                                    </a>
+                                    <ul class="pcoded-submenu">
+                                        <li class=" ">
+                                            <a href="widget-statistic.html">
+                                                <span class="pcoded-mtext">Statistic</span>
+                                            </a>
+                                        </li>
+                                        <li class=" ">
+                                            <a href="widget-data.html">
+                                                <span class="pcoded-mtext">Data</span>
+                                            </a>
+                                        </li>
+                                        <li class="">
+                                            <a href="widget-chart.html">
+                                                <span class="pcoded-mtext">Chart Widget</span>
+                                            </a>
+                                        </li>
+
+                                    </ul>
+                                </li>
+
+                                <li class="pcoded-hasmenu">
+                                    <a href="javascript:void(0)">
+                                        <span class="pcoded-micon"><i class="fa-solid fa-diagram-project"></i></span>
+                                        <span class="pcoded-mtext">Operaciones</span>
                                     </a>
                                     <ul class="pcoded-submenu">
                                         <li class=" ">

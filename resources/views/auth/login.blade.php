@@ -1,5 +1,9 @@
 @extends('layouts.app')
 
+@section('title')
+<title>Inicia Sesión - Little Brands Inc</title>
+@endsection
+
 @section('content')
     <!-- Container-fluid starts -->
     <div class="container">

@@ -1,9 +1,67 @@
 @extends('layouts.admin')
 
+@section('title')
+    <title>Incio - Little Brands Inc</title>
+@endsection
+
 @section('content')
     <div class="row">
 
-        <!-- statustic-card start -->
+        <div class="col-md-12">
+            <h5 class="mb-3">Acceso Directo</h5>
+        </div>
+
+        <div class="col-xl-3 col-md-6 ">
+            <a href="/inscripciones-y-clientes" class="card card-access">
+                <div class="card-block">
+                    <div class="row align-items-center">
+                        <div class="col-8">
+                            <h6 class="text-c-yellow m-b-0">Inscripciones y Clientes</h6>
+                        </div>
+                        <div class="col-4 text-end">
+                            <i class="fa-regular fa-address-book f-28"></i>
+                        </div>
+                    </div>
+                </div>
+
+            </a>
+        </div>
+        <div class="col-xl-3 col-md-6 ">
+            <a href="/finanzas-y-facturacion" class="card card-access">
+                <div class="card-block">
+                    <div class="row align-items-center">
+                        <div class="col-8">
+                            <h6 class="text-c-green m-b-0">Finanzas y Facturación</h6>
+                        </div>
+                        <div class="col-4 text-end">
+                            <i class="fa-solid fa-file-invoice-dollar f-28"></i>
+                        </div>
+                    </div>
+                </div>
+
+            </a>
+        </div>
+        <div class="col-xl-3 col-md-6 ">
+            <a href="/programacion-y-operaciones" class="card card-access">
+                <div class="card-block">
+                    <div class="row align-items-center">
+                        <div class="col-8">
+                            <h6 class="text-c-pink m-b-0">Programación y Operaciones</h6>
+                        </div>
+                        <div class="col-4 text-end">
+                            <i class="fa-solid fa-diagram-project f-28"></i>
+                        </div>
+                    </div>
+                </div>
+
+            </a>
+        </div>
+
+
+        <div class="col-md-12">
+            <h5 class="mb-3">Resumen</h5>
+        </div>
+
         <div class="col-xl-3 col-md-6">
             <div class="card bg-c-yellow text-white">
                 <div class="card-block">
@@ -19,6 +77,7 @@
                 </div>
             </div>
         </div>
+
         <div class="col-xl-3 col-md-6">
             <div class="card bg-c-green text-white">
                 <div class="card-block">
@@ -34,6 +93,7 @@
                 </div>
             </div>
         </div>
+
         <div class="col-xl-3 col-md-6">
             <div class="card bg-c-pink text-white">
                 <div class="card-block">
@@ -49,6 +109,7 @@
                 </div>
             </div>
         </div>
+
         <div class="col-xl-3 col-md-6">
             <div class="card bg-c-blue text-white">
                 <div class="card-block">
@@ -64,9 +125,7 @@
                 </div>
             </div>
         </div>
-        <!-- statustic-card start -->
 
-        <!-- statustic-card start -->
         <div class="col-xl-8 col-md-12">
             <div class="card">
                 <div class="card-header">
@@ -464,145 +523,5 @@
         </div>
         <!-- ticket and update end -->
 
-        <!-- latest activity end -->
-        <div class="col-xl-8 col-md-12">
-            <div class="card latest-activity-card">
-                <div class="card-header">
-                    <h5>Latest Activity</h5>
-                </div>
-                <div class="card-block">
-                    <div class="latest-update-box">
-                        <div class="row p-t-20 p-b-30">
-                            <div class="col-auto text-end update-meta">
-                                <p class="text-muted m-b-0 d-inline">just now</p>
-                                <i class="feather icon-sunrise bg-simple-c-blue update-icon"></i>
-                            </div>
-                            <div class="col">
-                                <h6>John Deo</h6>
-                                <p class="text-muted m-b-15">The trip was an
-                                    amazing
-                                    and a life changing experience!!</p>
-                                <img src="../files/assets/images/mega-menu/01.jpg" alt=""
-                                    class="img-fluid img-100 m-r-15 m-b-10">
-                                <img src="../files/assets/images/mega-menu/03.jpg" alt=""
-                                    class="img-fluid img-100 m-r-15 m-b-10">
-                            </div>
-                        </div>
-                        <div class="row p-b-30">
-                            <div class="col-auto text-end update-meta">
-                                <p class="text-muted m-b-0 d-inline">5 min ago</p>
-                                <i class="feather icon-file-text bg-simple-c-blue update-icon"></i>
-                            </div>
-                            <div class="col">
-                                <h6>Administrator</h6>
-                                <p class="text-muted m-b-0">Free courses for all
-                                    our
-                                    customers at A1 Conference Room - 9:00 am
-                                    tomorrow!</p>
-                            </div>
-                        </div>
-                        <div class="row p-b-30">
-                            <div class="col-auto text-end update-meta">
-                                <p class="text-muted m-b-0 d-inline">3 hours ago
-                                </p>
-                                <i class="feather icon-map-pin bg-simple-c-blue update-icon"></i>
-                            </div>
-                            <div class="col">
-                                <h6>Jeny William</h6>
-                                <p class="text-muted m-b-15">Happy Hour! Free
-                                    drinks
-                                    at <span class="text-c-blue">Cafe-Bar all
-                                    </span>day long!</p>
-                                <div id="markers-map" style="height:200px;width:100%"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="text-end">
-                        <a href="#!" class=" b-b-primary text-primary">View
-                            all
-                            Activity</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-4 col-md-12">
-            <div class="card per-task-card">
-                <div class="card-header">
-                    <h5>Your Tasks</h5>
-                </div>
-                <div class="card-block">
-                    <div class="row per-task-block text-center">
-                        <div class="col-6">
-                            <div data-label="45%" class="radial-bar radial-bar-45 radial-bar-lg radial-bar-primary">
-                            </div>
-                            <h6 class="text-muted">Finished</h6>
-                            <p class="text-muted">642</p>
-                            <button class="btn btn-primary btn-round btn-sm">Manage</button>
-                        </div>
-                        <div class="col-6">
-                            <div data-label="30%" class="radial-bar radial-bar-30 radial-bar-lg radial-bar-primary">
-                            </div>
-                            <h6 class="text-muted">Remaining</h6>
-                            <p class="text-muted">495</p>
-                            <button class="btn btn-primary btn-outline-primary btn-round btn-sm">Manage</button>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-            <div class="card feed-card">
-                <div class="card-header">
-                    <h5>Upcoming Deadlines</h5>
-                    <div class="card-header-right">
-                        <ul class="list-unstyled card-option">
-                            <li><i class="fa fa fa-wrench open-card-option"></i>
-                            </li>
-                            <li><i class="fa fa-window-maximize full-card"></i>
-                            </li>
-                            <li><i class="fa fa-minus minimize-card"></i></li>
-                            <li><i class="fa fa-refresh reload-card"></i></li>
-                            <li><i class="fa fa-trash close-card"></i></li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="card-block">
-                    <div class="row m-b-25">
-                        <div class="col-auto p-r-0">
-                            <img src="../files/assets/images/mega-menu/01.jpg" alt="" class="img-fluid img-50">
-                        </div>
-                        <div class="col">
-                            <h6 class="m-b-5">New able - Redesign</h6>
-                            <p class="text-c-pink m-b-0">2 Days Remaining</p>
-                        </div>
-                    </div>
-                    <div class="row m-b-25">
-                        <div class="col-auto p-r-0">
-                            <img src="../files/assets/images/mega-menu/02.jpg" alt="" class="img-fluid img-50">
-                        </div>
-                        <div class="col">
-                            <h6 class="m-b-5">New Admin Dashboard</h6>
-                            <p class="text-c-pink m-b-0">Proposal in 6 Days</p>
-                        </div>
-                    </div>
-                    <div class="row m-b-25">
-                        <div class="col-auto p-r-0">
-                            <img src="../files/assets/images/mega-menu/03.jpg" alt="" class="img-fluid img-50">
-                        </div>
-                        <div class="col">
-                            <h6 class="m-b-5">Logo Design</h6>
-                            <p class="text-c-green m-b-0">10 Days Remaining</p>
-                        </div>
-                    </div>
-
-                    <div class="text-center">
-                        <a href="#!" class="b-b-primary text-primary">View
-                            all
-                            Feeds</a>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-        <!-- latest activity end -->
     </div>
 @endsection

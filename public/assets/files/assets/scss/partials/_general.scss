@@ -28,12 +28,10 @@ a {
     @media only screen and(min-width: 1400px) {
         font-size: 14px;
     }
-    color: $inverse-color;
 
     &:focus,
     &:hover {
         text-decoration: none;
-        color: $primary-color;
     }
 }
 
