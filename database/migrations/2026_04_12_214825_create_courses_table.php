@@ -20,7 +20,6 @@ return new class extends Migration
             $table->integer('min_age')->nullable();
             $table->integer('max_age')->nullable();
             $table->decimal('price', 8, 2)->nullable();
-            $table->boolean('active')->default(true);
 
             $table->date('start_date');
             $table->date('end_date');

@@ -17,6 +17,8 @@ return new class extends Migration
 
             $table->foreignId('course_id')->constrained()->cascadeOnDelete();
             $table->foreignId('branch_id')->constrained()->cascadeOnDelete();
+           
+            $table->decimal('price', 8, 2)->nullable();
 
             $table->string('day'); // Monday
             $table->time('start_time');

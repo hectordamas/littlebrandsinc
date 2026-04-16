@@ -16,6 +16,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreignId('course_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('student_id')->constrained()->cascadeOnDelete();
 
             $table->string('day'); // Monday
             $table->time('start_time');

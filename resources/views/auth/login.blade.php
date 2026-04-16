@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title')
-<title>Inicia Sesión - Little Brands Inc</title>
+<title>Inicia Sesión - {{ env('APP_NAME') }}</title>
 @endsection
 
 @section('content')

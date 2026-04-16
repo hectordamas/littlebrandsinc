@@ -29,26 +29,22 @@
 
     <style>
         .login-bg {
-            position: relative;
-            background-image: url('/assets/img/background.png');
+            background-image: url('{{ asset('assets/img/background.png') }}');
+            background-attachment: fixed;
             background-size: cover;
             background-position: center;
             min-height: 100vh;
+            padding: 60px 0;
         }
 
         /* Overlay */
         .login-bg .overlay {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-
-            /* 🔥 puedes ajustar este color */
             background: rgba(0, 0, 0, 0.7);
-            /* oscuro elegante */
-
-            /* efecto moderno */
             backdrop-filter: blur(2px);
         }
 

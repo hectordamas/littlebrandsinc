@@ -24,9 +24,8 @@
 
     <!-- Feather icons -->
     <link rel="stylesheet" href="{{ asset('assets/files/assets/icon/feather/css/feather.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
-        integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+
     <!-- Main style -->
     <link rel="stylesheet" href="{{ asset('assets/files/assets/css/style.css') }}">
 
@@ -92,7 +91,7 @@
                             <i class="feather icon-menu"></i>
                         </a>
 
-                        <a href="{{ url('/') }}" class="d-block mx-auto">
+                        <a href="{{ url('/') }}">
                             <img src="{{ asset('assets/img/lbinc-admin.png') }}" alt="Little Brands Inc Logo"
                                 style="max-height: 50px;" />
                         </a>
@@ -192,35 +191,23 @@
                                 <div class="dropdown-primary dropdown">
                                     <div class="dropdown-toggle" data-bs-toggle="dropdown">
                                         <img src="{{ asset('assets/img/user.png') }}" class="img-radius"
-                                            alt="User-Profile-Image">
-                                        <span>John Doe</span>
+                                            alt="{{ Auth::user()->name }} Image Profile">
+                                        <span>{{ Auth::user()->name }}</span>
                                         <i class="feather icon-chevron-down"></i>
                                     </div>
                                     <ul class="show-notification profile-notification dropdown-menu"
                                         data-dropdown-in="fadeIn" data-dropdown-out="fadeOut">
                                         <li>
-                                            <a href="#!">
-                                                <i class="feather icon-settings"></i> Settings
-                                            </a>
-                                        </li>
-                                        <li>
                                             <a href="user-profile.html">
-                                                <i class="feather icon-user"></i> Profile
+                                                <i class="feather icon-user"></i> Perfil
                                             </a>
                                         </li>
                                         <li>
-                                            <a href="email-inbox.html">
-                                                <i class="feather icon-mail"></i> My Messages
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="auth-lock-screen.html">
-                                                <i class="feather icon-lock"></i> Lock Screen
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="auth-normal-sign-in.html">
-                                                <i class="feather icon-log-out"></i> Logout
+                                            <form action="{{ route('logout') }}" method="POST" id="logout-form">
+                                                @csrf</form>
+                                            <a href="javascript:void(0);"
+                                                onclick="document.getElementById('logout-form').submit()">
+                                                <i class="feather icon-log-out"></i> Cerrar Sesión
                                             </a>
                                         </li>
                                     </ul>
@@ -240,105 +227,33 @@
                         <div class="pcoded-inner-navbar main-menu">
                             <div class="pcoded-navigatio-lavel">Menú</div>
                             <ul class="pcoded-item pcoded-left-item">
-                                <li class="pcoded-hasmenu">
-                                    <a href="javascript:void(0)">
+                                <li class="">
+                                    <a href="{{ url('/') }}">
                                         <span class="pcoded-micon"><i class="feather icon-home"></i></span>
                                         <span class="pcoded-mtext">Inicio</span>
                                     </a>
-                                    <ul class="pcoded-submenu">
-                                        <li class="">
-                                            <a href="index.html">
-                                                <span class="pcoded-mtext">Default</span>
-                                            </a>
-                                        </li>
-                                        <li class="active">
-                                            <a href="dashboard-crm.html">
-                                                <span class="pcoded-mtext">CRM</span>
-                                            </a>
-                                        </li>
-                                        <li class="">
-                                            <a href="dashboard-analytics.html">
-                                                <span class="pcoded-mtext">Analytics</span>
-                                            </a>
-                                        </li>
-                                    </ul>
                                 </li>
                                 <li class="pcoded-hasmenu">
                                     <a href="javascript:void(0)">
                                         <span class="pcoded-micon">
-                                            <i class="fa-regular fa-address-book"></i>
+                                            <i class="far fa-address-book"></i>
                                         </span>
                                         <span class="pcoded-mtext">Inscripciones y Clientes</span>
                                     </a>
                                     <ul class="pcoded-submenu">
-                                        <li class=" pcoded-hasmenu">
-                                            <a href="javascript:void(0)">
-                                                <span class="pcoded-mtext">Vertical</span>
-                                            </a>
-                                            <ul class="pcoded-submenu">
-                                                <li class=" ">
-                                                    <a href="menu-static.html">
-                                                        <span class="pcoded-mtext">Static Layout</span>
-                                                    </a>
-                                                </li>
-                                                <li class=" ">
-                                                    <a href="menu-header-fixed.html">
-                                                        <span class="pcoded-mtext">Header Fixed</span>
-                                                    </a>
-                                                </li>
-                                                <li class=" ">
-                                                    <a href="menu-compact.html">
-                                                        <span class="pcoded-mtext">Compact</span>
-                                                    </a>
-                                                </li>
-                                                <li class=" ">
-                                                    <a href="menu-sidebar.html">
-                                                        <span class="pcoded-mtext">Sidebar Fixed</span>
-                                                    </a>
-                                                </li>
-
-                                            </ul>
-                                        </li>
-                                        <li class=" pcoded-hasmenu">
-                                            <a href="javascript:void(0)">
-                                                <span class="pcoded-mtext">Horizontal</span>
-                                            </a>
-                                            <ul class="pcoded-submenu">
-                                                <li class=" ">
-                                                    <a href="menu-horizontal-static.html" target="_blank">
-                                                        <span class="pcoded-mtext">Static Layout</span>
-                                                    </a>
-                                                </li>
-                                                <li class=" ">
-                                                    <a href="menu-horizontal-fixed.html" target="_blank">
-                                                        <span class="pcoded-mtext">Fixed layout</span>
-                                                    </a>
-                                                </li>
-                                                <li class=" ">
-                                                    <a href="menu-horizontal-icon.html" target="_blank">
-                                                        <span class="pcoded-mtext">Static With Icon</span>
-                                                    </a>
-                                                </li>
-                                                <li class=" ">
-                                                    <a href="menu-horizontal-icon-fixed.html" target="_blank">
-                                                        <span class="pcoded-mtext">Fixed With Icon</span>
-                                                    </a>
-                                                </li>
-                                            </ul>
-                                        </li>
-                                        <li class=" ">
-                                            <a href="menu-bottom.html">
-                                                <span class="pcoded-mtext">Bottom Menu</span>
+                                        <li class="">
+                                            <a href="{{ url('inscripciones') }}">
+                                                <span class="pcoded-mtext">Inscripciones</span>
                                             </a>
                                         </li>
-                                        <li class=" ">
-                                            <a href="box-layout.html" target="_blank">
-                                                <span class="pcoded-mtext">Box Layout</span>
+                                        <li class="">
+                                            <a href="{{ url('students') }}">
+                                                <span class="pcoded-mtext">Estudiantes</span>
                                             </a>
                                         </li>
-                                        <li class=" ">
-                                            <a href="menu-rtl.html" target="_blank">
-                                                <span class="pcoded-mtext">RTL</span>
+                                        <li class="">
+                                            <a href="{{ url('parents') }}">
+                                                <span class="pcoded-mtext">Padres</span>
                                             </a>
                                         </li>
                                     </ul>
@@ -346,24 +261,23 @@
 
                                 <li class="pcoded-hasmenu">
                                     <a href="javascript:void(0)">
-                                        <span class="pcoded-micon"><i
-                                                class="fa-solid fa-file-invoice-dollar"></i></span>
+                                        <span class="pcoded-micon"><i class="fas fa-file-invoice-dollar"></i></span>
                                         <span class="pcoded-mtext">Finanzas y Facturacíón</span>
                                     </a>
                                     <ul class="pcoded-submenu">
                                         <li class=" ">
                                             <a href="widget-statistic.html">
-                                                <span class="pcoded-mtext">Statistic</span>
+                                                <span class="pcoded-mtext">Movimientos</span>
                                             </a>
                                         </li>
                                         <li class=" ">
                                             <a href="widget-data.html">
-                                                <span class="pcoded-mtext">Data</span>
+                                                <span class="pcoded-mtext">Cuentas por Cobrar</span>
                                             </a>
                                         </li>
                                         <li class="">
                                             <a href="widget-chart.html">
-                                                <span class="pcoded-mtext">Chart Widget</span>
+                                                <span class="pcoded-mtext">Cuentas por Pagar</span>
                                             </a>
                                         </li>
 
@@ -372,23 +286,23 @@
 
                                 <li class="pcoded-hasmenu">
                                     <a href="javascript:void(0)">
-                                        <span class="pcoded-micon"><i class="fa-solid fa-diagram-project"></i></span>
+                                        <span class="pcoded-micon"><i class="fas fa-project-diagram"></i></span>
                                         <span class="pcoded-mtext">Operaciones</span>
                                     </a>
                                     <ul class="pcoded-submenu">
                                         <li class=" ">
                                             <a href="widget-statistic.html">
-                                                <span class="pcoded-mtext">Statistic</span>
+                                                <span class="pcoded-mtext">Cursos</span>
                                             </a>
                                         </li>
                                         <li class=" ">
                                             <a href="widget-data.html">
-                                                <span class="pcoded-mtext">Data</span>
+                                                <span class="pcoded-mtext">Calendario</span>
                                             </a>
                                         </li>
                                         <li class="">
                                             <a href="widget-chart.html">
-                                                <span class="pcoded-mtext">Chart Widget</span>
+                                                <span class="pcoded-mtext">Entrenadores</span>
                                             </a>
                                         </li>
 
@@ -404,10 +318,6 @@
                                     <div class="page-body">
                                         @yield('content')
                                     </div>
-                                </div>
-
-                                <div id="styleSelector">
-
                                 </div>
                             </div>
                         </div>
@@ -433,11 +343,7 @@
     <!-- Chart js -->
     <script src="{{ asset('assets/files/bower_components/chart.js/dist/Chart.js') }}"></script>
 
-    <!-- Google Maps -->
-    <script src="https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js">
-    </script>
-    <script src="https://maps.googleapis.com/maps/api/js"></script>
-    <script src="{{ asset('assets/files/assets/pages/google-maps/gmaps.js') }}"></script>
+
 
     <!-- Gauge + AmCharts -->
     <script src="{{ asset('assets/files/assets/pages/widget/gauge/gauge.min.js') }}"></script>
