@@ -31,4 +31,5 @@ Route::middleware(['auth'])->group(function () {
 
 
     Route::get('users', [UsersController::class, 'index']);
+    Route::get('users/{id}/edit', [UsersController::class, 'edit']);
 });

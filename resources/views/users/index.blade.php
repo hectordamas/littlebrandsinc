@@ -3,6 +3,9 @@
     <title>{{ env('APP_NAME') }} - Usuarios</title>
 @endsection
 
+
+
+
 @section('content')
     <!-- Modal -->
     <div class="modal fade" id="exampleModal" tabindex="-1">
@@ -113,4 +116,18 @@
             </div>
         </div>
     </div>
+@endsection
+
+
+@section('scripts')
+<script>
+$(document).ready(function() {
+    $('.table').DataTable({
+        dom: 'Bfrtip',
+        buttons: [
+            'copy', 'csv', 'excel', 'pdf', 'print'
+        ]
+    });
+});
+</script>
 @endsection

@@ -14,4 +14,12 @@ class UsersController extends Controller
             'users' => $users
         ]);
     }
+
+    public function edit($id){
+        $user = User::findOrFail($id);
+
+        return view('users.edit', [
+            'user' => $user
+        ]);
+    }
 }

@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('role')->default('parent'); // Administrador, Coach, Padre
+            $table->string('role')->default('Padre'); // Administrador, Coach, Padre
             $table->string('email')->unique();
             $table->string('whatsapp')->nullable();
             $table->timestamp('email_verified_at')->nullable();
