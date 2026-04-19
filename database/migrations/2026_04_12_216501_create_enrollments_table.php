@@ -17,15 +17,7 @@ return new class extends Migration
 
             $table->foreignId('course_id')->constrained()->cascadeOnDelete();
             $table->foreignId('student_id')->constrained()->cascadeOnDelete();
-
-            $table->string('day'); // Monday
-            $table->time('start_time');
-            $table->time('end_time');
-
-            $table->string('location')->nullable();
-            $table->foreignId('coach_id')->nullable()->constrained('users')->nullOnDelete();
-
-            $table->integer('capacity')->default(20);
+            $table->foreignId('parent_id')->nullable()->constrained('users')->nullOnDelete();
         });
     }
 

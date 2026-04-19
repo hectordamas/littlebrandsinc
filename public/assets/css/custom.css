@@ -1,3 +1,110 @@
+
+/* =========================
+   Tablas
+========================= */
+table td, 
+table th {
+    text-align: center !important;       /* horizontal */
+    vertical-align: middle !important;   /* vertical */
+}
+
+
+/* =========================
+   SELECT2 CUSTOM (MODERNO)
+========================= */
+.select2-container--default .select2-selection--single .select2-selection__rendered{
+    background-color: #fff;
+}
+/* Contenedor general */
+.select2-container {
+    width: 100% !important;
+    font-size: 14px;
+}
+
+/* Caja principal */
+.select2-container--default .select2-selection--single {
+    height: 38px;
+    border-radius: 8px;
+    border: 1px solid #ced4da;
+    background-color: #fff;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    transition: all 0.2s ease;
+}
+
+/* Texto */
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: #495057;
+    padding: 0;
+    line-height: normal;
+}
+
+/* Placeholder */
+.select2-container--default .select2-selection--single .select2-selection__placeholder {
+    color: #adb5bd;
+}
+
+/* Flechita */
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 100%;
+    right: 10px;
+}
+
+/* Hover */
+.select2-container--default .select2-selection--single:hover {
+    border-color: #86b7fe;
+}
+
+/* Focus */
+.select2-container--default.select2-container--focus .select2-selection--single {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Dropdown */
+.select2-container--default .select2-dropdown {
+    border-radius: 8px;
+    border: 1px solid #ced4da;
+    overflow: hidden;
+}
+
+/* Opciones */
+.select2-container--default .select2-results__option {
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+/* Opción hover */
+.select2-container--default .select2-results__option--highlighted {
+    background-color: #0d6efd;
+    color: #fff;
+}
+
+/* Opción seleccionada */
+.select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: #e9ecef;
+    color: #212529;
+}
+
+/* Buscador */
+.select2-container--default .select2-search--dropdown .select2-search__field {
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+    padding: 6px 10px;
+    outline: none;
+}
+
+/* Ajuste en modales */
+.select2-container--open {
+    z-index: 9999;
+}
+
+
+
+/* =========================
+   Card accesos Directos 
+========================= */
 .card-access {
     text-decoration: none;
     display: block;

@@ -5,7 +5,6 @@
 
 @section('content')
     <!-- Modal -->
-    <!-- Modal -->
     <div class="modal fade" id="exampleModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">

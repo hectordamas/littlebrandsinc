@@ -30,11 +30,26 @@
     <link rel="stylesheet" href="{{ asset('assets/files/assets/css/style.css') }}">
 
 
+    <!---Datatables-->
+    <link rel="stylesheet" type="text/css"
+        href="{{ asset('assets/files/bower_components/datatables.net-bs4/css/dataTables.bootstrap4.min.css') }}">
+    <link rel="stylesheet" type="text/css"
+        href="{{ asset('assets/files/assets/pages/data-table/css/buttons.dataTables.min.css') }}">
+    <link rel="stylesheet" type="text/css"
+        href="{{ asset('assets/files/bower_components/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css') }}">
+    <link rel="stylesheet" type="text/css"
+        href="{{ asset('assets/files/assets/pages/data-table/extensions/buttons/css/buttons.dataTables.min.css') }}">
 
     <!-- Scrollbar -->
     <link rel="stylesheet" href="{{ asset('assets/files/assets/css/jquery.mCustomScrollbar.css') }}">
 
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
+
+    <!--Teléfonos-->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.1.1/build/css/intlTelInput.css"/>
+
+    <!--Custo CSS-->
     <link rel="stylesheet" href="{{ asset('assets/css/custom.css') }}">
 
 </head>
@@ -227,12 +242,15 @@
                         <div class="pcoded-inner-navbar main-menu">
                             <div class="pcoded-navigatio-lavel">Menú</div>
                             <ul class="pcoded-item pcoded-left-item">
-                                <li class="">
+
+                                <li>
                                     <a href="{{ url('/') }}">
                                         <span class="pcoded-micon"><i class="feather icon-home"></i></span>
                                         <span class="pcoded-mtext">Inicio</span>
                                     </a>
                                 </li>
+
+                                <!--Inscripciones-->
                                 <li class="pcoded-hasmenu">
                                     <a href="javascript:void(0)">
                                         <span class="pcoded-micon">
@@ -242,7 +260,7 @@
                                     </a>
                                     <ul class="pcoded-submenu">
                                         <li class="">
-                                            <a href="{{ url('inscripciones') }}">
+                                            <a href="{{ url('enrollment') }}">
                                                 <span class="pcoded-mtext">Inscripciones</span>
                                             </a>
                                         </li>
@@ -259,6 +277,7 @@
                                     </ul>
                                 </li>
 
+                                <!--Finanzas-->
                                 <li class="pcoded-hasmenu">
                                     <a href="javascript:void(0)">
                                         <span class="pcoded-micon"><i class="fas fa-file-invoice-dollar"></i></span>
@@ -284,6 +303,7 @@
                                     </ul>
                                 </li>
 
+                                <!--Operaciones-->
                                 <li class="pcoded-hasmenu">
                                     <a href="javascript:void(0)">
                                         <span class="pcoded-micon"><i class="fas fa-project-diagram"></i></span>
@@ -307,6 +327,14 @@
                                         </li>
 
                                     </ul>
+                                </li>
+
+                                <!--Usuarios-->
+                                <li>
+                                    <a href="{{ url('users') }}">
+                                        <span class="pcoded-micon"><i class="fas fa-user"></i></span>
+                                        <span class="pcoded-mtext">Usuarios</span>
+                                    </a>
                                 </li>
                             </ul>
                         </div>
@@ -343,8 +371,6 @@
     <!-- Chart js -->
     <script src="{{ asset('assets/files/bower_components/chart.js/dist/Chart.js') }}"></script>
 
-
-
     <!-- Gauge + AmCharts -->
     <script src="{{ asset('assets/files/assets/pages/widget/gauge/gauge.min.js') }}"></script>
     <script src="{{ asset('assets/files/assets/pages/widget/amchart/amcharts.js') }}"></script>
@@ -358,7 +384,42 @@
     <script src="{{ asset('assets/files/assets/js/vartical-layout.min.js') }}"></script>
     <script src="{{ asset('assets/files/assets/js/jquery.mCustomScrollbar.concat.min.js') }}"></script>
     <script src="{{ asset('assets/files/assets/pages/dashboard/crm-dashboard.min.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <!--Telefonos-->
+    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.1.1/build/js/intlTelInput.min.js"></script>
+
+    <!--Datables-->
+    <script src="{{ asset('assets/files/bower_components/datatables.net/js/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ asset('assets/files/bower_components/datatables.net-buttons/js/dataTables.buttons.min.js') }}">
+    </script>
+    <script src="{{ asset('assets/files/assets/pages/data-table/js/jszip.min.js') }}"></script>
+    <script src="{{ asset('assets/files/assets/pages/data-table/js/pdfmake.min.js') }}"></script>
+    <script src="{{ asset('assets/files/assets/pages/data-table/js/vfs_fonts.js') }}"></script>
+    <script src="{{ asset('assets/files/assets/pages/data-table/extensions/buttons/js/dataTables.buttons.min.js') }}">
+    </script>
+    <script src="{{ asset('assets/files/assets/pages/data-table/extensions/buttons/js/buttons.flash.min.js') }}">
+    </script>
+    <script src="{{ asset('assets/files/assets/pages/data-table/extensions/buttons/js/jszip.min.js') }}"></script>
+    <script src="{{ asset('assets/files/assets/pages/data-table/extensions/buttons/js/vfs_fonts.js') }}"></script>
+    <script src="{{ asset('assets/files/assets/pages/data-table/extensions/buttons/js/buttons.colVis.min.js') }}">
+    </script>
+    <script src="{{ asset('assets/files/bower_components/datatables.net-buttons/js/buttons.print.min.js') }}"></script>
+    <script src="{{ asset('assets/files/bower_components/datatables.net-buttons/js/buttons.html5.min.js') }}"></script>
+
+    <script src="{{ asset('assets/files/assets/pages/data-table/js/dataTables.bootstrap4.min.js') }}"></script>
+    <script src="{{ asset('assets/files/bower_components/datatables.net-responsive/js/dataTables.responsive.min.js') }}">
+    </script>
+    <script
+        src="{{ asset('assets/files/bower_components/datatables.net-responsive-bs4/js/responsive.bootstrap4.min.js') }}">
+    </script>
+    <script src="{{ asset('assets/files/assets/pages/data-table/extensions/buttons/js/extension-btns-custom.js') }}">
+    </script>
+
+    <!-- Custom Scripts -->
     <script src="{{ asset('assets/files/assets/js/script.js') }}"></script>
+
+    @yield('scripts')
 </body>
 
 </html>

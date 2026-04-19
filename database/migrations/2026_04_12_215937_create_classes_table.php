@@ -11,16 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('l_b_classes', function (Blueprint $table) {
+        Schema::create('classes', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
 
             $table->foreignId('course_id')->constrained()->cascadeOnDelete();
             $table->foreignId('branch_id')->constrained()->cascadeOnDelete();
-           
-            $table->decimal('price', 8, 2)->nullable();
 
-            $table->string('day'); // Monday
+            $table->date('date'); // o mejor:
             $table->time('start_time');
             $table->time('end_time');
 
@@ -36,6 +34,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('l_b_classes');
+        Schema::dropIfExists('classes');
     }
 };

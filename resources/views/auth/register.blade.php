@@ -1,3 +1,4 @@
+{{--
 @extends('layouts.app')
 
 @section('title')
@@ -120,3 +121,5 @@
     </div>
 </div>
 @endsection
+
+--}}

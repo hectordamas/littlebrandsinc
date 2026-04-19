@@ -7,6 +7,8 @@ use App\Models\{Enrollment};
 
 class LBClass extends Model
 {
+    protected $table = 'classes';
+
     public function enrollments()
     {
         return $this->hasMany(Enrollment::class);

@@ -12,7 +12,7 @@
         </div>
 
         <div class="col-xl-3 col-md-6 ">
-            <a href="/inscripciones-y-clientes" class="card card-access">
+            <a href="/enrollment" class="card card-access">
                 <div class="card-block">
                     <div class="row align-items-center">
                         <div class="col-8">

@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\{StudentsController};
+use App\Http\Controllers\{StudentsController, EnrollmentController, UsersController};
 
 Route::get('/', function () {
     return redirect('login');
@@ -17,17 +17,18 @@ Route::get('inscripciones-y-clientes', function () {
     return redirect('students');
 });
 
-Route::get('inscripcion', function () { return view('auth.student-form'); });
+Route::get('inscripcion', function () { return view('auth.inscripcion-form'); });
 Route::post('/registro-estudiante', [StudentsController::class, 'register'])->name('students.register');
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('inscripciones-y-clientes', function () {
-        return redirect('students');
-    });
+    Route::get('enrollment', [EnrollmentController::class, 'index']);
 
     Route::get('students', [StudentsController::class, 'index']);
 
 
     Route::get('finanzas-y-facturacion');
     Route::get('programacion-y-operaciones');
+
+
+    Route::get('users', [UsersController::class, 'index']);
 });

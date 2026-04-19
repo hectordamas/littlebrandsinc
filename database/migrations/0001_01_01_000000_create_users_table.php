@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('role')->default('parent'); // admin, coach, parent
+            $table->string('role')->default('parent'); // Administrador, Coach, Padre
             $table->string('email')->unique();
             $table->string('whatsapp')->nullable();
             $table->timestamp('email_verified_at')->nullable();
@@ -28,7 +28,8 @@ return new class extends Migration
         $user->name = "Héctor Damas";
         $user->email = "hectorgabrieldm@hotmail.com";
         $user->password = bcrypt("alinware98_");
-        $user->role = "admin";
+        $user->role = "Administrador";
+        $user->whatsapp = "584241930033";
         $user->save();
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
