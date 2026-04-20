@@ -48,6 +48,8 @@
     <!--Custom CSS-->
     <link rel="stylesheet" href="{{ asset('assets/css/custom.css') }}">
 
+    @yield('styles')
+
 </head>
 <!-- Menu sidebar static layout -->
 

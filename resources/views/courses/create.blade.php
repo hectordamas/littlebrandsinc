@@ -79,6 +79,17 @@
                             </select>
                         </div>
 
+                        <div class="col-md-3 mb-3">
+                            <label for="coach_id" class="form-label">Coach</label>
+                            <select name="coach_id" id="coach_id" class="form-control" required>
+                                <option value="">Sin asignar</option>
+                                @foreach ($coaches as $coach)
+                                    <option value="{{ $coach->id }}"
+                                        {{ old('coach_id') == $coach->id ? 'selected' : '' }}>
+                                        {{ $coach->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
 
                     <div class="row">
@@ -173,7 +184,10 @@
             $('#price').on('input', function() {
                 let value = parseFloat($(this).val());
                 if (isNaN(value)) value = 0;
-                $('#price-preview').text('$' + value.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                $('#price-preview').text('$' + value.toLocaleString('es-ES', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }));
             });
         });
     </script>

@@ -25,15 +25,6 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        $user = new User();
-        $user->name = "Héctor Damas";
-        $user->email = "hectorgabrieldm@hotmail.com";
-        $user->password = bcrypt("alinware98_");
-        $user->role = "Administrador";
-        $user->dial_code = "+58";
-        $user->whatsapp = "4241930033";
-        $user->save();
-
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');

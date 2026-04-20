@@ -16,7 +16,7 @@
                         </div>
 
                         <a href="{{ route('courses.create') }}" class="btn btn-inverse btn-sm">
-                        <i class="fas fa-plus"></i> Agregar Curso</a>
+                            <i class="fas fa-plus"></i> Agregar Curso</a>
                     </div>
                     <div class="card-block">
                         <table class="table table-bordered table-striped">
@@ -38,23 +38,28 @@
                                 @forelse ($courses as $course)
                                     <tr>
                                         <td>{{ $course->id }}</td>
-                                        <td>{{ $course->name }}</td>
+                                        <td>{{ $course->title }}</td>
                                         <td>{{ $course->min_age ?? 'N/A' }}</td>
                                         <td>{{ $course->max_age ?? 'N/A' }}</td>
                                         <td>{{ $course->price ? '$' . number_format($course->price, 2) : 'N/A' }}</td>
-                                        <td>{{ $course->start_date->format('Y-m-d') }}</td>
-                                        <td>{{ $course->end_date->format('Y-m-d') }}</td>
+                                        <td>{{ $course->start_date ? \Carbon\Carbon::parse($course->start_date)->format('d/m/Y') : 'N/A' }}
+                                        </td>
+                                        <td>{{ $course->end_date ? \Carbon\Carbon::parse($course->end_date)->format('d/m/Y') : 'N/A' }}
+                                        </td>
                                         <td>{{ $course->active ? 'Sí' : 'No' }}</td>
                                         <td>{{ $course->branch->name ?? 'N/A' }}</td>
                                         <td>
                                             <a href="{{ route('courses.edit', $course->id) }}"
-                                                class="btn btn-sm btn-success">Editar</a>
+                                                class="btn btn-sm btn-inverse"><i class="fas fa-eye"></i></a>
+                                            <a href="{{ route('courses.edit', $course->id) }}"
+                                                class="btn btn-sm btn-success"><i class="fas fa-edit"></i></a>
                                             <form action="{{ route('courses.destroy', $course->id) }}" method="POST"
                                                 style="display:inline;">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-sm btn-danger"
-                                                    onclick="return confirm('¿Estás seguro?')">Eliminar</button>
+                                                    onclick="return confirm('¿Estás seguro?')"><i
+                                                        class="fas fa-trash"></i></button>
                                             </form>
                                         </td>
                                     </tr>
