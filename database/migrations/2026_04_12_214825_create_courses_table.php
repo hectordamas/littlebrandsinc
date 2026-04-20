@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->timestamps();
 
-            $table->string('name'); // Sub-10
+            $table->text('title'); // Sub-10
             $table->integer('min_age')->nullable();
             $table->integer('max_age')->nullable();
             $table->integer('capacity')->nullable();

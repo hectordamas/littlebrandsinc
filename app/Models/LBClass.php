@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\{Enrollment};
+use App\Models\{Enrollment, Course};
 
 class LBClass extends Model
 {
@@ -12,5 +12,10 @@ class LBClass extends Model
     public function enrollments()
     {
         return $this->hasMany(Enrollment::class);
+    }
+
+    public function course()
+    {
+        return $this->belongsTo(Course::class);
     }
 }
