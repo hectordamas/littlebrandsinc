@@ -3,16 +3,13 @@
     <title>{{ env('APP_NAME') }} - Usuarios</title>
 @endsection
 
-
-
-
 @section('content')
     <!-- Modal -->
-    <div class="modal fade" id="exampleModal" tabindex="-1">
+    <div class="modal fade" id="usersModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
 
-                <form method="POST" action="{{ url('users/store') }}">
+                <form method="POST" action="{{ route('users.store') }}">
                     @csrf
 
                     <!-- HEADER -->
@@ -23,25 +20,50 @@
 
                     <!-- BODY -->
                     <div class="modal-body">
-
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Nombre</label>
-                                <input type="text" name="student_name" class="form-control" required>
+                                <input type="text" name="name" class="form-control" required>
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Fecha de nacimiento</label>
-                                <input type="date" name="birthdate" class="form-control" required>
+                                <label class="form-label">Correo electrónico</label>
+                                <input type="email" name="email" class="form-control" required>
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Notas médicas</label>
-                                <textarea name="medical_notes" class="form-control"></textarea>
+                                <label class="form-label">Rol</label>
+                                <select name="role" class="form-control" required>
+                                    <option value="">Seleccione un rol</option>
+                                    <option value="Padre">Padre</option>
+                                    <option value="Coach">Coach</option>
+                                    <option value="Administrador">Administrador</option>
+                                </select>
                             </div>
 
+                            <div class="form-group col-md-6 mb-3">
+                                <label for="whatsapp">WhatsApp</label>
+
+                                <div class="input-group phone-group">
+                                    <select name="dial_code" id="dial_code" class="form-select">
+                                        @include('partials.dialcode_create')
+                                    </select>
+
+                                    <input type="text" name="whatsapp" id="whatsapp" class="form-control"
+                                        placeholder="4121234567">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Contraseña</label>
+                                <input type="password" name="password" class="form-control" required>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Confirmar contraseña</label>
+                                <input type="password" name="password_confirmation" class="form-control" required>
+                            </div>
                         </div>
-
                     </div>
 
                     <!-- FOOTER -->
@@ -54,7 +76,6 @@
                             Guardar Usuario
                         </button>
                     </div>
-
                 </form>
 
             </div>
@@ -70,13 +91,13 @@
                 </div>
                 <div>
                     <a href="javascript:void(0);" class="btn btn-inverse btn-sm" data-bs-toggle="modal"
-                        data-bs-target="#exampleModal"><i class="far fa-address-book text-light"></i> Registrar
+                        data-bs-target="#usersModal"><i class="far fa-address-book text-light"></i> Registrar
                         Usuario</a>
                 </div>
             </div>
             <div class="card-block">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                    <table class="table">
                         <thead class="table-dark">
                             <tr>
                                 <th>#</th>
@@ -84,7 +105,7 @@
                                 <th>Role</th>
                                 <th>E-Mail</th>
                                 <th>Whatsapp</th>
-                                <th class="text-end">Acciones</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -94,16 +115,19 @@
                                     <td>{{ $user->name }}</td>
                                     <td>{{ $user->role }}</td>
                                     <td>{{ $user->email }}</td>
-                                    <td>{{ format_phone($user->whatsapp) }}</td>
-                                    <td class="d-flex justify-content-center align-items-center gap-2">
+                                    <td>{{ $user->dial_code }}{{ $user->whatsapp }}</td>
+                                    <td class="d-flex justify-content-center align-items-center gap-1">
 
-                                        <a href="{{ url('users/' . $user->id . '/edit') }}" class="btn btn-success">
+                                        <a href="{{ url('users/' . $user->id . '/edit') }}" class="btn btn-sm btn-success">
                                             <i class="fas fa-edit"></i>
                                         </a>
 
-                                        <form action="" method="post" class="m-0">
+                                        <form action="{{ route('users.destroy', $user->id) }}" method="post"
+                                            class="m-0">
                                             @csrf
-                                            <button type="submit" class="btn btn-danger">
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-danger"
+                                                onclick="return confirmDelete(event)">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>
@@ -120,14 +144,60 @@
 
 
 @section('scripts')
-<script>
-$(document).ready(function() {
-    $('.table').DataTable({
-        dom: 'Bfrtip',
-        buttons: [
-            'copy', 'csv', 'excel', 'pdf', 'print'
-        ]
-    });
-});
-</script>
+    <script>
+        $(document).ready(function() {
+            $('.table').DataTable({
+                dom: 'Bfrtip',
+                buttons: [{
+                        extend: 'copy',
+                        text: 'Copiar',
+                        className: 'btn btn-inverse btn-sm'
+                    },
+                    {
+                        extend: 'csv',
+                        text: 'CSV',
+                        className: 'btn btn-inverse btn-sm'
+                    },
+                    {
+                        extend: 'excel',
+                        text: 'Excel',
+                        className: 'btn btn-inverse btn-sm'
+                    },
+                    {
+                        extend: 'pdf',
+                        text: 'PDF',
+                        className: 'btn btn-inverse btn-sm'
+                    },
+                    {
+                        extend: 'print',
+                        text: 'Imprimir',
+                        className: 'btn btn-inverse btn-sm'
+                    }
+                ]
+            });
+        });
+    </script>
+
+
+
+    <script>
+        function confirmDelete(event) {
+            event.preventDefault();
+            const form = (event.currentTarget || event.target).closest('form');
+
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: 'No podrás revertir esta acción.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        }
+    </script>
 @endsection

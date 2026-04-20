@@ -124,3 +124,40 @@ table th {
 .card-access:hover h6 {
     text-decoration: none;
 }
+
+
+
+/* =========================
+   Telefonos
+*========================= */
+
+.phone-group {
+    display: flex;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* SELECT minimalista */
+.phone-group select {
+    border: none;
+    background: #f8f9fa;
+    padding: 0;
+    max-width: 70px;
+    text-align: center;
+    outline: none;
+}
+
+/* INPUT principal */
+.phone-group input {
+    border: none;
+    padding: 8px 10px;
+    outline: none;
+}
+
+/* foco como campo único */
+.phone-group:focus-within {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 2px rgba(13,110,253,.25);
+}
+

@@ -16,7 +16,10 @@ return new class extends Migration
             $table->timestamps();
             $table->string('name'); // Sede Norte
             $table->string('address')->nullable();
+            $table->string('email')->nullable();
+            $table->string('phone')->nullable();
             $table->boolean('active')->default(true);
+            $table->longText('logo')->nullable();
         });
     }
 

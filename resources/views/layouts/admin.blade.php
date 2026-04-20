@@ -45,11 +45,7 @@
 
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
-
-    <!--Teléfonos-->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.1.1/build/css/intlTelInput.css"/>
-
-    <!--Custo CSS-->
+    <!--Custom CSS-->
     <link rel="stylesheet" href="{{ asset('assets/css/custom.css') }}">
 
 </head>
@@ -311,17 +307,17 @@
                                     </a>
                                     <ul class="pcoded-submenu">
                                         <li class=" ">
-                                            <a href="widget-statistic.html">
+                                            <a href="{{ url('courses') }}">
                                                 <span class="pcoded-mtext">Cursos</span>
                                             </a>
                                         </li>
                                         <li class=" ">
-                                            <a href="widget-data.html">
+                                            <a href="{{ url('calendar') }}">
                                                 <span class="pcoded-mtext">Calendario</span>
                                             </a>
                                         </li>
                                         <li class="">
-                                            <a href="widget-chart.html">
+                                            <a href="{{ url('trainers') }}">
                                                 <span class="pcoded-mtext">Entrenadores</span>
                                             </a>
                                         </li>
@@ -336,6 +332,15 @@
                                         <span class="pcoded-mtext">Usuarios</span>
                                     </a>
                                 </li>
+
+                                <!-- Sedes-->
+                                <li>
+                                    <a href="{{ url('branches') }}">
+                                        <span class="pcoded-micon"><i class="fas fa-building"></i></span>
+                                        <span class="pcoded-mtext">Sedes</span>
+                                    </a>
+                                </li>
+
                             </ul>
                         </div>
                     </nav>
@@ -386,8 +391,6 @@
     <script src="{{ asset('assets/files/assets/pages/dashboard/crm-dashboard.min.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-    <!--Telefonos-->
-    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.1.1/build/js/intlTelInput.min.js"></script>
 
     <!--Datables-->
     <script src="{{ asset('assets/files/bower_components/datatables.net/js/jquery.dataTables.min.js') }}"></script>
@@ -416,8 +419,47 @@
     <script src="{{ asset('assets/files/assets/pages/data-table/extensions/buttons/js/extension-btns-custom.js') }}">
     </script>
 
+    <!--SweetAlert2-->
+    <script src="{{ asset('assets/sweetalert2/sweetalert2.all.min.js') }}"></script>
+
     <!-- Custom Scripts -->
     <script src="{{ asset('assets/files/assets/js/script.js') }}"></script>
+
+    <!-- Custom Alert Scripts -->   
+    @if (session()->has('success'))
+        <script>
+            Swal.fire({
+                text: "{{ session('success') }}",
+                icon: "success",
+                confirmButtonText: "Continuar",
+                confirmButtonColor: '#28a745'
+            });
+        </script>
+    @endif
+
+    @if (session()->has('error'))
+        <script>
+            Swal.fire({
+                text: "{{ session('error') }}",
+                icon: "error",
+                confirmButtonText: "Entendido!",
+                confirmButtonColor: '#dc3545'
+            });
+        </script>
+    @endif
+
+    @foreach ($errors->all() as $error)
+        <script>
+            Swal.fire({
+                text: "{{ $error }}",
+                icon: "error",
+                confirmButtonText: "Entendido!",
+                confirmButtonColor: '#dc3545'
+            });
+        </script>
+    @endforeach
+
+    <script src="{{ asset('assets/files/assets/js/custom.js') }}"></script>
 
     @yield('scripts')
 </body>

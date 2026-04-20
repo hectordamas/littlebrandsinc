@@ -16,9 +16,12 @@ return new class extends Migration
             $table->timestamps();
 
             $table->string('name'); // Sub-10
-            $table->string('level')->nullable();
             $table->integer('min_age')->nullable();
             $table->integer('max_age')->nullable();
+            $table->integer('capacity')->nullable();
+
+            $table->longText('description')->nullable();
+
             $table->decimal('price', 8, 2)->nullable();
 
             $table->date('start_date');
@@ -27,7 +30,6 @@ return new class extends Migration
 
             $table->foreignId('branch_id')->constrained()->cascadeOnDelete();
 
-            $table->foreignId('course_id')->constrained()->cascadeOnDelete();
         });
     }
 

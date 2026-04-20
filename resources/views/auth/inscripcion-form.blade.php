@@ -53,7 +53,7 @@
                     </div>
 
                     <div class="card form-card">
-                        <div class="card-body p-4">
+                        <div class="card-block p-4">
 
                             <h4 class="text-center mb-4">Inscripción</h4>
 
@@ -99,9 +99,18 @@
                                     <input type="email" name="email" class="form-control">
                                 </div>
 
-                                <div class="mb-3">
-                                    <label>WhatsApp</label>
-                                    <input type="text" name="whatsapp" class="form-control">
+
+                                <div class="form-group mb-3">
+                                    <label for="whatsapp">WhatsApp</label>
+
+                                    <div class="input-group phone-group">
+                                        <select name="dial_code" id="dial_code" class="form-select" style="max-width: 100px;">
+                                            @include('partials.dialcode_create')
+                                        </select>
+
+                                        <input type="text" name="whatsapp" id="whatsapp" class="form-control"
+                                            placeholder="4121234567">
+                                    </div>
                                 </div>
 
                                 <div class="mb-3">
