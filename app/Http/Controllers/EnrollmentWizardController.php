@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Account;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Student;
+use App\Models\Transaction;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -13,6 +15,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Stripe\Exception\ApiErrorException;
+use Stripe\StripeClient;
 class EnrollmentWizardController extends Controller
 {
     public function show(Request $request)
@@ -73,6 +77,68 @@ class EnrollmentWizardController extends Controller
             5 => $this->handleStep5($request),
             default => $this->wizardRedirect($request, redirect()->route('enrollment.wizard')),
         };
+    }
+
+    public function createPaymentIntent(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'course_id' => 'required|integer|exists:courses,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Datos inválidos para procesar el pago.',
+                'errors' => $validator->errors()->toArray(),
+            ], 422);
+        }
+
+        $course = Course::query()
+            ->where('active', true)
+            ->whereDate('end_date', '>=', now()->toDateString())
+            ->findOrFail((int) $request->input('course_id'));
+
+        $amount = (int) round(((float) ($course->price ?? 0)) * 100);
+        if ($amount <= 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Este curso no tiene un monto válido para cobrar.',
+            ], 422);
+        }
+
+        $stripeSecret = config('services.stripe.secret');
+        if (! $stripeSecret) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Stripe no está configurado en el servidor.',
+            ], 500);
+        }
+
+        try {
+            $stripe = new StripeClient($stripeSecret);
+            $intent = $stripe->paymentIntents->create([
+                'amount' => $amount,
+                'currency' => 'usd',
+                'automatic_payment_methods' => ['enabled' => true],
+                'metadata' => [
+                    'course_id' => (string) $course->id,
+                    'course_title' => $course->title,
+                    'student_id' => (string) ($request->session()->get('selected_student_id') ?? ''),
+                ],
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'client_secret' => $intent->client_secret,
+                'payment_intent_id' => $intent->id,
+            ]);
+        } catch (ApiErrorException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No fue posible crear el intento de pago en Stripe.',
+                'error' => $e->getMessage(),
+            ], 502);
+        }
     }
 
     protected function handleStep1(Request $request): RedirectResponse|JsonResponse
@@ -247,8 +313,8 @@ class EnrollmentWizardController extends Controller
 
         $course = Course::withCount('enrollments')->findOrFail($courseId);
 
-        if (! $course->active) {
-            $msg = 'Este programa no está disponible';
+        if (! $course->active || Carbon::parse($course->end_date)->lt(Carbon::today())) {
+            $msg = 'Este programa no está disponible o ya finalizó';
 
             return $this->wizardJsonOrRedirect($request, [
                 'success' => false,
@@ -259,6 +325,20 @@ class EnrollmentWizardController extends Controller
 
         $studentId = $request->session()->get('selected_student_id');
         $student = Student::find($studentId);
+        $alreadyEnrolled = Enrollment::query()
+            ->where('student_id', $student->id)
+            ->where('course_id', $course->id)
+            ->exists();
+        if ($alreadyEnrolled) {
+            $msg = 'Este estudiante ya está inscrito en este programa';
+
+            return $this->wizardJsonOrRedirect($request, [
+                'success' => false,
+                'message' => $msg,
+                'errors' => ['selected_course' => [$msg]],
+            ], back()->withErrors(['selected_course' => $msg]));
+        }
+
         if (! $student) {
             return $this->wizardJsonOrRedirect($request, [
                 'success' => false,
@@ -316,7 +396,7 @@ class EnrollmentWizardController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'payment_method' => 'required|in:card,pending',
-            'stripe_payment_method_id' => 'nullable|string|max:255',
+            'stripe_payment_intent_id' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -325,18 +405,18 @@ class EnrollmentWizardController extends Controller
 
         $paymentMethod = $request->input('payment_method');
 
-        if ($paymentMethod === 'card' && ! $request->filled('stripe_payment_method_id')) {
+        if ($paymentMethod === 'card' && ! $request->filled('stripe_payment_intent_id')) {
             $validator = Validator::make([], []);
-            $validator->errors()->add('stripe_payment_method_id', 'Completa los datos de la tarjeta o usa el modo simulación.');
+            $validator->errors()->add('stripe_payment_intent_id', 'Completa el pago con tarjeta para continuar.');
 
             return $this->wizardValidationError($request, $validator);
         }
 
         $request->session()->put('payment_method', $paymentMethod);
         if ($paymentMethod === 'card') {
-            $request->session()->put('stripe_payment_method_id', $request->input('stripe_payment_method_id'));
+            $request->session()->put('stripe_payment_intent_id', $request->input('stripe_payment_intent_id'));
         } else {
-            $request->session()->forget('stripe_payment_method_id');
+            $request->session()->forget('stripe_payment_intent_id');
         }
 
         $request->session()->put('enrollment_step', 5);
@@ -361,6 +441,7 @@ class EnrollmentWizardController extends Controller
         $studentId = $request->session()->get('selected_student_id');
         $courseId = $request->session()->get('selected_course_id');
         $paymentMethod = $request->session()->get('payment_method');
+        $stripePaymentIntentId = $request->session()->get('stripe_payment_intent_id');
 
         if (! $studentId || ! $courseId || ! $paymentMethod) {
             return $this->wizardJsonOrRedirect($request, [
@@ -368,6 +449,80 @@ class EnrollmentWizardController extends Controller
                 'message' => 'Sesión incompleta. Reinicia el proceso.',
                 'errors' => ['session' => ['Sesión incompleta.']],
             ], redirect()->route('enrollment.wizard')->withErrors(['session' => 'Sesión incompleta.']));
+        }
+
+        $student = Student::find($studentId);
+        $course = Course::withCount('enrollments')->find($courseId);
+        if (! $student || ! $course) {
+            return $this->wizardJsonOrRedirect($request, [
+                'success' => false,
+                'message' => 'Sesión inválida. Reinicia el proceso.',
+                'errors' => ['session' => ['Sesión inválida.']],
+            ], redirect()->route('enrollment.wizard')->withErrors(['session' => 'Sesión inválida.']));
+        }
+
+        if (! $course->active || Carbon::parse($course->end_date)->lt(Carbon::today())) {
+            $msg = 'Este programa ya no está vigente.';
+
+            return $this->wizardJsonOrRedirect($request, [
+                'success' => false,
+                'message' => $msg,
+                'errors' => ['selected_course' => [$msg]],
+            ], redirect()->route('enrollment.wizard')->withErrors(['selected_course' => $msg]));
+        }
+
+        $alreadyEnrolled = Enrollment::query()
+            ->where('student_id', $student->id)
+            ->where('course_id', $course->id)
+            ->exists();
+        if ($alreadyEnrolled) {
+            $msg = 'Este estudiante ya está inscrito en este programa';
+
+            return $this->wizardJsonOrRedirect($request, [
+                'success' => false,
+                'message' => $msg,
+                'errors' => ['selected_course' => [$msg]],
+            ], redirect()->route('enrollment.wizard')->withErrors(['selected_course' => $msg]));
+        }
+
+        $spotsLeft = $course->capacity - $course->enrollments_count;
+        if ($spotsLeft <= 0) {
+            $msg = 'Lo sentimos, este programa ya no tiene cupos disponibles';
+
+            return $this->wizardJsonOrRedirect($request, [
+                'success' => false,
+                'message' => $msg,
+                'errors' => ['selected_course' => [$msg]],
+            ], redirect()->route('enrollment.wizard')->withErrors(['selected_course' => $msg]));
+        }
+
+        if ($paymentMethod === 'card' && $stripePaymentIntentId && str_starts_with($stripePaymentIntentId, 'pi_')) {
+            $stripeSecret = config('services.stripe.secret');
+            if (! $stripeSecret) {
+                return $this->wizardJsonOrRedirect($request, [
+                    'success' => false,
+                    'message' => 'Stripe no está configurado en el servidor.',
+                    'errors' => ['payment_method' => ['No se pudo validar el pago.']],
+                ], redirect()->route('enrollment.wizard')->withErrors(['payment_method' => 'No se pudo validar el pago.']));
+            }
+
+            try {
+                $stripe = new StripeClient($stripeSecret);
+                $intent = $stripe->paymentIntents->retrieve($stripePaymentIntentId, []);
+                if (! in_array($intent->status, ['succeeded', 'processing'], true)) {
+                    return $this->wizardJsonOrRedirect($request, [
+                        'success' => false,
+                        'message' => 'El pago con tarjeta no fue aprobado.',
+                        'errors' => ['payment_method' => ['No se pudo confirmar el pago en Stripe.']],
+                    ], redirect()->route('enrollment.wizard')->withErrors(['payment_method' => 'No se pudo confirmar el pago en Stripe.']));
+                }
+            } catch (ApiErrorException $e) {
+                return $this->wizardJsonOrRedirect($request, [
+                    'success' => false,
+                    'message' => 'No se pudo validar el pago en Stripe.',
+                    'errors' => ['payment_method' => [$e->getMessage()]],
+                ], redirect()->route('enrollment.wizard')->withErrors(['payment_method' => 'No se pudo validar el pago en Stripe.']));
+            }
         }
 
         $enrollment = new Enrollment;
@@ -378,6 +533,23 @@ class EnrollmentWizardController extends Controller
         $enrollment->payment_method = $paymentMethod;
         $enrollment->payment_status = $paymentMethod === 'pending' ? 'pending' : 'paid';
         $enrollment->save();
+
+        if ($enrollment->payment_status === 'paid') {
+            Transaction::create([
+                'enrollment_id' => $enrollment->id,
+                'student_id' => $student->id,
+                'course_id' => $course->id,
+                'branch_id' => $course->branch_id,
+                'account_id' => $this->resolveIncomeAccountId($paymentMethod),
+                'amount' => $course->price ?? 0,
+                'currency' => 'USD',
+                'type' => 'income',
+                'status' => 'completed',
+                'payment_method' => $paymentMethod === 'card' ? 'stripe' : $paymentMethod,
+                'reference' => $stripePaymentIntentId,
+                'description' => 'Pago de inscripción: '.$course->title,
+            ]);
+        }
 
         $request->session()->forget([
             'enrollment_step',
@@ -392,7 +564,7 @@ class EnrollmentWizardController extends Controller
             'selected_course_id',
             'course_price',
             'payment_method',
-            'stripe_payment_method_id',
+            'stripe_payment_intent_id',
             'wizard_locked_course_id',
         ]);
 
@@ -420,7 +592,7 @@ class EnrollmentWizardController extends Controller
             'selected_course_id',
             'course_price',
             'payment_method',
-            'stripe_payment_method_id',
+            'stripe_payment_intent_id',
             'wizard_locked_course_id',
         ];
         foreach ($keys as $key) {
@@ -432,7 +604,10 @@ class EnrollmentWizardController extends Controller
 
     protected function loadCoursesForWizard(?int $lockedCourseId, ?int $studentAge)
     {
-        $q = Course::query()->where('active', true)->withCount('enrollments');
+        $q = Course::query()
+            ->where('active', true)
+            ->whereDate('end_date', '>=', now()->toDateString())
+            ->withCount('enrollments');
 
         if ($lockedCourseId) {
             $q->whereKey($lockedCourseId);
@@ -573,5 +748,35 @@ class EnrollmentWizardController extends Controller
         }
 
         return $redirect;
+    }
+
+    protected function resolveIncomeAccountId(string $paymentMethod): int
+    {
+        if ($paymentMethod === 'card') {
+            $account = Account::firstOrCreate(
+                ['slug' => 'stripe'],
+                [
+                    'name' => 'Stripe',
+                    'type' => 'stripe',
+                    'currency' => 'USD',
+                    'active' => true,
+                    'meta' => ['provider' => 'stripe'],
+                ]
+            );
+
+            return (int) $account->id;
+        }
+
+        $account = Account::firstOrCreate(
+            ['slug' => 'cash'],
+            [
+                'name' => 'Caja / Efectivo',
+                'type' => 'cash',
+                'currency' => 'USD',
+                'active' => true,
+            ]
+        );
+
+        return (int) $account->id;
     }
 }

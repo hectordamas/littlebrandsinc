@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\{BranchesController, CoursesController, EnrollmentController, EnrollmentWizardController, HomeController, StudentsController, UsersController};
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -22,11 +23,17 @@ Route::post('/registro-estudiante', [StudentsController::class, 'register'])->na
 
 Route::get('inscripcion/wizard', [EnrollmentWizardController::class, 'show'])->name('enrollment.wizard');
 Route::post('inscripcion/wizard', [EnrollmentWizardController::class, 'submit'])->name('enrollment.wizard.submit');
+Route::post('inscripcion/wizard/payment-intent', [EnrollmentWizardController::class, 'createPaymentIntent'])->name('enrollment.wizard.payment-intent');
 Route::get('inscripcion/wizard/reset', [EnrollmentWizardController::class, 'reset'])->name('enrollment.wizard.reset');
 
 
 Route::middleware(['auth'])->group(function () {
     Route::get('enrollment', [EnrollmentController::class, 'index']);
+    Route::post('enrollment/store', [EnrollmentController::class, 'store'])->name('enrollment.store');
+    Route::patch('enrollment/{enrollment}/status', [EnrollmentController::class, 'updateStatus'])->name('enrollment.status');
+    Route::patch('enrollment/bulk-update', [EnrollmentController::class, 'bulkUpdate'])->name('enrollment.bulk-update');
+    Route::get('enrollment/{enrollment}', [EnrollmentController::class, 'show'])->name('enrollment.show');
+    Route::patch('enrollment/{enrollment}', [EnrollmentController::class, 'update'])->name('enrollment.update');
 
     Route::get('students', [StudentsController::class, 'index']);
 

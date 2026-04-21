@@ -1,81 +1,421 @@
-Quiero construir un formulario tipo wizard (step-by-step) en Laravel Blade + JS 
+Ya tengo el wizard (step-by-step form) funcional en Laravel Blade para inscripciones.
+
+Quiero mejorarlo agregando lógica real de negocio, pagos con Stripe y validaciones robustas.
+
+NO crear el wizard desde cero. SOLO extender y mejorar el existente.
+
+---
 
 ### 🎯 Objetivo
-Crear un flujo de inscripción de estudiantes en pasos claros y controlados.
+
+Mejorar el flujo actual con:
+
+- Stripe Elements (pago con tarjeta real)
+- Filtro de cursos vigentes
+- Prevención de inscripciones duplicadas
+- Registro automático de transacción financiera
 
 ---
 
-### 🧩 Flujo del formulario
+## 🧩 Mejoras requeridas
 
-STEP 1: Autenticación
-- Si el usuario NO está autenticado:
-  - Mostrar opción para iniciar sesión o registrarse.
-- Si ya está autenticado:
-  - Saltar automáticamente al STEP 2.
+### 1. Cursos vigentes
 
----
-
-STEP 2: Selección de estudiante
-- Mostrar lista de estudiantes asociados al usuario autenticado.
-- Permitir seleccionar uno existente.
-- Incluir opción: "Registrar nuevo estudiante"
-  - Si elige esta opción, mostrar formulario inline o modal para crear estudiante.
-  - Al crear, agregarlo dinámicamente a la lista y seleccionarlo.
+- SOLO mostrar cursos donde:
+  - `end_date >= now()`
+- Aplicar filtro en:
+  - Backend (Eloquent)
+  - Validación al guardar (OBLIGATORIO)
 
 ---
 
-STEP 3: Selección de programa/curso
-- Mostrar lista de programas disponibles.
-- Validaciones:
-  - Si NO hay cupos disponibles → mostrar mensaje claro.
-  - Si la edad del estudiante NO cumple requisitos → bloquear selección y mostrar motivo.
-- Si viene un `course_id` o `program_id` por GET:
-  - Si por medio de la url mando un curso especifico Limitar selección SOLO a ese curso, sino mostrar lista de cursos disponibles.
-  - Mantener el mismo flujo pero con selección fija.
+### 2. Validación de duplicados
+
+- Un estudiante NO puede inscribirse dos veces en el mismo curso
+
+- Validar en backend:
+  - si ya hay un errollment con este estudiante
+
+- Si ocurre:
+  - Retornar error claro al frontend
 
 ---
 
-STEP 4: Pago
-- Mostrar opciones:
-  1. Pago con tarjeta (Stripe)
-     - Formulario de tarjeta integrado.
-  2. Pago manual
-     - Mostrar mensaje: "El administrador validará tu pago"
-- Dependiendo de la opción, manejar flujo distinto.
+### 3. Validación de negocio
+
+Antes de permitir inscripción:
+
+- Validar cupos disponibles
+- Validar edad del estudiante vs rango del curso
+
+Si falla:
+- Mostrar mensaje claro explicando por qué
 
 ---
 
-STEP 5: Confirmación
-- Mostrar resumen de inscripción.
-- Confirmar y guardar.
+### 4. Soporte GET (curso preseleccionado)
+
+Si viene `course_id` o `program_id` en la URL:
+
+- Limitar selección SOLO a ese curso
+- No mostrar otros cursos
+- Bloquear cambio en UI
+- Mantener el flujo normal
 
 ---
 
-### ⚙️ Requisitos técnicos
+### 5. Stripe (Pago con tarjeta)
 
-- Usar Laravel Blade.
-- Manejar estado del wizard en frontend (Alpine.js preferido).
-- Validaciones tanto en frontend como backend.
-- UX clara:
-  - Botones "Siguiente" y "Atrás"
-  - Barra de progreso
-- Evitar recarga completa de página (SPA-like).
-- Código limpio y modular.
+Integrar Stripe Elements dentro del paso de pago:
 
 ---
 
-### 📦 Entregables
+#### Backend
 
-1. Vista Blade completa del wizard.
+Crear endpoint:
 
-3. Ejemplo de validaciones.
-4. Estructura de datos esperada (student, course, etc.).
-5. Ejemplo de integración básica con Stripe (simulado si es necesario).
+- createPaymentIntent()
+
+Debe:
+
+- Recibir course_id
+- Obtener precio desde DB (NO desde frontend)
+- Crear PaymentIntent
+- Retornar client_secret
+
+## 6. Crear una tabla de transacciones financieras (ledger) que sea flexible para soportar múltiples tipos de movimientos. al una inscripcion tener status de pagado debe registrar un movimiento en esta tabla
+
+### 🧱 Estructura de la tabla `transactions`
+
+Debe incluir:
+
+- id
+
+- enrollment_id (nullable, foreign key)
+- student_id (nullable, foreign key)
+- course_id (nullable, foreign key)
+
+- branch_id (required)
+- account_id (required)
+
+- amount (required)
+- currency (required)
+
+- type (income / expense)
+- status (pending, completed, failed)
+
+- payment_method (nullable: stripe, manual, transfer, etc.)
+- reference (nullable, ej: payment_intent_id)
+
+- description (nullable)
+
+- timestamps
 
 ---
 
-### 🚨 Consideraciones importantes
+Si la transacción está relacionada a una inscripción:
 
-- No permitir avanzar si un paso no está completo.
-- Mostrar errores de forma clara al usuario.
-- Código reutilizable para diferentes cursos.
+- enrollment_id NO es null → entonces:
+  - student_id debe existir
+  - course_id debe existir
+
+
+
+Usa las tarjetas de prueba oficiales de Stripe (no tarjetas reales).
+
+La más común para pago exitoso:
+
+Número: 4242 4242 4242 4242
+Fecha: cualquier fecha futura (ej. 12/34)
+CVC: cualquier 3 dígitos (ej. 123)
+ZIP/postal: cualquiera (si lo pide)
+Otras útiles:
+
+Rechazada genérica: 4000 0000 0000 0002
+Requiere autenticación 3DS: 4000 0025 0000 3155
+Fondos insuficientes: 4000 0000 0000 9995
+Importante:
+
+Asegúrate de usar llaves pk_test_... y sk_test_... (modo test).
+Nunca uses datos reales en entorno de pruebas.
+Referencia oficial: Stripe Testing Cards
+
+
+
+
+/////////////////////////////
+
+
+
+enrollments/index.blade.php
+
+Tengo un módulo de inscripciones en Laravel dentro de un panel administrativo. Ya existe un formulario modal funcional (NO crear desde cero), pero necesito mejorarlo a nivel de UX, validaciones y lógica de negocio.
+
+Voy a proporcionar el código Blade actual y quiero que lo optimices y extiendas.
+
+---
+
+### 🎯 Objetivo
+
+Mejorar el flujo de inscripción desde el administrador para que sea:
+
+- Rápido
+- Inteligente
+- Capaz de crear datos relacionados automáticamente
+- Con validaciones robustas
+- Integrado con el sistema financiero
+
+---
+
+## 🧩 Flujo esperado (IMPORTANTE)
+
+El admin debe poder:
+
+1. Seleccionar un representante existente  
+   O  
+2. Crear un representante nuevo en el mismo formulario  
+
+Luego:
+
+3. Seleccionar un estudiante existente del representante  
+   O  
+4. Crear un estudiante nuevo automáticamente asociado a ese representante  
+
+Finalmente:
+
+5. Seleccionar curso  
+6. Registrar inscripción  
+
+---
+
+## 👨 Representante (User)
+
+### Comportamiento:
+
+- Si el admin selecciona uno existente → usarlo
+- Si el admin llena el formulario de "nuevo representante":
+  - Crear el usuario automáticamente antes de continuar
+
+### Validaciones:
+
+- email único
+- nombre requerido
+- contraseña requerida si es nuevo
+
+---
+
+## 👦 Estudiante (Student)
+
+### Comportamiento:
+
+- Si selecciona uno existente → usarlo
+- Si llena el formulario de nuevo estudiante:
+  - Crear estudiante automáticamente
+  - Asociarlo al representante seleccionado o recién creado
+
+---
+
+### 🔗 Relación clave
+
+- El estudiante SIEMPRE debe tener un `user_id` (representante)
+- No permitir estudiante sin representante
+
+---
+
+## 🔄 Relación dinámica (UX)
+
+- Al seleccionar representante:
+  - Filtrar estudiantes automáticamente (solo los de ese user)
+- Si se crea uno nuevo:
+  - Refrescar lista y seleccionarlo automáticamente
+
+---
+
+## 📘 Cursos
+
+- SOLO mostrar cursos vigentes:
+  - `end_date >= now()`
+
+### Validaciones:
+
+- cupos disponibles
+- edad del estudiante dentro del rango permitido
+
+---
+
+## 🚫 Evitar duplicados
+
+- Un estudiante NO puede inscribirse dos veces en el mismo curso
+
+- Validar en backend:
+  - unique(student_id, course_id)
+
+- Mostrar error claro en el modal
+
+---
+
+## 💰 Estado de pago
+
+Agregar campo:
+
+```html
+<select name="payment_status">
+    <option value="pending">Pendiente</option>
+    <option value="paid">Pagado</option>
+</select>
+
+Usar datatable en enrollments.index, que este formulario sea a traves del modal y crear boton y logica para cambiar el status de la inscripción
+
+
+
+
+
+
+
+Tengo un módulo de inscripciones en Laravel con un listado en Blade usando DataTables.
+
+Ya existe:
+- Tabla de inscripciones
+- Botón individual para cambiar status
+- Vista de detalle por inscripción
+
+Quiero mejorar el sistema de gestión SIN romper lo existente.
+
+---
+
+# 🎯 OBJETIVO GENERAL
+
+Transformar el listado de inscripciones en un sistema de gestión más eficiente que permita:
+
+1. Selección múltiple de inscripciones
+2. Cambio de estado en lote (bulk update)
+3. Eliminación del botón individual de cambio rápido de status
+4. Mejora del flujo de visualización de detalles
+
+---
+
+# 🧩 CAMBIOS REQUERIDOS
+
+## 1. Selección múltiple de filas
+
+- Agregar checkbox en cada fila de la tabla
+- Agregar checkbox en el header para "seleccionar todo"
+- Permitir seleccionar múltiples inscripciones
+
+---
+
+## 2. Acción masiva (BULK ACTIONS)
+
+Agregar encima de la tabla:
+
+- Dropdown o botones de acciones masivas:
+  - Marcar como pendiente
+  - Marcar como completado
+  - Cancelar inscripciones
+  - Marcar pago como pagado / pendiente
+
+- Botón: "Aplicar cambios"
+
+---
+
+## 3. Backend bulk update
+
+Crear endpoint:
+
+- route: enrollment/bulk-update
+- method: PATCH o POST
+
+Debe recibir:
+- array de enrollment_ids
+- status (opcional)
+- payment_status (opcional)
+
+Reglas:
+- aplicar cambios a todos los seleccionados
+- validar que los IDs existan
+
+---
+
+## 4. ELIMINAR botón individual de status rápido
+
+Eliminar este bloque del listado:
+
+- el form que alterna status/pago por fila
+
+Reemplazarlo completamente por:
+- acción individual de edición en detalle
+
+---
+
+## 5. Detalle de inscripción mejorado
+
+Actualmente existe:
+`/enrollment/{id}`
+
+Mejorar esto para que:
+
+- sea un modal o vista más completa tipo "panel"
+- permita editar individualmente:
+
+  - status
+  - payment_status
+  - curso (opcional)
+  - estudiante (solo lectura o editable según permisos)
+
+- guardar cambios sin recargar (AJAX opcional)
+
+---
+
+## 6. UX de selección
+
+- Al seleccionar filas:
+  - mostrar barra flotante o toolbar con acciones
+  - mostrar contador: "X seleccionados"
+
+- Deshabilitar botón de acción si no hay selección
+
+---
+
+## 7. JavaScript requerido
+
+Implementar:
+
+- manejo de checkboxes (select all + individuales)
+- array dinámico de IDs seleccionados
+- envío de bulk request con AJAX o form normal
+- actualización visual de tabla sin recargar
+
+---
+
+## 8. Backend (Laravel)
+
+Crear o actualizar:
+
+EnrollmentController:
+
+- bulkUpdate(Request $request)
+
+Lógica:
+- validar request
+- actualizar múltiples registros
+- retornar JSON o redirect con success
+
+---
+
+## 9. REGLAS IMPORTANTES
+
+- NO romper DataTables actual
+- NO eliminar vista de detalle existente
+- SOLO mejorar UX y agregar funcionalidades
+- Mantener compatibilidad con Blade actual
+
+---
+
+## 📦 ENTREGABLES
+
+1. Blade actualizado con checkboxes
+2. Toolbar de acciones masivas
+3. JS para selección múltiple
+4. Endpoint bulkUpdate en Laravel
+5. Eliminación del botón individual de status
+6. Mejora del flujo de detalle de inscripción

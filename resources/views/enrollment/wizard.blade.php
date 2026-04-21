@@ -12,6 +12,7 @@
         'initialStep' => (int) $initialStep,
         'authenticated' => auth()->check(),
         'submitUrl' => route('enrollment.wizard.submit'),
+        'paymentIntentUrl' => route('enrollment.wizard.payment-intent'),
         'stripeKey' => $stripeKey,
         'wizardPayload' => $wizardPayload,
     ];
@@ -59,6 +60,16 @@
         .student-card.selected, .course-card.selected { border-color: #0d6efd; background: #e7f1ff; }
         .course-card.disabled { opacity: 0.65; cursor: not-allowed; }
         #card-element { padding: 12px; border: 1px solid #ced4da; border-radius: 8px; background: #fff; }
+        .stripe-loading-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.82);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            z-index: 5;
+        }
     </style>
 @endsection
 
@@ -279,8 +290,14 @@
 
                             <div x-show="paymentMethod === 'card'" x-transition>
                                 <template x-if="stripeKey">
-                                    <div>
+                                    <div class="position-relative">
                                         <div id="card-element" class="mb-2"></div>
+                                        <div class="stripe-loading-overlay" x-show="processingStripe" x-transition>
+                                            <div class="text-center">
+                                                <div class="spinner-border text-primary mb-2" role="status" aria-hidden="true"></div>
+                                                <div class="small text-muted">Procesando pago con Stripe...</div>
+                                            </div>
+                                        </div>
                                         <p class="small text-muted">Datos procesados por Stripe. No almacenamos el número completo en nuestro servidor.</p>
                                     </div>
                                 </template>
@@ -290,10 +307,10 @@
                                         <button type="button" class="btn btn-sm btn-outline-dark mt-2" @click="useSimulatedCard()">
                                             Generar pago simulado
                                         </button>
-                                        <span class="ms-2 small text-success" x-show="simulatedPm" x-text="'Listo: ' + simulatedPm"></span>
+                                        <span class="ms-2 small text-success" x-show="simulatedPi" x-text="'Listo: ' + simulatedPi"></span>
                                     </div>
                                 </template>
-                                <div class="invalid-feedback d-block" x-show="formErrors.stripe_payment_method_id" x-text="formErrors.stripe_payment_method_id?.[0]"></div>
+                                <div class="invalid-feedback d-block" x-show="formErrors.stripe_payment_intent_id" x-text="formErrors.stripe_payment_intent_id?.[0]"></div>
                             </div>
 
                             <div x-show="paymentMethod === 'pending'" class="alert alert-info small">
@@ -335,12 +352,13 @@
                         </div>
 
                         <div class="d-flex gap-2 mt-4 flex-wrap">
-                            <button type="button" class="btn btn-outline-secondary" x-show="canGoBack" @click="goBack()" :disabled="loading">Atrás</button>
-                            <button type="button" class="btn btn-primary flex-grow-1" x-show="step < 5" @click="goNext()" :disabled="loading">
+                            <button type="button" class="btn btn-outline-secondary" x-show="canGoBack" @click="goBack()" :disabled="loading || processingStripe">Atrás</button>
+                            <button type="button" class="btn btn-primary flex-grow-1" x-show="step < 5" @click="goNext()" :disabled="loading || processingStripe">
                                 <span x-show="!loading">Siguiente</span>
-                                <span x-show="loading">Procesando…</span>
+                                <span x-show="loading && !processingStripe">Procesando…</span>
+                                <span x-show="processingStripe">Procesando pago…</span>
                             </button>
-                            <button type="button" class="btn btn-success flex-grow-1" x-show="step === 5" @click="finalize()" :disabled="loading">
+                            <button type="button" class="btn btn-success flex-grow-1" x-show="step === 5" @click="finalize()" :disabled="loading || processingStripe">
                                 <span x-show="!loading">Confirmar inscripción</span>
                                 <span x-show="loading">Guardando…</span>
                             </button>
@@ -362,6 +380,7 @@ function enrollmentWizard(cfg) {
         step: cfg.initialStep,
         authenticated: cfg.authenticated,
         submitUrl: cfg.submitUrl,
+        paymentIntentUrl: cfg.paymentIntentUrl,
         stripeKey: cfg.stripeKey || '',
         courses: p.courses || [],
         students: p.students || [],
@@ -380,10 +399,11 @@ function enrollmentWizard(cfg) {
         formErrors: {},
         globalError: '',
         loading: false,
+        processingStripe: false,
         stripe: null,
         cardEl: null,
         stripeMounted: false,
-        simulatedPm: '',
+        simulatedPi: '',
         stepLabels: ['Cuenta', 'Estudiante', 'Programa', 'Pago', 'Confirmación'],
 
         get progressPercent() { return Math.min(100, (this.step / 5) * 100); },
@@ -451,14 +471,14 @@ function enrollmentWizard(cfg) {
         },
 
         onPaymentMethodChange() {
-            this.formErrors = { ...this.formErrors, stripe_payment_method_id: null };
+            this.formErrors = { ...this.formErrors, stripe_payment_intent_id: null };
             this.$nextTick(() => {
                 if (this.paymentMethod === 'card') this.mountStripeIfNeeded();
             });
         },
 
         useSimulatedCard() {
-            this.simulatedPm = 'pm_simulated_' + Date.now();
+            this.simulatedPi = 'pi_simulated_' + Date.now();
         },
 
         async mountStripeIfNeeded() {
@@ -533,8 +553,8 @@ function enrollmentWizard(cfg) {
                     let pm = '';
                     if (this.stripeKey) {
                         /* se rellena en goNext con createPaymentMethod */
-                    } else if (!this.simulatedPm) {
-                        this.formErrors.stripe_payment_method_id = ['Usa el botón de simulación o configura Stripe'];
+                    } else if (!this.simulatedPi) {
+                        this.formErrors.stripe_payment_intent_id = ['Usa el botón de simulación o configura Stripe'];
                     }
                 }
             }
@@ -580,7 +600,7 @@ function enrollmentWizard(cfg) {
             if (this.step === 4) {
                 fd.append('payment_method', this.paymentMethod);
                 if (this.paymentMethod === 'card') {
-                    fd.append('stripe_payment_method_id', this.pendingPm || this.simulatedPm || '');
+                    fd.append('stripe_payment_intent_id', this.pendingPaymentIntentId || this.simulatedPi || '');
                 }
             }
             if (this.step === 5) {
@@ -589,26 +609,53 @@ function enrollmentWizard(cfg) {
             return fd;
         },
 
-        pendingPm: '',
+        pendingPaymentIntentId: '',
 
         async goNext() {
             if (this.step === 4 && this.paymentMethod === 'card' && this.stripeKey) {
-                this.pendingPm = '';
-                if (!this.stripe || !this.cardEl) {
-                    await this.mountStripeIfNeeded();
+                this.pendingPaymentIntentId = '';
+                this.processingStripe = true;
+                try {
+                    if (!this.stripe || !this.cardEl) {
+                        await this.mountStripeIfNeeded();
+                    }
+                    if (!this.stripe || !this.cardEl) {
+                        this.globalError = 'No se pudo inicializar el formulario de pago.';
+                        return;
+                    }
+                    const intentRes = await fetch(this.paymentIntentUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({ course_id: this.selectedCourseId }),
+                    });
+                    const intentJson = await intentRes.json().catch(() => ({}));
+                    if (!intentRes.ok || !intentJson.success || !intentJson.client_secret) {
+                        this.globalError = intentJson.message || 'No se pudo iniciar el pago con Stripe.';
+                        return;
+                    }
+                    const { error, paymentIntent } = await this.stripe.confirmCardPayment(intentJson.client_secret, {
+                        payment_method: { card: this.cardEl },
+                    });
+                    if (error) {
+                        this.globalError = error.message;
+                        return;
+                    }
+                    if (!paymentIntent || paymentIntent.status !== 'succeeded') {
+                        this.globalError = 'El pago no fue confirmado. Intenta nuevamente.';
+                        return;
+                    }
+                    this.pendingPaymentIntentId = paymentIntent.id;
+                } finally {
+                    this.processingStripe = false;
                 }
-                if (!this.stripe || !this.cardEl) {
-                    this.globalError = 'No se pudo inicializar el formulario de pago.';
-                    return;
-                }
-                const { error, paymentMethod } = await this.stripe.createPaymentMethod({ type: 'card', card: this.cardEl });
-                if (error) {
-                    this.globalError = error.message;
-                    return;
-                }
-                this.pendingPm = paymentMethod.id;
             } else if (this.step === 4 && this.paymentMethod === 'card' && !this.stripeKey) {
-                this.pendingPm = this.simulatedPm;
+                this.pendingPaymentIntentId = this.simulatedPi;
             }
 
             if (!this.validateClient()) return;
