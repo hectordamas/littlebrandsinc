@@ -208,7 +208,7 @@
                                     <ul class="show-notification profile-notification dropdown-menu"
                                         data-dropdown-in="fadeIn" data-dropdown-out="fadeOut">
                                         <li>
-                                            <a href="user-profile.html">
+                                            <a href="{{ route('users.profile') }}">
                                                 <i class="feather icon-user"></i> Perfil
                                             </a>
                                         </li>
