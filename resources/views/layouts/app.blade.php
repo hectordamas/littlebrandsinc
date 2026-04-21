@@ -26,6 +26,7 @@
     <link rel="stylesheet" href="{{ asset('assets/files/assets/icon/icofont/css/icofont.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/files/assets/css/style.css') }}" />
 
+    @yield('styles')
 
     <style>
         .login-bg {
@@ -122,6 +123,7 @@
     </script>
     <script src="{{ asset('assets/files/bower_components/jquery-i18next/jquery-i18next.min.js') }}"></script>
     <script src="{{ asset('assets/files/assets/js/common-pages.js') }}"></script>
+    @yield('scripts')
 </body>
 
 </html>

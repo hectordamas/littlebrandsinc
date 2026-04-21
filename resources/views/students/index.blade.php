@@ -145,7 +145,7 @@
 
                                     <td>
                                         {{-- Ejemplo simple --}}
-                                        {{ $student->enrollments->first()->course->name ?? '-' }}
+                                        {{ $student->enrollments->first()->course->title ?? '-' }}
                                     </td>
 
                                     <td>

@@ -156,7 +156,31 @@
                             </tr>
                         </thead>
                         <tbody>
-
+                            @foreach ($enrollments as $enrollment)
+                                <tr>
+                                    <td>{{ $enrollment->id }}</td>
+                                    <td>{{ $enrollment->student->name }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($enrollment->student->birthdate)->age }} años</td>
+                                    <td>{{ $enrollment->student->user->name }}</td>
+                                    <td>{{ $enrollment->course->title }}</td>
+                                    <td>
+                                        @if ($enrollment->status == 'active')
+                                            <span class="badge bg-success">Activo</span>
+                                        @elseif ($enrollment->status == 'completed')
+                                            <span class="badge bg-primary">Completado</span>
+                                        @elseif ($enrollment->status == 'cancelled')
+                                            <span class="badge bg-danger">Cancelado</span>
+                                        @else
+                                            <span class="badge bg-secondary">{{ ucfirst($enrollment->status) }}</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{{ url('enrollment/' . $enrollment->id) }}"
+                                            class="btn btn-sm btn-info"><i class="far fa-eye"></i> Ver</a>
+                                        <!-- Aquí puedes agregar botones para editar o eliminar si lo deseas -->
+                                    </td>
+                                </tr>
+                            @endforeach
                         </tbody>
                     </table>
                 </div>

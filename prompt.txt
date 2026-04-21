@@ -1,0 +1,81 @@
+Quiero construir un formulario tipo wizard (step-by-step) en Laravel Blade + JS 
+
+### 🎯 Objetivo
+Crear un flujo de inscripción de estudiantes en pasos claros y controlados.
+
+---
+
+### 🧩 Flujo del formulario
+
+STEP 1: Autenticación
+- Si el usuario NO está autenticado:
+  - Mostrar opción para iniciar sesión o registrarse.
+- Si ya está autenticado:
+  - Saltar automáticamente al STEP 2.
+
+---
+
+STEP 2: Selección de estudiante
+- Mostrar lista de estudiantes asociados al usuario autenticado.
+- Permitir seleccionar uno existente.
+- Incluir opción: "Registrar nuevo estudiante"
+  - Si elige esta opción, mostrar formulario inline o modal para crear estudiante.
+  - Al crear, agregarlo dinámicamente a la lista y seleccionarlo.
+
+---
+
+STEP 3: Selección de programa/curso
+- Mostrar lista de programas disponibles.
+- Validaciones:
+  - Si NO hay cupos disponibles → mostrar mensaje claro.
+  - Si la edad del estudiante NO cumple requisitos → bloquear selección y mostrar motivo.
+- Si viene un `course_id` o `program_id` por GET:
+  - Si por medio de la url mando un curso especifico Limitar selección SOLO a ese curso, sino mostrar lista de cursos disponibles.
+  - Mantener el mismo flujo pero con selección fija.
+
+---
+
+STEP 4: Pago
+- Mostrar opciones:
+  1. Pago con tarjeta (Stripe)
+     - Formulario de tarjeta integrado.
+  2. Pago manual
+     - Mostrar mensaje: "El administrador validará tu pago"
+- Dependiendo de la opción, manejar flujo distinto.
+
+---
+
+STEP 5: Confirmación
+- Mostrar resumen de inscripción.
+- Confirmar y guardar.
+
+---
+
+### ⚙️ Requisitos técnicos
+
+- Usar Laravel Blade.
+- Manejar estado del wizard en frontend (Alpine.js preferido).
+- Validaciones tanto en frontend como backend.
+- UX clara:
+  - Botones "Siguiente" y "Atrás"
+  - Barra de progreso
+- Evitar recarga completa de página (SPA-like).
+- Código limpio y modular.
+
+---
+
+### 📦 Entregables
+
+1. Vista Blade completa del wizard.
+
+3. Ejemplo de validaciones.
+4. Estructura de datos esperada (student, course, etc.).
+5. Ejemplo de integración básica con Stripe (simulado si es necesario).
+
+---
+
+### 🚨 Consideraciones importantes
+
+- No permitir avanzar si un paso no está completo.
+- Mostrar errores de forma clara al usuario.
+- Código reutilizable para diferentes cursos.

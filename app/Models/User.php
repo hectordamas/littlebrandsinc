@@ -49,7 +49,7 @@ class User extends Authenticatable
         ];
     }
 
-    protected function students()
+    public function students()
     {
         return $this->hasMany(Student::class);
     }

@@ -16,7 +16,7 @@ Route::get('inscripciones-y-clientes', function () {
 });
 
 Route::get('inscripcion', function () {
-    return view('auth.inscripcion-form');
+    return redirect()->route('enrollment.wizard');
 });
 Route::post('/registro-estudiante', [StudentsController::class, 'register'])->name('students.register');
 
