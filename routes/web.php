@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\{BranchesController, CoursesController, EnrollmentController, EnrollmentWizardController, HomeController, StudentsController, UsersController};
+use App\Http\Controllers\{AccountsController, BranchesController, CoursesController, EnrollmentController, EnrollmentWizardController, FinanceController, HomeController, StudentsController, UsersController};
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -33,14 +33,36 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('enrollment/{enrollment}/status', [EnrollmentController::class, 'updateStatus'])->name('enrollment.status');
     Route::patch('enrollment/bulk-update', [EnrollmentController::class, 'bulkUpdate'])->name('enrollment.bulk-update');
     Route::get('enrollment/{enrollment}', [EnrollmentController::class, 'show'])->name('enrollment.show');
+    Route::get('enrollment/{enrollment}/receipt', [EnrollmentController::class, 'downloadReceipt'])->name('enrollment.receipt');
     Route::patch('enrollment/{enrollment}', [EnrollmentController::class, 'update'])->name('enrollment.update');
 
-    Route::get('students', [StudentsController::class, 'index']);
+    Route::get('students', [StudentsController::class, 'index'])->name('students.index');
+    Route::get('students/{student}', [StudentsController::class, 'show'])->name('students.show');
+    Route::get('parents', [UsersController::class, 'parents'])->name('parents.index');
+    Route::get('trainers', [UsersController::class, 'trainers'])->name('trainers.index');
 
-    Route::get('finanzas-y-facturacion');
+    Route::get('finanzas-y-facturacion', [FinanceController::class, 'index'])->name('finance.index');
+    Route::get('finanzas-y-facturacion/cobranzas', [FinanceController::class, 'collections'])->name('finance.collections');
+    Route::post('finanzas-y-facturacion/cobranzas', [FinanceController::class, 'storeCollection'])->name('finance.collections.store');
+    Route::get('finanzas-y-facturacion/cobranzas/{receivable}', [FinanceController::class, 'showCollection'])->name('finance.collections.show');
+    Route::post('finanzas-y-facturacion/cobranzas/{receivable}/abonos', [FinanceController::class, 'storeCollectionPayment'])->name('finance.collections.payments.store');
+    Route::get('finanzas-y-facturacion/cuentas-por-pagar', [FinanceController::class, 'payables'])->name('finance.payables');
+    Route::post('finanzas-y-facturacion/cuentas-por-pagar', [FinanceController::class, 'storePayable'])->name('finance.payables.store');
+    Route::get('finanzas-y-facturacion/cuentas-por-pagar/{payable}', [FinanceController::class, 'showPayable'])->name('finance.payables.show');
+    Route::post('finanzas-y-facturacion/cuentas-por-pagar/{payable}/abonos', [FinanceController::class, 'storePayablePayment'])->name('finance.payables.payments.store');
+    Route::post('finanzas-y-facturacion/movimientos', [FinanceController::class, 'storeTransaction'])->name('finance.transactions.store');
+    Route::get('finanzas-y-facturacion/movimientos/{transaction}/comprobante', [FinanceController::class, 'downloadTransactionReceipt'])->name('finance.transactions.receipt');
+
+    Route::get('accounts', [AccountsController::class, 'index'])->name('accounts.index');
+    Route::post('accounts', [AccountsController::class, 'store'])->name('accounts.store');
+    Route::get('accounts/{id}/edit', [AccountsController::class, 'edit'])->name('accounts.edit');
+    Route::put('accounts/{id}', [AccountsController::class, 'update'])->name('accounts.update');
+    
     Route::get('programacion-y-operaciones');
 
     Route::get('users', [UsersController::class, 'index'])->name('users.index');
+    Route::get('profile', [UsersController::class, 'profile'])->name('users.profile');
+    Route::put('profile', [UsersController::class, 'updateProfile'])->name('users.profile.update');
     Route::get('users/{id}/edit', [UsersController::class, 'edit'])->name('users.edit');
     Route::put('users/{id}', [UsersController::class, 'update'])->name('users.update');
     Route::delete('users/{id}', [UsersController::class, 'destroy'])->name('users.destroy');
@@ -63,4 +85,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('classes/{id}', [CoursesController::class, 'destroyClass'])->name('courses.classes.destroy');
     Route::put('classes/{id}', [CoursesController::class, 'updateClass'])->name('courses.classes.update');
     Route::post('classes', [CoursesController::class, 'storeClass'])->name('courses.classes.store');
+
+    Route::get('calendar', [CoursesController::class, 'calendar'])->name('calendar.index');
+    Route::get('calendar/events', [CoursesController::class, 'calendarEvents'])->name('calendar.events');
 });

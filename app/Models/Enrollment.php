@@ -17,4 +17,9 @@ class Enrollment extends Model
     {
         return $this->belongsTo(Course::class);
     }
+
+    public function receivable()
+    {
+        return $this->hasOne(AccountReceivable::class);
+    }
 }

@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 @section('title')
-    <title>{{ env('APP_NAME') }} - Estudiantes</title>
+    <title>{{ env('APP_NAME') }} - Entrenadores</title>
 @endsection
 
 @section('styles')
@@ -24,64 +24,40 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <div>
-                    <h5>Estudiantes Inscritos</h5>
-                    <span class="text-muted">Consulta y seguimiento de alumnos creados a traves de inscripciones</span>
+                    <h5>Entrenadores</h5>
+                    <span class="text-muted">Listado de usuarios con rol Coach registrados en el sistema</span>
                 </div>
             </div>
             <div class="card-block">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle" id="studentsTable">
+                    <table class="table table-hover align-middle" id="trainersTable">
                         <thead class="table-dark">
                             <tr>
                                 <th>#</th>
                                 <th>Nombre</th>
-                                <th>Edad</th>
-                                <th>Representante</th>
-                                <th>Cursos inscritos</th>
-                                <th>Estado</th>
+                                <th>Email</th>
+                                <th>WhatsApp</th>
+                                <th>Rol</th>
                                 <th class="text-end">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($students as $student)
+                            @forelse ($trainers as $trainer)
                                 <tr>
-                                    <td>{{ $loop->iteration }}</td>
-
-                                    <td>
-                                        <strong>{{ $student->name }}</strong>
-                                    </td>
-
-                                    <td>
-                                        {{ \Carbon\Carbon::parse($student->birthdate)->age }} años
-                                    </td>
-
-                                    <td>
-                                        {{ $student->user->name ?? '-' }}
-                                    </td>
-
-                                    <td>
-                                        {{ $student->enrollments->pluck('course.title')->filter()->join(', ') ?: '-' }}
-                                    </td>
-
-                                    <td>
-                                        @if ($student->active)
-                                            <span class="badge bg-success">Activo</span>
-                                        @else
-                                            <span class="badge bg-secondary">Inactivo</span>
-                                        @endif
-                                    </td>
-
+                                    <td>{{ $trainer->id }}</td>
+                                    <td>{{ $trainer->name }}</td>
+                                    <td>{{ $trainer->email }}</td>
+                                    <td>{{ trim(($trainer->dial_code ?? '') . ' ' . ($trainer->whatsapp ?? '')) ?: 'N/A' }}</td>
+                                    <td><span class="badge bg-info text-dark">{{ $trainer->role }}</span></td>
                                     <td class="text-end">
-                                        <a href="{{ route('students.show', $student) }}" class="btn btn-sm btn-primary">
-                                            <i class="far fa-eye"></i> Ver
+                                        <a href="{{ route('users.edit', $trainer->id) }}" class="btn btn-sm btn-success">
+                                            <i class="fas fa-edit"></i> Editar
                                         </a>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="text-center text-muted">
-                                        No hay estudiantes registrados
-                                    </td>
+                                    <td colspan="6" class="text-center text-muted">No hay entrenadores registrados.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -94,12 +70,12 @@
 
 @section('scripts')
     <script>
-        function studentExportColumns() {
-            return [0, 1, 2, 3, 4, 5];
+        function trainerExportColumns() {
+            return [0, 1, 2, 3, 4];
         }
 
         $(document).ready(function() {
-            const table = $('#studentsTable').DataTable({
+            const table = $('#trainersTable').DataTable({
                 dom: '<"d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3"fB>rt<"d-flex flex-column flex-md-row justify-content-between align-items-md-center mt-3"lip>',
                 order: [
                     [0, 'desc']
@@ -110,7 +86,7 @@
                         text: '<i class="fas fa-copy"></i> Copiar',
                         className: 'btn btn-sm btn-inverse',
                         exportOptions: {
-                            columns: studentExportColumns()
+                            columns: trainerExportColumns()
                         }
                     },
                     {
@@ -118,7 +94,7 @@
                         text: '<i class="fas fa-file-excel"></i> Excel',
                         className: 'btn btn-sm btn-inverse',
                         exportOptions: {
-                            columns: studentExportColumns()
+                            columns: trainerExportColumns()
                         }
                     },
                     {
@@ -126,7 +102,7 @@
                         text: '<i class="fas fa-file-csv"></i> CSV',
                         className: 'btn btn-sm btn-inverse',
                         exportOptions: {
-                            columns: studentExportColumns()
+                            columns: trainerExportColumns()
                         }
                     },
                     {
@@ -134,7 +110,7 @@
                         text: '<i class="fas fa-file-pdf"></i> PDF',
                         className: 'btn btn-sm btn-inverse',
                         exportOptions: {
-                            columns: studentExportColumns()
+                            columns: trainerExportColumns()
                         },
                         orientation: 'landscape',
                         pageSize: 'A4',
@@ -152,12 +128,12 @@
                         text: '<i class="fas fa-print"></i> Imprimir',
                         className: 'btn btn-sm btn-inverse',
                         exportOptions: {
-                            columns: studentExportColumns()
+                            columns: trainerExportColumns()
                         }
                     }
                 ],
                 columnDefs: [{
-                    targets: [6],
+                    targets: [5],
                     orderable: false,
                     searchable: false
                 }],

@@ -19,9 +19,6 @@
     <!-- Bootstrap -->
     <link rel="stylesheet" href="{{ asset('assets/files/bower_components/bootstrap/dist/css/bootstrap.min.css') }}">
 
-    <!-- Radial chart -->
-    <link rel="stylesheet" href="{{ asset('assets/files/assets/pages/chart/radial/css/radial.css') }}">
-
     <!-- Feather icons -->
     <link rel="stylesheet" href="{{ asset('assets/files/assets/icon/feather/css/feather.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
@@ -137,7 +134,7 @@
                             </li>
                         </ul>
                         <ul class="nav-right">
-                            <li class="header-notification">
+                            {{--<li class="header-notification">
                                 <div class="dropdown-primary dropdown">
                                     <div class="dropdown-toggle" data-bs-toggle="dropdown">
                                         <i class="feather icon-bell"></i>
@@ -199,7 +196,7 @@
                                         </li>
                                     </ul>
                                 </div>
-                            </li>
+                            </li>--}}
                             <li class="user-profile header-notification">
                                 <div class="dropdown-primary dropdown">
                                     <div class="dropdown-toggle" data-bs-toggle="dropdown">
@@ -279,22 +276,31 @@
                                 <li class="pcoded-hasmenu">
                                     <a href="javascript:void(0)">
                                         <span class="pcoded-micon"><i class="fas fa-file-invoice-dollar"></i></span>
-                                        <span class="pcoded-mtext">Finanzas y Facturacíón</span>
+                                        <span class="pcoded-mtext">Finanzas y Facturación</span>
                                     </a>
                                     <ul class="pcoded-submenu">
                                         <li class=" ">
-                                            <a href="widget-statistic.html">
+                                            <a href="{{ route('finance.index') }}">
+                                                <span class="pcoded-micon"><i class="fas fa-money-bill-transfer"></i></span>
                                                 <span class="pcoded-mtext">Movimientos</span>
                                             </a>
                                         </li>
                                         <li class=" ">
-                                            <a href="widget-data.html">
+                                            <a href="{{ route('finance.collections') }}">
+                                                <span class="pcoded-micon"><i class="fas fa-money-check-dollar"></i></span>
                                                 <span class="pcoded-mtext">Cuentas por Cobrar</span>
                                             </a>
                                         </li>
-                                        <li class="">
-                                            <a href="widget-chart.html">
+                                        <li class=" ">
+                                            <a href="{{ route('finance.payables') }}">
+                                                <span class="pcoded-micon"><i class="fas fa-file-invoice"></i></span>
                                                 <span class="pcoded-mtext">Cuentas por Pagar</span>
+                                            </a>
+                                        </li>
+                                        <li class="">
+                                            <a href="{{ route('accounts.index') }}">
+                                                <span class="pcoded-micon"><i class="fas fa-wallet"></i></span>
+                                                <span class="pcoded-mtext">Cuentas</span>
                                             </a>
                                         </li>
 
@@ -378,19 +384,11 @@
     <!-- Chart js -->
     <script src="{{ asset('assets/files/bower_components/chart.js/dist/Chart.js') }}"></script>
 
-    <!-- Gauge + AmCharts -->
-    <script src="{{ asset('assets/files/assets/pages/widget/gauge/gauge.min.js') }}"></script>
-    <script src="{{ asset('assets/files/assets/pages/widget/amchart/amcharts.js') }}"></script>
-    <script src="{{ asset('assets/files/assets/pages/widget/amchart/serial.js') }}"></script>
-    <script src="{{ asset('assets/files/assets/pages/widget/amchart/gauge.js') }}"></script>
-    <script src="{{ asset('assets/files/assets/pages/widget/amchart/pie.js') }}"></script>
-    <script src="{{ asset('assets/files/assets/pages/widget/amchart/light.js') }}"></script>
 
     <!-- Custom js -->
     <script src="{{ asset('assets/files/assets/js/pcoded.min.js') }}"></script>
     <script src="{{ asset('assets/files/assets/js/vartical-layout.min.js') }}"></script>
     <script src="{{ asset('assets/files/assets/js/jquery.mCustomScrollbar.concat.min.js') }}"></script>
-    <script src="{{ asset('assets/files/assets/pages/dashboard/crm-dashboard.min.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 
@@ -461,7 +459,60 @@
         </script>
     @endforeach
 
-    <script src="{{ asset('assets/files/assets/js/custom.js') }}"></script>
+    <script>
+        (function() {
+            function parseMoneyInput(rawValue) {
+                if (rawValue === null || rawValue === undefined) {
+                    return 0;
+                }
+
+                const cleaned = String(rawValue).trim().replaceAll(',', '.');
+                let normalized = '';
+
+                for (let i = 0; i < cleaned.length; i++) {
+                    const char = cleaned[i];
+                    const isDigit = char >= '0' && char <= '9';
+                    const isDot = char === '.';
+                    const isMinus = char === '-' && normalized.length === 0;
+
+                    if (isDigit || isDot || isMinus) {
+                        normalized += char;
+                    }
+                }
+
+                const parsed = Number.parseFloat(normalized);
+                return Number.isFinite(parsed) ? parsed : 0;
+            }
+
+            function formatMoney(amount) {
+                return new Intl.NumberFormat('es-ES', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                }).format(amount);
+            }
+
+            function bindMoneyInput(input) {
+                const preview = input.parentNode.querySelector('[data-money-preview]');
+
+                const sync = function() {
+                    const amount = parseMoneyInput(input.value);
+                    if (preview) {
+                        preview.textContent = '$ ' + formatMoney(amount);
+                    }
+                };
+
+                sync();
+                input.addEventListener('input', sync);
+                input.addEventListener('blur', sync);
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelectorAll('input[data-money-format]').forEach(bindMoneyInput);
+            });
+        })();
+    </script>
+
+    <script src="{{ asset('assets/js/custom.js') }}"></script>
 
     @yield('scripts')
 </body>

@@ -3,15 +3,72 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use App\Models\{User};
 
 class UsersController extends Controller
 {
+    public function profile()
+    {
+        $user = Auth::user();
+        if (! $user instanceof User) {
+            abort(403);
+        }
+
+        return view('users.profile', [
+            'user' => $user,
+        ]);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user();
+        if (! $user instanceof User) {
+            abort(403);
+        }
+
+        $request->validate([
+            'dial_code' => 'nullable|string|max:6',
+            'whatsapp' => 'nullable|string|max:20',
+            'password' => 'nullable|string|min:8|confirmed',
+        ]);
+
+        $user->dial_code = $request->dial_code;
+        $user->whatsapp = $request->whatsapp;
+
+        if ($request->filled('password')) {
+            $user->password = Hash::make($request->password);
+        }
+
+        $user->save();
+
+        return redirect()->route('users.profile')->with('success', 'Perfil actualizado exitosamente.');
+    }
+
     public function index(){
         $users = User::orderBy('id', 'desc')->get();
 
         return view('users.index', [
             'users' => $users
+        ]);
+    }
+
+    public function parents()
+    {
+        $parents = User::where('role', 'Padre')->orderBy('id', 'desc')->get();
+
+        return view('parents.index', [
+            'parents' => $parents,
+        ]);
+    }
+
+    public function trainers()
+    {
+        $trainers = User::where('role', 'Coach')->orderBy('id', 'desc')->get();
+
+        return view('trainers.index', [
+            'trainers' => $trainers,
         ]);
     }
 

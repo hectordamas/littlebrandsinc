@@ -3,10 +3,68 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use App\Models\{Course, Branch, LBClass, User};
 
 class CoursesController extends Controller
 {
+    public function calendar()
+    {
+        $branches = Branch::orderBy('name')->get();
+
+        return view('courses.calendar', [
+            'branches' => $branches,
+        ]);
+    }
+
+    public function calendarEvents(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'branch_id' => 'nullable|integer|exists:branches,id',
+            'start' => 'nullable|date',
+            'end' => 'nullable|date',
+        ]);
+
+        $branchId = isset($validated['branch_id']) ? (int) $validated['branch_id'] : null;
+
+        $classes = LBClass::query()
+            ->with(['course', 'branch', 'coach'])
+            ->when($branchId, function ($query) use ($branchId) {
+                $query->where('branch_id', $branchId);
+            })
+            ->when(isset($validated['start']), function ($query) use ($validated) {
+                $query->whereDate('date', '>=', $validated['start']);
+            })
+            ->when(isset($validated['end']), function ($query) use ($validated) {
+                $query->whereDate('date', '<=', $validated['end']);
+            })
+            ->orderBy('date')
+            ->orderBy('start_time')
+            ->get();
+
+        $events = $classes->map(function (LBClass $class) {
+            $courseTitle = optional($class->course)->title ?? 'Clase';
+            $branchName = optional($class->branch)->name ?? 'Sin sede';
+            $coachName = optional($class->coach)->name ?? 'Sin coach';
+            $start = $class->date . 'T' . $class->start_time;
+            $end = $class->date . 'T' . $class->end_time;
+
+            return [
+                'id' => $class->id,
+                'title' => $courseTitle,
+                'start' => $start,
+                'end' => $end,
+                'extendedProps' => [
+                    'branch' => $branchName,
+                    'coach' => $coachName,
+                    'time' => substr((string) $class->start_time, 0, 5) . ' - ' . substr((string) $class->end_time, 0, 5),
+                ],
+            ];
+        })->values();
+
+        return response()->json($events);
+    }
+
     public function index()
     {
         $courses = Course::orderBy('id', 'desc')->get();

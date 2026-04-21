@@ -4,6 +4,48 @@
     <title>{{ config('app.name') }} - Cursos</title>
 @endsection
 
+@section('styles')
+    <style>
+        .dataTables-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .dataTables-actions .dt-button {
+            border: 0;
+            box-shadow: none;
+        }
+
+        .course-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .wizard-link-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            border: 1px solid #bfdbfe;
+            background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+            color: #1d4ed8;
+            border-radius: 999px;
+            padding: 0.3rem 0.55rem;
+            font-size: 0.72rem;
+            font-weight: 700;
+            transition: all 0.2s ease;
+        }
+
+        .wizard-link-chip:hover {
+            border-color: #93c5fd;
+            color: #1e3a8a;
+            transform: translateY(-1px);
+        }
+    </style>
+@endsection
+
 @section('content')
     <div class="container">
         <div class="row">
@@ -19,7 +61,8 @@
                             <i class="fas fa-plus"></i> Agregar Curso</a>
                     </div>
                     <div class="card-block">
-                        <table class="table table-bordered table-striped">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped" id="coursesTable">
                             <thead class="table-dark">
                                 <tr>
                                     <th>ID</th>
@@ -49,18 +92,25 @@
                                         <td>{{ $course->active ? 'Sí' : 'No' }}</td>
                                         <td>{{ $course->branch->name ?? 'N/A' }}</td>
                                         <td>
-                                            <a href="{{ route('courses.edit', $course->id) }}"
-                                                class="btn btn-sm btn-inverse"><i class="fas fa-eye"></i></a>
-                                            <a href="{{ route('courses.edit', $course->id) }}"
-                                                class="btn btn-sm btn-success"><i class="fas fa-edit"></i></a>
-                                            <form action="{{ route('courses.destroy', $course->id) }}" method="POST"
-                                                style="display:inline;">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger"
-                                                    onclick="return confirm('¿Estás seguro?')"><i
-                                                        class="fas fa-trash"></i></button>
-                                            </form>
+                                            <div class="course-actions">
+                                                <button type="button"
+                                                    class="wizard-link-chip copy-wizard-link-btn"
+                                                    data-wizard-link="{{ route('enrollment.wizard', ['course_id' => $course->id]) }}"
+                                                    title="Copiar enlace del wizard de este curso">
+                                                    <i class="fas fa-link"></i>
+                                                    Wizard
+                                                </button>
+                                                <a href="{{ route('courses.edit', $course->id) }}"
+                                                    class="btn btn-sm btn-success"><i class="fas fa-edit"></i></a>
+                                                <form action="{{ route('courses.destroy', $course->id) }}" method="POST"
+                                                    style="display:inline;">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-sm btn-danger"
+                                                        onclick="return confirm('¿Estás seguro?')"><i
+                                                            class="fas fa-trash"></i></button>
+                                                </form>
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty
@@ -69,10 +119,116 @@
                                     </tr>
                                 @endforelse
                             </tbody>
-                        </table>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+@endsection
+
+@section('scripts')
+    <script>
+        function courseExportColumns() {
+            return [0, 1, 2, 3, 4, 5, 6, 7, 8];
+        }
+
+        $(document).ready(function() {
+            const table = $('#coursesTable').DataTable({
+                dom: '<"d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3"fB>rt<"d-flex flex-column flex-md-row justify-content-between align-items-md-center mt-3"lip>',
+                order: [
+                    [0, 'desc']
+                ],
+                pageLength: 10,
+                buttons: [{
+                        extend: 'copyHtml5',
+                        text: '<i class="fas fa-copy"></i> Copiar',
+                        className: 'btn btn-sm btn-inverse',
+                        exportOptions: {
+                            columns: courseExportColumns()
+                        }
+                    },
+                    {
+                        extend: 'excelHtml5',
+                        text: '<i class="fas fa-file-excel"></i> Excel',
+                        className: 'btn btn-sm btn-inverse',
+                        exportOptions: {
+                            columns: courseExportColumns()
+                        }
+                    },
+                    {
+                        extend: 'csvHtml5',
+                        text: '<i class="fas fa-file-csv"></i> CSV',
+                        className: 'btn btn-sm btn-inverse',
+                        exportOptions: {
+                            columns: courseExportColumns()
+                        }
+                    },
+                    {
+                        extend: 'pdfHtml5',
+                        text: '<i class="fas fa-file-pdf"></i> PDF',
+                        className: 'btn btn-sm btn-inverse',
+                        exportOptions: {
+                            columns: courseExportColumns()
+                        },
+                        orientation: 'landscape',
+                        pageSize: 'A4',
+                        customize: function(doc) {
+                            doc.pageMargins = [12, 12, 12, 12];
+                            doc.defaultStyle.fontSize = 9;
+                            doc.styles.tableHeader.fontSize = 10;
+                            const tableBody = doc.content[1].table.body;
+                            const columnCount = tableBody[0].length;
+                            doc.content[1].table.widths = Array(columnCount).fill('*');
+                        }
+                    },
+                    {
+                        extend: 'print',
+                        text: '<i class="fas fa-print"></i> Imprimir',
+                        className: 'btn btn-sm btn-inverse',
+                        exportOptions: {
+                            columns: courseExportColumns()
+                        }
+                    }
+                ],
+                columnDefs: [{
+                    targets: [9],
+                    orderable: false,
+                    searchable: false
+                }],
+                language: {
+                    search: 'Buscar:',
+                    lengthMenu: 'Mostrar _MENU_ registros',
+                    info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+                    paginate: {
+                        previous: 'Anterior',
+                        next: 'Siguiente'
+                    }
+                }
+            });
+
+            table.buttons().container().addClass('dataTables-actions');
+
+            $(document).on('click', '.copy-wizard-link-btn', function() {
+                const link = $(this).data('wizard-link');
+                if (!link) {
+                    return;
+                }
+
+                navigator.clipboard.writeText(link).then(function() {
+                    Swal.fire({
+                        icon: 'success',
+                        text: 'Enlace del wizard copiado al portapapeles.',
+                        confirmButtonColor: '#198754'
+                    });
+                }).catch(function() {
+                    Swal.fire({
+                        icon: 'error',
+                        text: 'No fue posible copiar el enlace automáticamente.'
+                    });
+                });
+            });
+        });
+    </script>
 @endsection

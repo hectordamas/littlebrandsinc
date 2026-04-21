@@ -37,17 +37,22 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <div>
-                    <h5 class="mb-1">Detalle de Inscripcion #{{ $enrollment->id }}</h5>
-                    <span class="text-muted">Panel de detalle y seguimiento de la inscripcion</span>
+                    <h5 class="mb-1">Detalle de Inscripción #{{ $enrollment->id }}</h5>
+                    <span class="text-muted">Panel de detalle y seguimiento de la inscripción</span>
                 </div>
-                <a href="{{ url('enrollment') }}" class="btn btn-sm btn-secondary">
-                    <i class="fas fa-arrow-left"></i> Volver al listado
-                </a>
+                <div class="d-flex gap-2">
+                    <a href="{{ route('enrollment.receipt', $enrollment) }}" class="btn btn-sm btn-danger">
+                        <i class="fas fa-file-pdf"></i> Descargar comprobante PDF
+                    </a>
+                    <a href="{{ url('enrollment') }}" class="btn btn-sm btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Volver al listado
+                    </a>
+                </div>
             </div>
             <div class="card-block">
                 <div class="detail-section">
                     <span class="detail-chip">Curso</span>
-                    <div class="detail-section-title">Informacion del Curso Inscrito</div>
+                    <div class="detail-section-title">Información del Curso Inscrito</div>
                     <div class="row g-3">
                     <div class="col-md-12">
                     </div>
@@ -131,11 +136,11 @@
                     <div class="col-md-4">
                         <label class="form-label text-muted">Edad</label>
                         <input type="text" class="form-control"
-                            value="{{ optional($enrollment->student)->birthdate ? \Carbon\Carbon::parse($enrollment->student->birthdate)->age . ' anios' : 'N/A' }}" readonly>
+                            value="{{ optional($enrollment->student)->birthdate ? \Carbon\Carbon::parse($enrollment->student->birthdate)->age . ' años' : 'N/A' }}" readonly>
                     </div>
                     <div class="col-md-12">
-                        <label class="form-label text-muted">Notas medicas</label>
-                        <textarea class="form-control" rows="2" readonly>{{ optional($enrollment->student)->medical_notes ?: 'Sin notas medicas.' }}</textarea>
+                        <label class="form-label text-muted">Notas médicas</label>
+                        <textarea class="form-control" rows="2" readonly>{{ optional($enrollment->student)->medical_notes ?: 'Sin notas médicas.' }}</textarea>
                     </div>
                 </div>
                 </div>
@@ -157,7 +162,7 @@
                     <div class="col-md-4">
                         <label class="form-label text-muted">WhatsApp</label>
                         <input type="text" class="form-control"
-                            value="{{ optional(optional($enrollment->student)->user)->whatsapp ?? 'N/A' }}" readonly>
+                            value="{{ trim((optional(optional($enrollment->student)->user)->dial_code ?? '') . ' ' . (optional(optional($enrollment->student)->user)->whatsapp ?? '')) ?: 'N/A' }}" readonly>
                     </div>
                 </div>
                 </div>

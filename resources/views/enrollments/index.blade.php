@@ -5,6 +5,48 @@
 
 @section('styles')
     <style>
+        .wizard-share-box {
+            border: 1px solid #cbd5e1;
+            background:
+                radial-gradient(circle at 10% 20%, rgba(186, 230, 253, 0.45), transparent 40%),
+                linear-gradient(145deg, #f8fafc, #e2e8f0);
+            border-radius: 0.8rem;
+            padding: 0.95rem;
+            margin-bottom: 0.95rem;
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+        }
+
+        .wizard-share-title {
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 0.2rem;
+            font-size: 0.92rem;
+        }
+
+        .wizard-share-subtitle {
+            color: #475569;
+            font-size: 0.8rem;
+            margin-bottom: 0.55rem;
+        }
+
+        .wizard-share-box .form-control {
+            background: #fff;
+            border: 1px solid #bfdbfe;
+            font-size: 0.85rem;
+            color: #1e293b;
+        }
+
+        .wizard-copy-btn {
+            border: 1px solid #2563eb;
+            background: linear-gradient(180deg, #3b82f6, #2563eb);
+            font-weight: 600;
+        }
+
+        .wizard-copy-btn:hover {
+            background: linear-gradient(180deg, #2563eb, #1d4ed8);
+            border-color: #1d4ed8;
+        }
+
         .bulk-toolbar {
             position: sticky;
             top: 0;
@@ -46,6 +88,18 @@
             bottom: 0;
             background: #fff;
             border-top: 1px solid #dee2e6;
+        }
+
+        .dataTables-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .dataTables-actions .dt-button {
+            border: 0;
+            box-shadow: none;
         }
     </style>
 @endsection
@@ -219,6 +273,29 @@
                 </div>
             </div>
             <div class="card-block">
+                <div class="wizard-share-box">
+                    <div class="wizard-share-title">
+                        <i class="fas fa-wand-magic-sparkles me-1"></i>
+                        Enlace de inscripción para compartir
+                    </div>
+                    <div class="wizard-share-subtitle">
+                        Copia y envía este enlace por WhatsApp o correo para que los usuarios se inscriban directamente.
+                    </div>
+
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-9">
+                            <label for="wizardEnrollmentLink" class="form-label mb-1">Wizard de inscripción</label>
+                            <input id="wizardEnrollmentLink" type="text" class="form-control"
+                                value="{{ route('enrollment.wizard') }}" readonly>
+                        </div>
+                        <div class="col-md-3 text-md-end">
+                            <button type="button" id="copyEnrollmentWizardLink" class="btn btn-primary wizard-copy-btn w-100">
+                                <i class="fas fa-copy"></i> Copiar enlace
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="bulkToolbar" class="bulk-toolbar d-none">
                     <div class="row g-2 align-items-center">
                         <div class="col-md-4">
@@ -343,7 +420,7 @@
                         <div id="detailFormError" class="alert alert-danger mt-3 d-none"></div>
                     </div>
                     <div class="modal-footer justify-content-between">
-                        <a href="#" target="_blank" id="openFullDetail" class="btn btn-sm btn-outline-secondary">Abrir detalle completo</a>
+                        <a href="#" id="openFullDetail" class="btn btn-sm btn-outline-secondary">Abrir detalle completo</a>
                         <div>
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                             <button type="submit" class="btn btn-primary" id="saveDetailChanges">Guardar cambios</button>
@@ -473,6 +550,10 @@
             $('#detailFormError').addClass('d-none').text('');
         }
 
+        function exportColumnsIndexes() {
+            return [1, 2, 3, 4, 5, 6];
+        }
+
         const selectedIds = new Set();
         let detailModal;
         let table;
@@ -485,15 +566,106 @@
                 });
             });
 
+            $('#copyEnrollmentWizardLink').on('click', function() {
+                const link = $('#wizardEnrollmentLink').val();
+
+                navigator.clipboard.writeText(link).then(function() {
+                    Swal.fire({
+                        icon: 'success',
+                        text: 'Enlace del wizard copiado al portapapeles.',
+                        confirmButtonColor: '#198754'
+                    });
+                }).catch(function() {
+                    Swal.fire({
+                        icon: 'error',
+                        text: 'No fue posible copiar el enlace automáticamente.'
+                    });
+                });
+            });
+
             $('#userSelect').on('change', function() {
                 filterStudentsByParent();
             });
 
             table = $('#enrollmentsTable').DataTable({
+                dom: '<"d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3"fB>rt<"d-flex flex-column flex-md-row justify-content-between align-items-md-center mt-3"lip>',
                 order: [
                     [1, 'desc']
                 ],
                 pageLength: 10,
+                buttons: [{
+                        extend: 'copyHtml5',
+                        text: '<i class="fas fa-copy"></i> Copiar',
+                        className: 'btn btn-sm btn-inverse',
+                        exportOptions: {
+                            columns: exportColumnsIndexes()
+                        }
+                    },
+                    {
+                        extend: 'excelHtml5',
+                        text: '<i class="fas fa-file-excel"></i> Excel',
+                        className: 'btn btn-sm btn-inverse',
+                        exportOptions: {
+                            columns: exportColumnsIndexes()
+                        }
+                    },
+                    {
+                        extend: 'csvHtml5',
+                        text: '<i class="fas fa-file-csv"></i> CSV',
+                        className: 'btn btn-sm btn-inverse',
+                        exportOptions: {
+                            columns: exportColumnsIndexes()
+                        }
+                    },
+                    {
+                        extend: 'pdfHtml5',
+                        text: '<i class="fas fa-file-pdf"></i> PDF',
+                        className: 'btn btn-sm btn-inverse',
+                        exportOptions: {
+                            columns: exportColumnsIndexes()
+                        },
+                        orientation: 'landscape',
+                        pageSize: 'A4',
+                        customize: function(doc) {
+                            doc.pageMargins = [12, 12, 12, 12];
+                            doc.defaultStyle.fontSize = 9;
+                            doc.styles.tableHeader.fontSize = 10;
+                            doc.styles.tableHeader.alignment = 'left';
+
+                            const tableBody = doc.content[1].table.body;
+                            const columnCount = tableBody[0].length;
+                            doc.content[1].table.widths = Array(columnCount).fill('*');
+                            doc.content[1].layout = {
+                                hLineWidth: function() {
+                                    return 0.6;
+                                },
+                                vLineWidth: function() {
+                                    return 0.6;
+                                },
+                                hLineColor: function() {
+                                    return '#d1d5db';
+                                },
+                                vLineColor: function() {
+                                    return '#d1d5db';
+                                },
+                                paddingLeft: function() {
+                                    return 6;
+                                },
+                                paddingRight: function() {
+                                    return 6;
+                                }
+                            };
+                        }
+                    },
+                    {
+                        extend: 'print',
+                        text: '<i class="fas fa-print"></i> Imprimir',
+                        className: 'btn btn-sm btn-inverse',
+                        exportOptions: {
+                            columns: exportColumnsIndexes()
+                        }
+                    }
+                ],
                 columnDefs: [{
                     targets: [0, 7],
                     orderable: false,
@@ -509,6 +681,8 @@
                     }
                 }
             });
+
+            table.buttons().container().addClass('dataTables-actions');
 
             detailModal = new bootstrap.Modal(document.getElementById('enrollmentDetailModal'));
 

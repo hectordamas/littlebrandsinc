@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Account, Course, Enrollment, Student, Transaction, User};
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\{Account, AccountReceivable, Course, Enrollment, Student, Transaction, User};
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -111,6 +112,28 @@ class EnrollmentController extends Controller
         ]);
     }
 
+    public function downloadReceipt(Enrollment $enrollment)
+    {
+        $enrollment->loadMissing([
+            'student.user',
+            'course.branch',
+            'course.classes' => function ($query) {
+                $query->with('coach')->orderBy('date')->orderBy('start_time');
+            },
+        ]);
+
+        if ($enrollment->course) {
+            $enrollment->course->loadCount('enrollments');
+        }
+
+        $pdf = Pdf::loadView('enrollments.receipt-pdf', [
+            'enrollment' => $enrollment,
+            'generatedAt' => now(),
+        ])->setPaper('a4');
+
+        return $pdf->download('comprobante-inscripcion-'.$enrollment->id.'.pdf');
+    }
+
     public function update(Request $request, Enrollment $enrollment)
     {
         $validated = $request->validate([
@@ -211,6 +234,7 @@ class EnrollmentController extends Controller
         ?string $paymentStatus
     ): void {
         $enrollment->loadMissing('course');
+        $previousPaymentStatus = (string) $enrollment->payment_status;
 
         $resolvedStatus = $status ?? $enrollment->status;
 
@@ -228,6 +252,15 @@ class EnrollmentController extends Controller
 
         $enrollment->load(['student.user', 'course']);
 
+        if ($previousPaymentStatus === 'paid' && $enrollment->payment_status === 'pending') {
+            Transaction::query()
+                ->where('enrollment_id', $enrollment->id)
+                ->where('type', 'income')
+                ->update(['account_receivable_id' => null]);
+        }
+
+        $this->syncEnrollmentReceivableState($enrollment);
+
         if ($enrollment->payment_status === 'paid') {
             $this->syncEnrollmentIncomeTransaction($enrollment);
         }
@@ -239,6 +272,10 @@ class EnrollmentController extends Controller
             return;
         }
 
+        $receivable = AccountReceivable::query()
+            ->where('enrollment_id', $enrollment->id)
+            ->first();
+
         $incomeTransaction = Transaction::where('enrollment_id', $enrollment->id)
             ->where('type', 'income')
             ->first();
@@ -249,6 +286,7 @@ class EnrollmentController extends Controller
             'course_id' => $enrollment->course_id,
             'branch_id' => $enrollment->course->branch_id,
             'account_id' => $this->resolveIncomeAccountId(),
+            'account_receivable_id' => $receivable?->id,
             'amount' => $enrollment->course->price ?? 0,
             'currency' => 'USD',
             'type' => 'income',
@@ -260,11 +298,83 @@ class EnrollmentController extends Controller
 
         if ($incomeTransaction) {
             $incomeTransaction->update($payload);
+        } else {
+            Transaction::create($payload);
+        }
+
+        if ($receivable) {
+            $paidAmount = (float) $receivable->transactions()->sum('amount');
+            $balance = max(0, (float) $receivable->amount_total - $paidAmount);
+
+            $status = 'pending';
+            if ($balance <= 0) {
+                $status = 'paid';
+            } elseif ($paidAmount > 0) {
+                $status = 'partial';
+            }
+
+            $receivable->update([
+                'balance_due' => $balance,
+                'status' => $status,
+            ]);
+        }
+    }
+
+    protected function syncEnrollmentReceivableState(Enrollment $enrollment): void
+    {
+        if (! $enrollment->course || $enrollment->course->price === null || $enrollment->course->branch_id === null) {
+            return;
+        }
+
+        $receivable = AccountReceivable::query()
+            ->where('enrollment_id', $enrollment->id)
+            ->first();
+
+        if ($enrollment->payment_status === 'pending') {
+            if (! $receivable) {
+                AccountReceivable::create([
+                    'branch_id' => $enrollment->course->branch_id,
+                    'enrollment_id' => $enrollment->id,
+                    'title' => 'Inscripcion #'.$enrollment->id.' - '.($enrollment->course->title ?? 'Curso'),
+                    'amount_total' => $enrollment->course->price,
+                    'balance_due' => $enrollment->course->price,
+                    'currency' => 'USD',
+                    'status' => 'pending',
+                ]);
+
+                return;
+            }
+
+            $receivable->update([
+                'branch_id' => $enrollment->course->branch_id,
+                'title' => 'Inscripcion #'.$enrollment->id.' - '.($enrollment->course->title ?? 'Curso'),
+                'amount_total' => $enrollment->course->price,
+                'balance_due' => $enrollment->course->price,
+                'currency' => 'USD',
+                'status' => 'pending',
+            ]);
 
             return;
         }
 
-        Transaction::create($payload);
+        if (! $receivable) {
+            return;
+        }
+
+        $paidAmount = (float) $receivable->transactions()->sum('amount');
+        $balance = max(0, (float) $receivable->amount_total - $paidAmount);
+
+        $status = 'pending';
+        if ($balance <= 0) {
+            $status = 'paid';
+        } elseif ($paidAmount > 0) {
+            $status = 'partial';
+        }
+
+        $receivable->update([
+            'balance_due' => $balance,
+            'status' => $status,
+        ]);
     }
 
     protected function enrollmentPayload(Enrollment $enrollment): array

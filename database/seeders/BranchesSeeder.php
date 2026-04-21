@@ -21,7 +21,7 @@ class BranchesSeeder extends Seeder
             'email' => 'volleyball@littlebrands.com',
             'phone' => '555-0101',
             'active' => true,
-            'logo' => null,
+            'logo' => 'uploads/logoBranches/1776648926_lbinc-admin.png',
             ],
             [
             'name' => 'Baseball',
@@ -29,7 +29,7 @@ class BranchesSeeder extends Seeder
             'email' => 'baseball@littlebrands.com',
             'phone' => '555-0102',
             'active' => true,
-            'logo' => null,
+            'logo' => 'uploads/logoBranches/1776648926_lbinc-admin.png',
             ],
             [
             'name' => 'Hockey',
@@ -37,7 +37,7 @@ class BranchesSeeder extends Seeder
             'email' => 'hockey@littlebrands.com',
             'phone' => '555-0103',
             'active' => true,
-            'logo' => null,
+            'logo' => 'uploads/logoBranches/1776648926_lbinc-admin.png',
             ],
             [
             'name' => 'Golf',
@@ -45,7 +45,7 @@ class BranchesSeeder extends Seeder
             'email' => 'golf@littlebrands.com',
             'phone' => '555-0104',
             'active' => true,
-            'logo' => null,
+            'logo' => 'uploads/logoBranches/1776648926_lbinc-admin.png',
             ],
             [
             'name' => 'Running',
@@ -53,7 +53,7 @@ class BranchesSeeder extends Seeder
             'email' => 'running@littlebrands.com',
             'phone' => '555-0105',
             'active' => true,
-            'logo' => null,
+            'logo' => 'uploads/logoBranches/1776648926_lbinc-admin.png',
             ],
         ];
 
