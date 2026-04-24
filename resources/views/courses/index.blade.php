@@ -69,7 +69,8 @@
                                     <th>Nombre</th>
                                     <th>Edad Mínima</th>
                                     <th>Edad Máxima</th>
-                                    <th>Precio</th>
+                                    <th>Inscripción</th>
+                                    <th>Mensualidad</th>
                                     <th>Inicio</th>
                                     <th>Fin</th>
                                     <th>Activo</th>
@@ -85,6 +86,7 @@
                                         <td>{{ $course->min_age ?? 'N/A' }}</td>
                                         <td>{{ $course->max_age ?? 'N/A' }}</td>
                                         <td>{{ $course->price ? '$' . number_format($course->price, 2) : 'N/A' }}</td>
+                                        <td>{{ $course->monthly_fee ? '$' . number_format($course->monthly_fee, 2) : 'N/A' }}</td>
                                         <td>{{ $course->start_date ? \Carbon\Carbon::parse($course->start_date)->format('d/m/Y') : 'N/A' }}
                                         </td>
                                         <td>{{ $course->end_date ? \Carbon\Carbon::parse($course->end_date)->format('d/m/Y') : 'N/A' }}
@@ -115,7 +117,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="11">No se encontraron cursos.</td>
+                                        <td colspan="12">No se encontraron cursos.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -131,7 +133,7 @@
 @section('scripts')
     <script>
         function courseExportColumns() {
-            return [0, 1, 2, 3, 4, 5, 6, 7, 8];
+            return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
         }
 
         $(document).ready(function() {
@@ -193,7 +195,7 @@
                     }
                 ],
                 columnDefs: [{
-                    targets: [9],
+                    targets: [10],
                     orderable: false,
                     searchable: false
                 }],

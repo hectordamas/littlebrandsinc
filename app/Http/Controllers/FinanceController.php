@@ -435,6 +435,8 @@ class FinanceController extends Controller
                 continue;
             }
 
+            $amountTotal = $this->calculateEnrollmentReceivableTotal($course);
+
             $receivable = AccountReceivable::query()
                 ->where('enrollment_id', $enrollment->id)
                 ->first();
@@ -444,17 +446,17 @@ class FinanceController extends Controller
                     $receivable = AccountReceivable::create([
                         'branch_id' => $course->branch_id,
                         'enrollment_id' => $enrollment->id,
-                        'title' => 'Inscripcion #'.$enrollment->id.' - '.($course->title ?? 'Curso'),
-                        'amount_total' => $course->price,
-                        'balance_due' => $course->price,
+                        'title' => 'Inscripcion + mensualidades #'.$enrollment->id.' - '.($course->title ?? 'Curso'),
+                        'amount_total' => $amountTotal,
+                        'balance_due' => $amountTotal,
                         'currency' => 'USD',
                         'status' => 'pending',
                     ]);
                 } else {
                     $receivable->update([
                         'branch_id' => $course->branch_id,
-                        'title' => 'Inscripcion #'.$enrollment->id.' - '.($course->title ?? 'Curso'),
-                        'amount_total' => $course->price,
+                        'title' => 'Inscripcion + mensualidades #'.$enrollment->id.' - '.($course->title ?? 'Curso'),
+                        'amount_total' => $amountTotal,
                         'currency' => 'USD',
                         'status' => in_array($receivable->status, ['partial', 'paid'], true)
                             ? $receivable->status
@@ -489,5 +491,17 @@ class FinanceController extends Controller
 
             $this->refreshReceivableBalance($receivable->fresh());
         }
+    }
+
+    protected function calculateEnrollmentReceivableTotal($course): float
+    {
+        $months = 1;
+        if ($course->start_date && $course->end_date) {
+            $start = \Carbon\Carbon::parse($course->start_date)->startOfMonth();
+            $end = \Carbon\Carbon::parse($course->end_date)->startOfMonth();
+            $months = max(1, $start->diffInMonths($end) + 1);
+        }
+
+        return (float) ($course->price ?? 0) + ((float) ($course->monthly_fee ?? 0) * $months);
     }
 }

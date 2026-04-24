@@ -283,9 +283,6 @@
         </div>
     </div>
 
-    <div class="home-footer">
-        Desarrollado con ❤️ por Héctor Damas
-    </div>
 @endsection
 
 @section('scripts')

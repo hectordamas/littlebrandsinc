@@ -1,0 +1,25 @@
+Importante para que funcione en producción
+
+Debe estar definido STRIPE_WEBHOOK_SECRET en tu .env.
+Debes tener scheduler y cola corriendo:
+php artisan schedule:work
+php artisan queue:work
+En Stripe debes apuntar el webhook a:
+/stripe/webhook
+y suscribir eventos:
+invoice.paid
+invoice.payment_failed
+customer.subscription.deleted
+Siguientes pasos recomendados
+
+Hacer una inscripción de prueba con tarjeta y validar:
+transacción inicial por inscripción + 1er mes
+creación de suscripción
+creación de cuotas
+Simular webhook invoice.paid para confirmar que marca cuota pagada y actualiza cuenta por cobrar.
+Si quieres, te preparo ahora mismo una prueba guiada paso a paso con datos reales de sandbox Stripe para verificar extremo a extremo.
+
+Dejar corriendo scheduler y cola en servidor:
+php artisan schedule:work
+php artisan queue:work
+Hacer una prueba de ciclo mensual (con Stripe test clock o esperando siguiente ciclo) para validar:

@@ -18,8 +18,23 @@ class Enrollment extends Model
         return $this->belongsTo(Course::class);
     }
 
+    public function parent()
+    {
+        return $this->belongsTo(User::class, 'parent_id');
+    }
+
     public function receivable()
     {
         return $this->hasOne(AccountReceivable::class);
+    }
+
+    public function billingProfile()
+    {
+        return $this->hasOne(EnrollmentBillingProfile::class);
+    }
+
+    public function installments()
+    {
+        return $this->hasMany(EnrollmentInstallment::class);
     }
 }

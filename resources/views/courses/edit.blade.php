@@ -57,11 +57,18 @@
                             value="{{ old('capacity', $course->capacity) }}">
                     </div>
                     <div class="mb-3 col-md-3">
-                        <label for="price" class="form-label">Precio</label>
+                        <label for="price" class="form-label">Precio de inscripción</label>
                         <input type="number" name="price" id="price" class="form-control" step="0.01"
                             value="{{ old('price', $course->price) }}">
                         <span id="price-preview"
                             class="fw-bold text-success">${{ number_format(old('price', $course->price ?? 0), 2) }}</span>
+                    </div>
+                    <div class="mb-3 col-md-3">
+                        <label for="monthly_fee" class="form-label">Mensualidad</label>
+                        <input type="number" name="monthly_fee" id="monthly_fee" class="form-control" step="0.01"
+                            value="{{ old('monthly_fee', $course->monthly_fee) }}">
+                        <span id="monthly-fee-preview"
+                            class="fw-bold text-primary">${{ number_format(old('monthly_fee', $course->monthly_fee ?? 0), 2) }}</span>
                     </div>
                     <div class="mb-3 col-md-3">
                         <label for="branch_id" class="form-label">Sede</label>
@@ -255,4 +262,28 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('scripts')
+    <script>
+        $(document).ready(function() {
+            $('#price').on('input', function() {
+                let value = parseFloat($(this).val());
+                if (isNaN(value)) value = 0;
+                $('#price-preview').text('$' + value.toLocaleString('es-ES', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }));
+            }).trigger('input');
+
+            $('#monthly_fee').on('input', function() {
+                let value = parseFloat($(this).val());
+                if (isNaN(value)) value = 0;
+                $('#monthly-fee-preview').text('$' + value.toLocaleString('es-ES', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }));
+            }).trigger('input');
+        });
+    </script>
 @endsection

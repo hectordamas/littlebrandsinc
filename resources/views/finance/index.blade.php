@@ -195,19 +195,19 @@
 
         <div class="row g-3 mb-3" id="finance-dashboard">
             <div class="col-md-3">
-                <div class="finance-card">
+                <div class="finance-card shadow-sm">
                     <div class="finance-card-label">Ingresos completados</div>
                     <div class="finance-card-value" data-summary-field="completedIncome">${{ number_format($completedIncome, 2) }}</div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="finance-card">
+                <div class="finance-card shadow-sm">
                     <div class="finance-card-label">Egresos completados</div>
                     <div class="finance-card-value" data-summary-field="completedExpenses">${{ number_format($completedExpenses, 2) }}</div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="finance-card">
+                <div class="finance-card shadow-sm">
                     <div class="finance-card-label">Cobranza pendiente</div>
                     <div class="finance-card-value" data-summary-field="pendingCollectionAmount">${{ number_format($pendingCollectionAmount, 2) }}</div>
                     <div class="mt-2">
@@ -218,7 +218,7 @@
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="finance-card">
+                <div class="finance-card shadow-sm">
                     <div class="finance-card-label">Balance neto</div>
                     <div class="finance-card-value" data-summary-field="netBalance">${{ number_format($netBalance, 2) }}</div>
                     <div class="small text-muted mt-2" data-summary-field="pendingCollectionsCount">{{ $pendingCollectionsCount }} inscripciones pendientes de cobro</div>

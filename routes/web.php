@@ -1,8 +1,9 @@
 <?php
 
-use App\Http\Controllers\{AccountsController, BranchesController, CoursesController, EnrollmentController, EnrollmentWizardController, FinanceController, HomeController, StudentsController, UsersController};
+use App\Http\Controllers\{AccountsController, BranchesController, CoursesController, EnrollmentController, EnrollmentWizardController, FinanceController, HomeController, StripeWebhookController, StudentsController, UsersController};
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 
 Route::get('/', function () {
     return redirect('login');
@@ -25,6 +26,9 @@ Route::get('inscripcion/wizard', [EnrollmentWizardController::class, 'show'])->n
 Route::post('inscripcion/wizard', [EnrollmentWizardController::class, 'submit'])->name('enrollment.wizard.submit');
 Route::post('inscripcion/wizard/payment-intent', [EnrollmentWizardController::class, 'createPaymentIntent'])->name('enrollment.wizard.payment-intent');
 Route::get('inscripcion/wizard/reset', [EnrollmentWizardController::class, 'reset'])->name('enrollment.wizard.reset');
+Route::post('stripe/webhook', StripeWebhookController::class)
+    ->withoutMiddleware([ValidateCsrfToken::class])
+    ->name('stripe.webhook');
 
 
 Route::middleware(['auth'])->group(function () {

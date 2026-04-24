@@ -2,7 +2,7 @@
   Wizard de inscripción (5 pasos). Estado: sesión Laravel + Alpine en cliente.
   Estructura esperada (wizardPayload / API):
   - student: { id, name, birthdate }
-  - course: { id, title, price, min_age, max_age, spots_left, can_enroll, enroll_error }
+    - course: { id, title, price, monthly_fee, min_age, max_age, spots_left, can_enroll, enroll_error }
   - enrollment final: student_id, course_id, payment_method (card|pending), terms
 --}}
 @extends('layouts.app')
@@ -247,8 +247,12 @@
                                             <h6 class="mb-1" x-text="c.title"></h6>
                                             <p class="mb-1 small text-muted" x-text="c.description"></p>
                                             <div class="small">
-                                                <span class="text-dark">Precio:</span>
+                                                <span class="text-dark">Inscripción:</span>
                                                 <strong x-text="formatMoney(c.price)"></strong>
+                                            </div>
+                                            <div class="small">
+                                                <span class="text-dark">Mensualidad:</span>
+                                                <strong x-text="formatMoney(c.monthly_fee)"></strong>
                                             </div>
                                             <div class="small" :class="c.spots_left > 0 ? 'text-success' : 'text-danger'">
                                                 Cupos: <span x-text="c.spots_left"></span>
@@ -272,7 +276,8 @@
                                     <div class="d-flex justify-content-between"><span>Estudiante</span><span x-text="summaryStudent"></span></div>
                                     <div class="d-flex justify-content-between"><span>Programa</span><span x-text="summaryCourseTitle"></span></div>
                                     <hr class="my-2">
-                                    <div class="d-flex justify-content-between"><strong>Total</strong><strong x-text="summaryTotal"></strong></div>
+                                    <div class="d-flex justify-content-between"><strong>Total inicial (inscripción + 1er mes)</strong><strong x-text="summaryInitialTotal"></strong></div>
+                                    <div class="d-flex justify-content-between"><span>Mensualidad</span><span x-text="summaryMonthlyFee"></span></div>
                                 </div>
                             </div>
 
@@ -335,7 +340,10 @@
                                     <span x-text="paymentMethod === 'card' ? 'Tarjeta (Stripe)' : 'Manual / pendiente de validación'"></span>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between">
-                                    <strong>Total</strong><strong x-text="summaryTotal"></strong>
+                                    <strong>Total inicial (inscripción + 1er mes)</strong><strong x-text="summaryInitialTotal"></strong>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Mensualidad</span><span x-text="summaryMonthlyFee"></span>
                                 </li>
                             </ul>
 
@@ -456,6 +464,17 @@ function enrollmentWizard(cfg) {
             const c = this.courses.find(cc => cc.id === this.selectedCourseId);
             const price = c ? c.price : this.selectedCourse?.price;
             return this.formatMoney(price);
+        },
+        get summaryInitialTotal() {
+            const c = this.courses.find(cc => cc.id === this.selectedCourseId);
+            const enrollmentFee = Number(c ? c.price : this.selectedCourse?.price || 0);
+            const monthlyFee = Number(c ? c.monthly_fee : this.selectedCourse?.monthly_fee || 0);
+            return this.formatMoney(enrollmentFee + monthlyFee);
+        },
+        get summaryMonthlyFee() {
+            const c = this.courses.find(cc => cc.id === this.selectedCourseId);
+            const monthlyFee = c ? c.monthly_fee : this.selectedCourse?.monthly_fee;
+            return this.formatMoney(monthlyFee);
         },
 
         selectExistingStudent(s) {

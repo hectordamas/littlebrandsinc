@@ -5,7 +5,7 @@
 
 @section('content')
     <div class="col-md-12">
-        <div class="card mb-3">
+        <div class="card mb-3 shadow-sm">
             <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
                     <h5 class="mb-1">Cuenta por cobrar #{{ $receivable->id }}</h5>
@@ -29,7 +29,7 @@
             </div>
         </div>
 
-        <div class="card mb-3">
+        <div class="card mb-3 shadow-sm">
             <div class="card-header">
                 <h6 class="mb-1">Registrar abono</h6>
             </div>

@@ -62,11 +62,11 @@
                                 <label class="form-label">Proveedor</label>
                                 <input type="text" name="vendor_name" class="form-control" value="{{ old('vendor_name') }}" required>
                             </div>
-                            <div class="col-md-8">
+                            <div class="col-md-6">
                                 <label class="form-label">Concepto</label>
                                 <input type="text" name="title" class="form-control" value="{{ old('title') }}" required>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <label class="form-label">Monto total</label>
                                 <input type="number" step="any" name="amount_total" class="form-control" value="{{ old('amount_total') }}" data-money-format required>
                                 <strong class="money-preview" data-money-preview></strong>
@@ -91,7 +91,7 @@
     </div>
 
     <div class="col-md-12">
-        <div class="summary-card">
+        <div class="summary-card shadow-sm">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
                     <div class="summary-label">Saldo pendiente total en CxP</div>

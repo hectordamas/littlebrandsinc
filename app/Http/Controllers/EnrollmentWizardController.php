@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Account;
+use App\Models\AccountReceivable;
 use App\Models\Course;
 use App\Models\Enrollment;
+use App\Models\EnrollmentBillingProfile;
+use App\Models\EnrollmentInstallment;
 use App\Models\Student;
 use App\Models\Transaction;
 use App\Models\User;
@@ -13,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Stripe\Exception\ApiErrorException;
@@ -38,8 +42,11 @@ class EnrollmentWizardController extends Controller
                 $request->session()->put('enrollment_step', 2);
                 $step = 2;
             }
-            $students = Auth::user()->students()->orderBy('name')->get();
-            $request->session()->put('students', $students);
+            $authUser = Auth::user();
+            if ($authUser instanceof User) {
+                $students = $authUser->students()->orderBy('name')->get();
+                $request->session()->put('students', $students);
+            }
         } else {
             $step = (int) $request->session()->get('enrollment_step', 1);
         }
@@ -98,7 +105,8 @@ class EnrollmentWizardController extends Controller
             ->whereDate('end_date', '>=', now()->toDateString())
             ->findOrFail((int) $request->input('course_id'));
 
-        $amount = (int) round(((float) ($course->price ?? 0)) * 100);
+        $initialAmount = $this->calculateInitialChargeAmount($course);
+        $amount = (int) round($initialAmount * 100);
         if ($amount <= 0) {
             return response()->json([
                 'success' => false,
@@ -124,6 +132,7 @@ class EnrollmentWizardController extends Controller
                     'course_id' => (string) $course->id,
                     'course_title' => $course->title,
                     'student_id' => (string) ($request->session()->get('selected_student_id') ?? ''),
+                    'concept' => 'enrollment_plus_first_month',
                 ],
             ]);
 
@@ -183,7 +192,10 @@ class EnrollmentWizardController extends Controller
             $request->session()->regenerate();
             $request->session()->put('enrollment_step', 2);
             $request->session()->put('user_type', 'existing');
-            $request->session()->put('students', Auth::user()->students()->orderBy('name')->get());
+            $authUser = Auth::user();
+            if ($authUser instanceof User) {
+                $request->session()->put('students', $authUser->students()->orderBy('name')->get());
+            }
 
             return $this->wizardJsonOrRedirect($request, [
                 'success' => true,
@@ -269,7 +281,10 @@ class EnrollmentWizardController extends Controller
             $request->session()->put('student_name', $newStudentName);
             $request->session()->put('student_birthdate', $newStudentBirthdate);
             $request->session()->put('student_medical_notes', $newStudentMedicalNotes);
-            $request->session()->put('students', Auth::user()->students()->orderBy('name')->get());
+            $authUser = Auth::user();
+            if ($authUser instanceof User) {
+                $request->session()->put('students', $authUser->students()->orderBy('name')->get());
+            }
         } else {
             $msg = 'Debes seleccionar o agregar un estudiante';
 
@@ -382,7 +397,8 @@ class EnrollmentWizardController extends Controller
         }
 
         $request->session()->put('selected_course_id', $courseId);
-        $request->session()->put('course_price', $course->price);
+        $request->session()->put('course_enrollment_fee', $course->price);
+        $request->session()->put('course_monthly_fee', $course->monthly_fee);
         $request->session()->put('enrollment_step', 4);
 
         return $this->wizardJsonOrRedirect($request, [
@@ -525,30 +541,92 @@ class EnrollmentWizardController extends Controller
             }
         }
 
-        $enrollment = new Enrollment;
-        $enrollment->student_id = $studentId;
-        $enrollment->course_id = $courseId;
-        $enrollment->parent_id = Auth::id();
-        $enrollment->status = $paymentMethod === 'pending' ? 'pending' : 'completed';
-        $enrollment->payment_method = $paymentMethod;
-        $enrollment->payment_status = $paymentMethod === 'pending' ? 'pending' : 'paid';
-        $enrollment->save();
+        try {
+            $enrollment = DB::transaction(function () use ($studentId, $courseId, $paymentMethod, $student, $course, $stripePaymentIntentId) {
+            $enrollment = new Enrollment;
+            $enrollment->student_id = $studentId;
+            $enrollment->course_id = $courseId;
+            $enrollment->parent_id = Auth::id();
+            $enrollment->status = $paymentMethod === 'pending' ? 'pending' : 'completed';
+            $enrollment->payment_method = $paymentMethod;
+            $enrollment->payment_status = $paymentMethod === 'pending' ? 'pending' : 'paid';
+            $enrollment->save();
 
-        if ($enrollment->payment_status === 'paid') {
-            Transaction::create([
-                'enrollment_id' => $enrollment->id,
-                'student_id' => $student->id,
-                'course_id' => $course->id,
+            $installmentMonths = $this->calculateInstallmentMonths($course);
+            $enrollmentFee = (float) ($course->price ?? 0);
+            $monthlyFee = (float) ($course->monthly_fee ?? 0);
+            $totalReceivable = $enrollmentFee + ($monthlyFee * $installmentMonths);
+
+            $receivable = AccountReceivable::create([
                 'branch_id' => $course->branch_id,
-                'account_id' => $this->resolveIncomeAccountId($paymentMethod),
-                'amount' => $course->price ?? 0,
+                'enrollment_id' => $enrollment->id,
+                'title' => 'Inscripcion + mensualidades #'.$enrollment->id.' - '.($course->title ?? 'Curso'),
+                'amount_total' => $totalReceivable,
+                'balance_due' => $totalReceivable,
                 'currency' => 'USD',
-                'type' => 'income',
-                'status' => 'completed',
-                'payment_method' => $paymentMethod === 'card' ? 'stripe' : $paymentMethod,
-                'reference' => $stripePaymentIntentId,
-                'description' => 'Pago de inscripción: '.$course->title,
+                'status' => $paymentMethod === 'pending' ? 'pending' : 'partial',
+                'due_date' => $course->start_date ? Carbon::parse($course->start_date)->toDateString() : now()->toDateString(),
+                'notes' => 'Incluye inscripción y plan de mensualidades.',
             ]);
+
+            $this->createInstallmentsForEnrollment($enrollment, $course, $receivable, $installmentMonths, $paymentMethod === 'card');
+
+            if ($enrollment->payment_status === 'paid') {
+                Transaction::create([
+                    'enrollment_id' => $enrollment->id,
+                    'student_id' => $student->id,
+                    'course_id' => $course->id,
+                    'branch_id' => $course->branch_id,
+                    'account_id' => $this->resolveIncomeAccountId($paymentMethod),
+                    'account_receivable_id' => $receivable->id,
+                    'amount' => $this->calculateInitialChargeAmount($course),
+                    'currency' => 'USD',
+                    'type' => 'income',
+                    'status' => 'completed',
+                    'payment_method' => $paymentMethod === 'card' ? 'stripe' : $paymentMethod,
+                    'reference' => $stripePaymentIntentId,
+                    'description' => 'Pago de inscripción + 1er mes: '.$course->title,
+                ]);
+
+                $firstInstallment = EnrollmentInstallment::query()
+                    ->where('enrollment_id', $enrollment->id)
+                    ->where('is_first_month', true)
+                    ->first();
+
+                if ($firstInstallment) {
+                    $firstInstallment->update([
+                        'status' => 'paid',
+                        'stripe_payment_intent_id' => $stripePaymentIntentId,
+                        'paid_at' => now(),
+                    ]);
+                }
+
+                $this->refreshReceivableBalance($receivable->fresh());
+            }
+
+            if ($paymentMethod === 'card' && $stripePaymentIntentId && str_starts_with($stripePaymentIntentId, 'pi_')) {
+                $this->setupRecurringSubscription($enrollment, $course, $stripePaymentIntentId);
+            } else {
+                EnrollmentBillingProfile::updateOrCreate(
+                    ['enrollment_id' => $enrollment->id],
+                    [
+                        'billing_mode' => 'manual',
+                        'auto_pay_enabled' => false,
+                        'status' => 'active',
+                    ]
+                );
+            }
+
+                return $enrollment;
+            });
+        } catch (\Throwable $e) {
+            return $this->wizardJsonOrRedirect($request, [
+                'success' => false,
+                'message' => 'No se pudo completar la configuración de cobro automático.',
+                'errors' => ['payment_method' => [$e->getMessage()]],
+            ], redirect()->route('enrollment.wizard')->withErrors([
+                'payment_method' => 'No se pudo completar la configuración de cobro automático.',
+            ]));
         }
 
         $request->session()->forget([
@@ -562,7 +640,8 @@ class EnrollmentWizardController extends Controller
             'student_birthdate',
             'student_medical_notes',
             'selected_course_id',
-            'course_price',
+            'course_enrollment_fee',
+            'course_monthly_fee',
             'payment_method',
             'stripe_payment_intent_id',
             'wizard_locked_course_id',
@@ -590,7 +669,8 @@ class EnrollmentWizardController extends Controller
             'student_birthdate',
             'student_medical_notes',
             'selected_course_id',
-            'course_price',
+            'course_enrollment_fee',
+            'course_monthly_fee',
             'payment_method',
             'stripe_payment_intent_id',
             'wizard_locked_course_id',
@@ -657,13 +737,17 @@ class EnrollmentWizardController extends Controller
         $studentAge = $studentBirthdate ? Carbon::parse($studentBirthdate)->age : null;
         $courses = $this->loadCoursesForWizard($lockedCourseId, $studentAge);
 
-        $students = Auth::check()
-            ? Auth::user()->students()->orderBy('name')->get()->map(fn ($st) => [
-                'id' => $st->id,
-                'name' => $st->name,
-                'birthdate' => $st->birthdate ? Carbon::parse($st->birthdate)->format('Y-m-d') : null,
-            ])->values()->all()
-            : [];
+        $students = [];
+        if (Auth::check()) {
+            $authUser = Auth::user();
+            if ($authUser instanceof User) {
+                $students = $authUser->students()->orderBy('name')->get()->map(fn ($st) => [
+                    'id' => $st->id,
+                    'name' => $st->name,
+                    'birthdate' => $st->birthdate ? Carbon::parse($st->birthdate)->format('Y-m-d') : null,
+                ])->values()->all();
+            }
+        }
 
         $courseId = $request->session()->get('selected_course_id');
         $courseModel = $courseId ? Course::withCount('enrollments')->find($courseId) : null;
@@ -677,7 +761,8 @@ class EnrollmentWizardController extends Controller
             'courses' => $courses->map(fn ($c) => $this->serializeCourse($c))->values()->all(),
             'selected_course_id' => $courseId ? (int) $courseId : null,
             'selected_course' => $courseModel ? $this->serializeCourse($courseModel) : null,
-            'course_price' => $request->session()->get('course_price'),
+            'course_enrollment_fee' => $request->session()->get('course_enrollment_fee'),
+            'course_monthly_fee' => $request->session()->get('course_monthly_fee'),
             'locked_course_id' => $lockedCourseId ? (int) $lockedCourseId : null,
             'payment_method' => $request->session()->get('payment_method'),
         ];
@@ -699,9 +784,173 @@ class EnrollmentWizardController extends Controller
             'enrollments_count' => $course->enrollments_count ?? 0,
             'spots_left' => $spotsLeft,
             'price' => $course->price !== null ? (float) $course->price : null,
+            'monthly_fee' => $course->monthly_fee !== null ? (float) $course->monthly_fee : null,
             'can_enroll' => (bool) ($course->can_enroll ?? true),
             'enroll_error' => $course->enroll_error,
         ];
+    }
+
+    protected function calculateInitialChargeAmount(Course $course): float
+    {
+        return (float) ($course->price ?? 0) + (float) ($course->monthly_fee ?? 0);
+    }
+
+    protected function calculateInstallmentMonths(Course $course): int
+    {
+        if (! $course->start_date || ! $course->end_date) {
+            return 1;
+        }
+
+        $start = Carbon::parse($course->start_date)->startOfMonth();
+        $end = Carbon::parse($course->end_date)->startOfMonth();
+
+        return max(1, $start->diffInMonths($end) + 1);
+    }
+
+    protected function createInstallmentsForEnrollment(
+        Enrollment $enrollment,
+        Course $course,
+        AccountReceivable $receivable,
+        int $installmentMonths,
+        bool $firstMonthPaid
+    ): void {
+        $monthlyFee = (float) ($course->monthly_fee ?? 0);
+        if ($monthlyFee <= 0) {
+            return;
+        }
+
+        $baseDate = $course->start_date
+            ? Carbon::parse($course->start_date)->startOfDay()
+            : now()->startOfDay();
+
+        for ($offset = 0; $offset < $installmentMonths; $offset++) {
+            $dueDate = (clone $baseDate)->addMonthsNoOverflow($offset);
+
+            EnrollmentInstallment::create([
+                'enrollment_id' => $enrollment->id,
+                'account_receivable_id' => $receivable->id,
+                'period_year' => (int) $dueDate->year,
+                'period_month' => (int) $dueDate->month,
+                'due_date' => $dueDate->toDateString(),
+                'amount' => $monthlyFee,
+                'currency' => 'USD',
+                'status' => ($offset === 0 && $firstMonthPaid) ? 'paid' : 'pending',
+                'is_first_month' => $offset === 0,
+                'paid_at' => ($offset === 0 && $firstMonthPaid) ? now() : null,
+            ]);
+        }
+    }
+
+    protected function setupRecurringSubscription(Enrollment $enrollment, Course $course, string $stripePaymentIntentId): void
+    {
+        $monthlyFee = (float) ($course->monthly_fee ?? 0);
+        if ($monthlyFee <= 0) {
+            EnrollmentBillingProfile::updateOrCreate(
+                ['enrollment_id' => $enrollment->id],
+                [
+                    'billing_mode' => 'manual',
+                    'auto_pay_enabled' => false,
+                    'status' => 'active',
+                ]
+            );
+
+            return;
+        }
+
+        $stripeSecret = config('services.stripe.secret');
+        if (! $stripeSecret) {
+            throw new \RuntimeException('Stripe no está configurado para suscripciones.');
+        }
+
+        $stripe = new StripeClient($stripeSecret);
+        $paymentIntent = $stripe->paymentIntents->retrieve($stripePaymentIntentId, []);
+
+        if (! $paymentIntent || empty($paymentIntent->payment_method)) {
+            throw new \RuntimeException('No se encontró método de pago para activar la suscripción.');
+        }
+
+        $parent = $enrollment->parent()->first();
+        if (! $parent) {
+            throw new \RuntimeException('No se encontró el representante para crear la suscripción.');
+        }
+
+        $customerId = $parent->stripe_customer_id;
+        if (! $customerId) {
+            $customer = $stripe->customers->create([
+                'name' => $parent->name,
+                'email' => $parent->email,
+                'metadata' => [
+                    'parent_user_id' => (string) $parent->id,
+                ],
+            ]);
+            $customerId = $customer->id;
+            $parent->stripe_customer_id = $customerId;
+            $parent->save();
+        }
+
+        $stripe->paymentMethods->attach($paymentIntent->payment_method, [
+            'customer' => $customerId,
+        ]);
+
+        $stripe->customers->update($customerId, [
+            'invoice_settings' => [
+                'default_payment_method' => $paymentIntent->payment_method,
+            ],
+        ]);
+
+        $billingAnchor = now()->addMonth()->startOfDay();
+        $subscription = $stripe->subscriptions->create([
+            'customer' => $customerId,
+            'collection_method' => 'charge_automatically',
+            'items' => [[
+                'price_data' => [
+                    'currency' => 'usd',
+                    'recurring' => ['interval' => 'month'],
+                    'unit_amount' => (int) round($monthlyFee * 100),
+                    'product_data' => [
+                        'name' => 'Mensualidad - '.($course->title ?? 'Programa'),
+                    ],
+                ],
+            ]],
+            'billing_cycle_anchor' => $billingAnchor->timestamp,
+            'proration_behavior' => 'none',
+            'metadata' => [
+                'enrollment_id' => (string) $enrollment->id,
+                'course_id' => (string) $course->id,
+            ],
+        ]);
+
+        EnrollmentBillingProfile::updateOrCreate(
+            ['enrollment_id' => $enrollment->id],
+            [
+                'billing_mode' => 'stripe_subscription',
+                'auto_pay_enabled' => true,
+                'stripe_customer_id' => $customerId,
+                'stripe_subscription_id' => $subscription->id,
+                'stripe_default_payment_method_id' => $paymentIntent->payment_method,
+                'billing_anchor_day' => (int) $billingAnchor->day,
+                'next_billing_date' => Carbon::createFromTimestamp((int) $subscription->current_period_end)->toDateString(),
+                'status' => 'active',
+            ]
+        );
+    }
+
+    protected function refreshReceivableBalance(AccountReceivable $receivable): void
+    {
+        $paidAmount = (float) $receivable->transactions()->sum('amount');
+        $balance = max(0, (float) $receivable->amount_total - $paidAmount);
+
+        $status = 'pending';
+        if ($balance <= 0) {
+            $status = 'paid';
+        } elseif ($paidAmount > 0) {
+            $status = 'partial';
+        }
+
+        $receivable->update([
+            'balance_due' => $balance,
+            'status' => $status,
+        ]);
     }
 
     protected function wantsWizardJson(Request $request): bool

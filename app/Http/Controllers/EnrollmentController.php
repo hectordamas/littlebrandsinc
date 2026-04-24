@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Barryvdh\DomPDF\Facade\Pdf;
-use App\Models\{Account, AccountReceivable, Course, Enrollment, Student, Transaction, User};
+use App\Models\{Account, AccountReceivable, Course, Enrollment, EnrollmentBillingProfile, EnrollmentInstallment, Student, Transaction, User};
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -66,21 +66,12 @@ class EnrollmentController extends Controller
                 'payment_status' => $paymentStatus,
             ]);
 
+            $this->syncEnrollmentReceivableState($enrollment);
+            $this->ensureManualBillingArtifacts($enrollment, $paymentStatus === 'paid');
+
             if ($enrollment->payment_status === 'paid') {
-                Transaction::create([
-                    'enrollment_id' => $enrollment->id,
-                    'student_id' => $student->id,
-                    'course_id' => $course->id,
-                    'branch_id' => $course->branch_id,
-                    'account_id' => $this->resolveIncomeAccountId(),
-                    'amount' => $course->price ?? 0,
-                    'currency' => 'USD',
-                    'type' => 'income',
-                    'status' => 'completed',
-                    'payment_method' => 'manual',
-                    'reference' => 'admin-enrollment-'.$enrollment->id,
-                    'description' => 'Pago de inscripcion (admin): '.$course->title,
-                ]);
+                $enrollment->load(['student.user', 'course']);
+                $this->syncEnrollmentIncomeTransaction($enrollment);
             }
         });
 
@@ -260,6 +251,7 @@ class EnrollmentController extends Controller
         }
 
         $this->syncEnrollmentReceivableState($enrollment);
+        $this->ensureManualBillingArtifacts($enrollment, $enrollment->payment_status === 'paid');
 
         if ($enrollment->payment_status === 'paid') {
             $this->syncEnrollmentIncomeTransaction($enrollment);
@@ -287,13 +279,13 @@ class EnrollmentController extends Controller
             'branch_id' => $enrollment->course->branch_id,
             'account_id' => $this->resolveIncomeAccountId(),
             'account_receivable_id' => $receivable?->id,
-            'amount' => $enrollment->course->price ?? 0,
+            'amount' => $this->calculateInitialChargeAmount($enrollment->course),
             'currency' => 'USD',
             'type' => 'income',
             'status' => 'completed',
             'payment_method' => $enrollment->payment_method ?: 'manual',
             'reference' => 'admin-enrollment-'.$enrollment->id,
-            'description' => 'Pago confirmado de inscripcion: '.$enrollment->course->title,
+            'description' => 'Pago confirmado de inscripcion + 1er mes: '.$enrollment->course->title,
         ];
 
         if ($incomeTransaction) {
@@ -326,6 +318,8 @@ class EnrollmentController extends Controller
             return;
         }
 
+        $amountTotal = $this->calculateEnrollmentReceivableTotal($enrollment->course);
+
         $receivable = AccountReceivable::query()
             ->where('enrollment_id', $enrollment->id)
             ->first();
@@ -335,9 +329,9 @@ class EnrollmentController extends Controller
                 AccountReceivable::create([
                     'branch_id' => $enrollment->course->branch_id,
                     'enrollment_id' => $enrollment->id,
-                    'title' => 'Inscripcion #'.$enrollment->id.' - '.($enrollment->course->title ?? 'Curso'),
-                    'amount_total' => $enrollment->course->price,
-                    'balance_due' => $enrollment->course->price,
+                    'title' => 'Inscripcion + mensualidades #'.$enrollment->id.' - '.($enrollment->course->title ?? 'Curso'),
+                    'amount_total' => $amountTotal,
+                    'balance_due' => $amountTotal,
                     'currency' => 'USD',
                     'status' => 'pending',
                 ]);
@@ -347,9 +341,9 @@ class EnrollmentController extends Controller
 
             $receivable->update([
                 'branch_id' => $enrollment->course->branch_id,
-                'title' => 'Inscripcion #'.$enrollment->id.' - '.($enrollment->course->title ?? 'Curso'),
-                'amount_total' => $enrollment->course->price,
-                'balance_due' => $enrollment->course->price,
+                'title' => 'Inscripcion + mensualidades #'.$enrollment->id.' - '.($enrollment->course->title ?? 'Curso'),
+                'amount_total' => $amountTotal,
+                'balance_due' => $amountTotal,
                 'currency' => 'USD',
                 'status' => 'pending',
             ]);
@@ -395,6 +389,8 @@ class EnrollmentController extends Controller
             'course_start_date' => optional($course)->start_date,
             'course_end_date' => optional($course)->end_date,
             'course_price' => optional($course)->price,
+            'course_enrollment_fee' => optional($course)->price,
+            'course_monthly_fee' => optional($course)->monthly_fee,
             'course_capacity' => optional($course)->capacity,
             'course_enrollments_count' => optional($course)->enrollments_count,
             'classes' => $classes->map(function ($class) {
@@ -514,5 +510,94 @@ class EnrollmentController extends Controller
         );
 
         return (int) $account->id;
+    }
+
+    protected function calculateInitialChargeAmount(Course $course): float
+    {
+        return (float) ($course->price ?? 0) + (float) ($course->monthly_fee ?? 0);
+    }
+
+    protected function calculateEnrollmentReceivableTotal(Course $course): float
+    {
+        $months = 1;
+        if ($course->start_date && $course->end_date) {
+            $start = Carbon::parse($course->start_date)->startOfMonth();
+            $end = Carbon::parse($course->end_date)->startOfMonth();
+            $months = max(1, $start->diffInMonths($end) + 1);
+        }
+
+        return (float) ($course->price ?? 0) + ((float) ($course->monthly_fee ?? 0) * $months);
+    }
+
+    protected function ensureManualBillingArtifacts(Enrollment $enrollment, bool $firstMonthPaid): void
+    {
+        if (($enrollment->payment_method ?? 'manual') !== 'manual') {
+            return;
+        }
+
+        $enrollment->loadMissing('course');
+        $course = $enrollment->course;
+        if (! $course) {
+            return;
+        }
+
+        $receivable = AccountReceivable::query()
+            ->where('enrollment_id', $enrollment->id)
+            ->first();
+
+        EnrollmentBillingProfile::updateOrCreate(
+            ['enrollment_id' => $enrollment->id],
+            [
+                'billing_mode' => 'manual',
+                'auto_pay_enabled' => false,
+                'status' => 'active',
+                'billing_anchor_day' => (int) now()->day,
+                'next_billing_date' => now()->addMonth()->toDateString(),
+            ]
+        );
+
+        $monthlyFee = (float) ($course->monthly_fee ?? 0);
+        if ($monthlyFee <= 0) {
+            return;
+        }
+
+        $months = 1;
+        if ($course->start_date && $course->end_date) {
+            $start = Carbon::parse($course->start_date)->startOfMonth();
+            $end = Carbon::parse($course->end_date)->startOfMonth();
+            $months = max(1, $start->diffInMonths($end) + 1);
+        }
+
+        $baseDate = $course->start_date
+            ? Carbon::parse($course->start_date)->startOfDay()
+            : now()->startOfDay();
+
+        for ($offset = 0; $offset < $months; $offset++) {
+            $dueDate = (clone $baseDate)->addMonthsNoOverflow($offset);
+
+            EnrollmentInstallment::updateOrCreate(
+                [
+                    'enrollment_id' => $enrollment->id,
+                    'period_year' => (int) $dueDate->year,
+                    'period_month' => (int) $dueDate->month,
+                ],
+                [
+                    'account_receivable_id' => $receivable?->id,
+                    'due_date' => $dueDate->toDateString(),
+                    'amount' => $monthlyFee,
+                    'currency' => 'USD',
+                    'status' => ($offset === 0 && $firstMonthPaid) ? 'paid' : 'pending',
+                    'is_first_month' => $offset === 0,
+                    'paid_at' => ($offset === 0 && $firstMonthPaid) ? now() : null,
+                ]
+            );
+        }
+
+        if ($receivable) {
+            EnrollmentInstallment::query()
+                ->where('enrollment_id', $enrollment->id)
+                ->whereNull('account_receivable_id')
+                ->update(['account_receivable_id' => $receivable->id]);
+        }
     }
 }

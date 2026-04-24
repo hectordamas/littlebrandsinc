@@ -76,9 +76,14 @@
                             value="{{ optional($enrollment->course)->end_date ? \Carbon\Carbon::parse($enrollment->course->end_date)->format('d/m/Y') : 'N/A' }}" readonly>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label text-muted">Precio</label>
+                        <label class="form-label text-muted">Precio de inscripción</label>
                         <input type="text" class="form-control"
                             value="{{ optional($enrollment->course)->price !== null ? '$' . number_format((float) $enrollment->course->price, 2) : 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted">Mensualidad</label>
+                        <input type="text" class="form-control"
+                            value="{{ optional($enrollment->course)->monthly_fee !== null ? '$' . number_format((float) $enrollment->course->monthly_fee, 2) : 'N/A' }}" readonly>
                     </div>
                     <div class="col-md-12">
                         <label class="form-label text-muted">Descripcion</label>

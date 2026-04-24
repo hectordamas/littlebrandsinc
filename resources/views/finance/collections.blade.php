@@ -65,11 +65,11 @@
                                 <input type="number" step="any" name="amount_total" class="form-control" value="{{ old('amount_total') }}" data-money-format required>
                                 <strong class="money-preview" data-money-preview></strong>
                             </div>
-                            <div class="col-md-8">
+                            <div class="col-md-6">
                                 <label class="form-label">Concepto</label>
                                 <input type="text" name="title" class="form-control" value="{{ old('title') }}" required>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <label class="form-label">Vencimiento</label>
                                 <input type="date" name="due_date" class="form-control" value="{{ old('due_date') }}">
                             </div>
@@ -90,7 +90,7 @@
     </div>
 
     <div class="col-md-12">
-        <div class="summary-card">
+        <div class="summary-card shadow-sm">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
                     <div class="summary-label">Saldo pendiente total en CxC</div>
@@ -119,7 +119,6 @@
                             <tr>
                                 <th>#</th>
                                 <th>Concepto</th>
-                                <th>Estudiante</th>
                                 <th>Origen CxC</th>
                                 <th>Sede</th>
                                 <th>Total</th>
@@ -133,7 +132,6 @@
                                 <tr>
                                     <td>{{ $receivable->id }}</td>
                                     <td>{{ $receivable->title }}</td>
-                                    <td>{{ optional(optional($receivable->enrollment)->student)->name ?? 'N/A' }}</td>
                                     <td>
                                         @if ($receivable->enrollment_id)
                                             <span class="badge bg-info text-dark">Automática</span>
@@ -158,7 +156,7 @@
                                     </td>
                                     <td class="text-end">
                                         <a href="{{ route('finance.collections.show', $receivable) }}" class="btn btn-sm btn-inverse">
-                                            <i class="far fa-eye"></i> Detalle
+                                            <i class="far fa-eye"></i>
                                         </a>
                                     </td>
                                 </tr>

@@ -95,6 +95,7 @@ class CoursesController extends Controller
             'max_age' => 'nullable|integer|min:0',
             'capacity' => 'nullable|integer|min:1',
             'price' => 'nullable|numeric|min:0',
+            'monthly_fee' => 'nullable|numeric|min:0',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'branch_id' => 'required|exists:branches,id',
@@ -107,6 +108,7 @@ class CoursesController extends Controller
         $course->max_age = $request->max_age;
         $course->capacity = $request->capacity;
         $course->price = $request->price;
+        $course->monthly_fee = $request->monthly_fee;
         $course->start_date = $request->start_date;
         $course->end_date = $request->end_date;
         $course->branch_id = $request->branch_id;
@@ -153,6 +155,7 @@ class CoursesController extends Controller
             'max_age' => 'nullable|integer|min:0',
             'capacity' => 'nullable|integer|min:1',
             'price' => 'nullable|numeric|min:0',
+            'monthly_fee' => 'nullable|numeric|min:0',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'branch_id' => 'required|exists:branches,id',
@@ -164,6 +167,7 @@ class CoursesController extends Controller
         $course->max_age = $request->max_age;
         $course->capacity = $request->capacity;
         $course->price = $request->price;
+        $course->monthly_fee = $request->monthly_fee;
         $course->start_date = $request->start_date;
         $course->end_date = $request->end_date;
         $course->branch_id = $request->branch_id;

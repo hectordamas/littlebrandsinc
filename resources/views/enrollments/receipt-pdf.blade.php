@@ -144,8 +144,11 @@
             {{ optional($enrollment->course)->start_date ? \Carbon\Carbon::parse($enrollment->course->start_date)->format('d/m/Y') : 'N/A' }} -
             {{ optional($enrollment->course)->end_date ? \Carbon\Carbon::parse($enrollment->course->end_date)->format('d/m/Y') : 'N/A' }}
         </div>
-        <div class="row"><span class="label">Precio:</span>
+        <div class="row"><span class="label">Precio de inscripción:</span>
             {{ optional($enrollment->course)->price !== null ? '$' . number_format((float) $enrollment->course->price, 2) : 'N/A' }}
+        </div>
+        <div class="row"><span class="label">Mensualidad:</span>
+            {{ optional($enrollment->course)->monthly_fee !== null ? '$' . number_format((float) $enrollment->course->monthly_fee, 2) : 'N/A' }}
         </div>
     </div>
 
