@@ -1,0 +1,94 @@
+Necesito crear una landing page para una empresa llamada "Little Brands Inc"
+
+Esta empresa es un holding o grupo de empresas encargada de enseñar deportes para niños
+tiene dos empresas que constituyen este holding: "Little Strikers" y "Little Paddlers"
+los brochures de estas empresas esta en public/landing_page/brochures, 
+no tengo contenido para esta nueva empresa por lo que deberias ayudarme a crearlo, Necesito 
+"Inicio", "Acerca de", "Mision", "Vision", "Contacto". Necesito que sea muy atractiva en 
+experiencia de usuario, que tenga un formulario de contacto que envie correos a una 
+direccion que yo configure en el .env, que tenga quizas un buen slider y animaciones lindas
+, que los colores y fuentes sean acorde a la marca. Los logos estan en "public/landing_page/logos",
+
+necesito que este en la ruta "/" vista welcome.blade.php
+
+
+Quiero que construyas una landing page completa en Laravel (Blade) para una empresa llamada "Little Brands Inc".
+
+📌 Contexto:
+- "Little Brands Inc" es un holding enfocado en la enseñanza de deportes para niños.
+- Este holding agrupa dos marcas:
+  - "Little Strikers" (fútbol)
+  - "Little Paddlers" (padel)
+- Los brochures de estas marcas están disponibles en:
+  public/landing_page/brochures
+- Los logos están en:
+  public/landing_page/logos
+
+⚠️ Importante:
+No existe contenido previo para "Little Brands Inc", por lo tanto debes generar contenido profesional, atractivo y orientado a padres de familia.
+
+🎯 Objetivo:
+Crear una landing page moderna, visualmente atractiva, optimizada para conversión (UX/UI), con animaciones suaves y estructura clara.
+
+📄 La vista debe ser:
+resources/views/welcome.blade.php
+y debe corresponder a la ruta "/"
+
+🧩 Secciones requeridas:
+1. Hero / Inicio
+   - Slider o sección destacada con imágenes (puedes usar placeholders si no hay imágenes)
+   - Mensaje claro: formación deportiva infantil + valores
+   - Call to Action (ej: "Inscribir a mi hijo")
+
+2. Acerca de
+   - Explicar qué es Little Brands Inc
+   - Mencionar las dos marcas (Little Strikers y Little Paddlers)
+   - Mostrar sus logos
+
+3. Misión
+   - Crear una misión enfocada en desarrollo infantil, disciplina, diversión
+
+4. Visión
+   - Proyección a futuro (liderazgo en formación deportiva infantil)
+
+5. Marcas (opcional pero recomendado)
+   - Cards o secciones para:
+     - Little Strikers
+     - Little Paddlers
+   - Breve descripción + enlace o referencia a brochures
+
+6. Contacto
+   - Formulario con:
+     - Nombre
+     - Email
+     - Teléfono
+     - Mensaje
+   - Debe enviar correo usando Laravel Mail a una dirección definida en .env (ej: MAIL_TO_ADDRESS)
+   - Validación frontend + backend
+
+🎨 Diseño / UX:
+- Estilo moderno (puedes usar TailwindCSS o Bootstrap)
+- Animaciones suaves (fade-in, scroll reveal, etc.)
+- Tipografías amigables para niños pero profesionales
+- Colores alineados a una marca infantil/deportiva (azules, verdes, naranjas)
+- Responsive (mobile-first)
+
+⚙️ Backend:
+- Crear controlador si es necesario (LandingController o similar)
+- Manejar envío de correos con Mailable
+- Validación con Request
+
+✨ Extras:
+- Navbar fijo con scroll suave
+- Footer con información básica
+- Botones llamativos
+- Buen espaciado y jerarquía visual
+
+📦 Entregable esperado:
+- Código completo de welcome.blade.php
+- Controlador necesario
+- Mailable (si aplica)
+- Rutas web.php
+- Ejemplo de .env para MAIL_TO_ADDRESS
+
+Evita código incompleto o pseudocódigo. Todo debe ser funcional en Laravel.

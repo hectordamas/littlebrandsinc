@@ -1,13 +1,12 @@
 <?php
 
-use App\Http\Controllers\{AccountsController, BranchesController, CoursesController, EnrollmentController, EnrollmentWizardController, FinanceController, HomeController, StripeWebhookController, StudentsController, UsersController};
+use App\Http\Controllers\{AccountsController, BranchesController, CoursesController, EnrollmentController, EnrollmentWizardController, FinanceController, HomeController, LandingController, StripeWebhookController, StudentsController, UsersController};
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 
-Route::get('/', function () {
-    return redirect('login');
-});
+Route::get('/', [LandingController::class, 'index'])->name('landing.index');
+Route::post('/contacto', [LandingController::class, 'contact'])->name('landing.contact');
 
 Auth::routes();
 
