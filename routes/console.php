@@ -1,6 +1,7 @@
 <?php
 
 use App\Console\Commands\SendInstallmentDueRemindersCommand;
+use App\Console\Commands\DispatchParentEventNotificationsCommand;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -10,3 +11,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command(SendInstallmentDueRemindersCommand::class)->dailyAt('08:00');
+Schedule::command(DispatchParentEventNotificationsCommand::class)->everyThirtyMinutes();

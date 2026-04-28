@@ -62,7 +62,7 @@
 
         body::after {
             content: '';
-            position: absolute;
+            position: fixed;
             inset: 0 auto auto 0;
             width: 420px;
             height: 420px;
@@ -87,9 +87,11 @@
 
         .topbar {
             position: fixed;
-            inset: 0 0 auto 0;
-            z-index: 50;
-            padding-top: 18px;
+            top: 0;
+            right: 0;
+            left: 0;
+            z-index: 2200;
+            padding-top: 20px;
         }
 
         .topbar-inner {
@@ -145,6 +147,25 @@
             color: var(--ink);
             background: rgba(12, 127, 242, 0.08);
             transform: translateY(-1px);
+        }
+
+        .nav-toggle {
+            display: none;
+            width: 42px;
+            height: 42px;
+            border: 1px solid rgba(9, 23, 34, 0.12);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.92);
+            color: var(--ink);
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .nav-toggle svg {
+            width: 20px;
+            height: 20px;
         }
 
         .cta-pill {
@@ -951,16 +972,39 @@
         }
 
         @media (max-width: 980px) {
-            .topbar {
-                padding-top: 12px;
-            }
 
             .topbar-inner {
-                padding: 0.8rem;
+                padding: 0.65rem 0.75rem;
+                position: relative;
+                overflow: visible;
+                flex-wrap: wrap;
+                row-gap: 0.5rem;
             }
 
             .topnav {
                 display: none;
+                order: 3;
+                width: 100%;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.25rem;
+                border-radius: 14px;
+                padding: 0.45rem;
+                margin-top: 0.2rem;
+                margin-left: 0;
+                background: rgba(255, 255, 255, 0.97);
+                border: 1px solid rgba(9, 23, 34, 0.08);
+                box-shadow: 0 10px 24px rgba(9, 23, 34, 0.12);
+            }
+
+            .topbar-inner.menu-open .topnav {
+                display: flex;
+            }
+
+            .topnav a {
+                width: 100%;
+                border-radius: 12px;
+                padding: 0.78rem 0.9rem;
             }
 
             .hero-grid,
@@ -988,6 +1032,11 @@
 
             .cta-pill {
                 display: none;
+            }
+
+            .nav-toggle {
+                display: inline-flex;
+                margin-left: auto;
             }
 
             .brand img {
@@ -1042,6 +1091,14 @@
                 <a href="#vision">Visión</a>
                 <a href="#contacto">Contacto</a>
             </nav>
+
+            <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Abrir menu de navegacion">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                    <path d="M4 7h16"></path>
+                    <path d="M4 12h16"></path>
+                    <path d="M4 17h16"></path>
+                </svg>
+            </button>
 
             <a class="cta-pill" href="#contacto">Inscribir a mi hijo</a>
         </div>
@@ -1334,8 +1391,52 @@
         (function () {
             const slides = Array.from(document.querySelectorAll('.slide'));
             const dots = Array.from(document.querySelectorAll('.dot'));
+            const topbarInner = document.querySelector('.topbar-inner');
+            const navToggle = document.querySelector('.nav-toggle');
+            const navLinks = Array.from(document.querySelectorAll('.topnav a'));
             let active = 0;
             let timerId = null;
+
+            function closeMobileMenu() {
+                if (!topbarInner || !navToggle) {
+                    return;
+                }
+                topbarInner.classList.remove('menu-open');
+                navToggle.setAttribute('aria-expanded', 'false');
+            }
+
+            if (topbarInner && navToggle) {
+                navToggle.addEventListener('click', () => {
+                    const nextOpen = !topbarInner.classList.contains('menu-open');
+                    topbarInner.classList.toggle('menu-open', nextOpen);
+                    navToggle.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
+                });
+
+                navLinks.forEach((link) => {
+                    link.addEventListener('click', closeMobileMenu);
+                });
+
+                document.addEventListener('click', (event) => {
+                    if (!topbarInner.classList.contains('menu-open')) {
+                        return;
+                    }
+                    if (!topbarInner.contains(event.target)) {
+                        closeMobileMenu();
+                    }
+                });
+
+                document.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape') {
+                        closeMobileMenu();
+                    }
+                });
+
+                window.addEventListener('resize', () => {
+                    if (window.innerWidth > 980) {
+                        closeMobileMenu();
+                    }
+                });
+            }
 
             function showSlide(index) {
                 active = index;

@@ -6,6 +6,7 @@ use App\Models\{AccountPayable, AccountReceivable, Branch, Course, Enrollment, L
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class HomeController extends Controller
 {
@@ -26,6 +27,16 @@ class HomeController extends Controller
      */
     public function index()
     {
+        $user = Auth::user();
+
+        if ($user && $user->role === 'Padre') {
+            return redirect()->route('parent.portal');
+        }
+
+        if ($user && $user->role === 'Coach') {
+            return redirect()->route('coach.calendar');
+        }
+
         $studentsCount = (int) Student::query()->count();
         $enrollmentsCount = (int) Enrollment::query()->count();
         $activeCoursesCount = (int) Course::query()->where('active', true)->count();

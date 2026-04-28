@@ -239,115 +239,124 @@
                             <ul class="pcoded-item pcoded-left-item">
 
                                 <li>
-                                    <a href="{{ url('/') }}">
+                                    <a href="{{ route('home') }}">
                                         <span class="pcoded-micon"><i class="feather icon-home"></i></span>
                                         <span class="pcoded-mtext">Inicio</span>
                                     </a>
                                 </li>
 
-                                <!--Inscripciones-->
-                                <li class="pcoded-hasmenu">
-                                    <a href="javascript:void(0)">
-                                        <span class="pcoded-micon">
-                                            <i class="far fa-address-book"></i>
-                                        </span>
-                                        <span class="pcoded-mtext">Inscripciones y Clientes</span>
-                                    </a>
-                                    <ul class="pcoded-submenu">
-                                        <li class="">
-                                            <a href="{{ url('enrollment') }}">
-                                                <span class="pcoded-mtext">Inscripciones</span>
-                                            </a>
-                                        </li>
-                                        <li class="">
-                                            <a href="{{ url('students') }}">
-                                                <span class="pcoded-mtext">Estudiantes</span>
-                                            </a>
-                                        </li>
-                                        <li class="">
-                                            <a href="{{ url('parents') }}">
-                                                <span class="pcoded-mtext">Padres</span>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </li>
+                                @if (Auth::user()->role === 'Administrador')
+                                    <li class="pcoded-hasmenu">
+                                        <a href="javascript:void(0)">
+                                            <span class="pcoded-micon">
+                                                <i class="far fa-address-book"></i>
+                                            </span>
+                                            <span class="pcoded-mtext">Inscripciones y Clientes</span>
+                                        </a>
+                                        <ul class="pcoded-submenu">
+                                            <li class="">
+                                                <a href="{{ url('enrollment') }}">
+                                                    <span class="pcoded-mtext">Inscripciones</span>
+                                                </a>
+                                            </li>
+                                            <li class="">
+                                                <a href="{{ url('students') }}">
+                                                    <span class="pcoded-mtext">Estudiantes</span>
+                                                </a>
+                                            </li>
+                                            <li class="">
+                                                <a href="{{ url('parents') }}">
+                                                    <span class="pcoded-mtext">Padres</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
 
-                                <!--Finanzas-->
-                                <li class="pcoded-hasmenu">
-                                    <a href="javascript:void(0)">
-                                        <span class="pcoded-micon"><i class="fas fa-file-invoice-dollar"></i></span>
-                                        <span class="pcoded-mtext">Finanzas y Facturación</span>
-                                    </a>
-                                    <ul class="pcoded-submenu">
-                                        <li class=" ">
-                                            <a href="{{ route('finance.index') }}">
-                                                <span class="pcoded-micon"><i class="fas fa-money-bill-transfer"></i></span>
-                                                <span class="pcoded-mtext">Movimientos</span>
-                                            </a>
-                                        </li>
-                                        <li class=" ">
-                                            <a href="{{ route('finance.collections') }}">
-                                                <span class="pcoded-micon"><i class="fas fa-money-check-dollar"></i></span>
-                                                <span class="pcoded-mtext">Cuentas por Cobrar</span>
-                                            </a>
-                                        </li>
-                                        <li class=" ">
-                                            <a href="{{ route('finance.payables') }}">
-                                                <span class="pcoded-micon"><i class="fas fa-file-invoice"></i></span>
-                                                <span class="pcoded-mtext">Cuentas por Pagar</span>
-                                            </a>
-                                        </li>
-                                        <li class="">
-                                            <a href="{{ route('accounts.index') }}">
-                                                <span class="pcoded-micon"><i class="fas fa-wallet"></i></span>
-                                                <span class="pcoded-mtext">Cuentas</span>
-                                            </a>
-                                        </li>
+                                    <li class="pcoded-hasmenu">
+                                        <a href="javascript:void(0)">
+                                            <span class="pcoded-micon"><i class="fas fa-file-invoice-dollar"></i></span>
+                                            <span class="pcoded-mtext">Finanzas y Facturación</span>
+                                        </a>
+                                        <ul class="pcoded-submenu">
+                                            <li class=" ">
+                                                <a href="{{ route('finance.index') }}">
+                                                    <span class="pcoded-micon"><i class="fas fa-money-bill-transfer"></i></span>
+                                                    <span class="pcoded-mtext">Movimientos</span>
+                                                </a>
+                                            </li>
+                                            <li class=" ">
+                                                <a href="{{ route('finance.collections') }}">
+                                                    <span class="pcoded-micon"><i class="fas fa-money-check-dollar"></i></span>
+                                                    <span class="pcoded-mtext">Cuentas por Cobrar</span>
+                                                </a>
+                                            </li>
+                                            <li class=" ">
+                                                <a href="{{ route('finance.payables') }}">
+                                                    <span class="pcoded-micon"><i class="fas fa-file-invoice"></i></span>
+                                                    <span class="pcoded-mtext">Cuentas por Pagar</span>
+                                                </a>
+                                            </li>
+                                            <li class="">
+                                                <a href="{{ route('accounts.index') }}">
+                                                    <span class="pcoded-micon"><i class="fas fa-wallet"></i></span>
+                                                    <span class="pcoded-mtext">Cuentas</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
 
-                                    </ul>
-                                </li>
+                                    <li class="pcoded-hasmenu">
+                                        <a href="javascript:void(0)">
+                                            <span class="pcoded-micon"><i class="fas fa-project-diagram"></i></span>
+                                            <span class="pcoded-mtext">Operaciones</span>
+                                        </a>
+                                        <ul class="pcoded-submenu">
+                                            <li class=" ">
+                                                <a href="{{ url('courses') }}">
+                                                    <span class="pcoded-mtext">Cursos</span>
+                                                </a>
+                                            </li>
+                                            <li class=" ">
+                                                <a href="{{ url('calendar') }}">
+                                                    <span class="pcoded-mtext">Calendario</span>
+                                                </a>
+                                            </li>
+                                            <li class="">
+                                                <a href="{{ url('trainers') }}">
+                                                    <span class="pcoded-mtext">Entrenadores</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
 
-                                <!--Operaciones-->
-                                <li class="pcoded-hasmenu">
-                                    <a href="javascript:void(0)">
-                                        <span class="pcoded-micon"><i class="fas fa-project-diagram"></i></span>
-                                        <span class="pcoded-mtext">Operaciones</span>
-                                    </a>
-                                    <ul class="pcoded-submenu">
-                                        <li class=" ">
-                                            <a href="{{ url('courses') }}">
-                                                <span class="pcoded-mtext">Cursos</span>
-                                            </a>
-                                        </li>
-                                        <li class=" ">
-                                            <a href="{{ url('calendar') }}">
-                                                <span class="pcoded-mtext">Calendario</span>
-                                            </a>
-                                        </li>
-                                        <li class="">
-                                            <a href="{{ url('trainers') }}">
-                                                <span class="pcoded-mtext">Entrenadores</span>
-                                            </a>
-                                        </li>
+                                    <li>
+                                        <a href="{{ url('users') }}">
+                                            <span class="pcoded-micon"><i class="fas fa-user"></i></span>
+                                            <span class="pcoded-mtext">Usuarios</span>
+                                        </a>
+                                    </li>
 
-                                    </ul>
-                                </li>
-
-                                <!--Usuarios-->
-                                <li>
-                                    <a href="{{ url('users') }}">
-                                        <span class="pcoded-micon"><i class="fas fa-user"></i></span>
-                                        <span class="pcoded-mtext">Usuarios</span>
-                                    </a>
-                                </li>
-
-                                <!-- Sedes-->
-                                <li>
-                                    <a href="{{ url('branches') }}">
-                                        <span class="pcoded-micon"><i class="fas fa-building"></i></span>
-                                        <span class="pcoded-mtext">Sedes</span>
-                                    </a>
-                                </li>
+                                    <li>
+                                        <a href="{{ url('branches') }}">
+                                            <span class="pcoded-micon"><i class="fas fa-building"></i></span>
+                                            <span class="pcoded-mtext">Sedes</span>
+                                        </a>
+                                    </li>
+                                @elseif (Auth::user()->role === 'Padre')
+                                    <li>
+                                        <a href="{{ route('parent.portal') }}">
+                                            <span class="pcoded-micon"><i class="fas fa-user-friends"></i></span>
+                                            <span class="pcoded-mtext">Portal de Familia</span>
+                                        </a>
+                                    </li>
+                                @elseif (Auth::user()->role === 'Coach')
+                                    <li>
+                                        <a href="{{ route('coach.calendar') }}">
+                                            <span class="pcoded-micon"><i class="fas fa-calendar-days"></i></span>
+                                            <span class="pcoded-mtext">Mis Clases</span>
+                                        </a>
+                                    </li>
+                                @endif
 
                             </ul>
                         </div>

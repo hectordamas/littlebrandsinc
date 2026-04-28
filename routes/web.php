@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\{AccountsController, BranchesController, CoursesController, EnrollmentController, EnrollmentWizardController, FinanceController, HomeController, LandingController, StripeWebhookController, StudentsController, UsersController};
+use App\Http\Controllers\{AccountsController, BranchesController, CoachPortalController, CoursesController, EnrollmentController, EnrollmentWizardController, FinanceController, HomeController, LandingController, ParentPortalController, StripeWebhookController, StudentsController, UsersController};
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
@@ -29,8 +29,13 @@ Route::post('stripe/webhook', StripeWebhookController::class)
     ->withoutMiddleware([ValidateCsrfToken::class])
     ->name('stripe.webhook');
 
-
 Route::middleware(['auth'])->group(function () {
+    Route::get('profile', [UsersController::class, 'profile'])->name('users.profile');
+    Route::put('profile', [UsersController::class, 'updateProfile'])->name('users.profile.update');
+});
+
+
+Route::middleware(['auth', 'role:Administrador'])->group(function () {
     Route::get('enrollment', [EnrollmentController::class, 'index']);
     Route::post('enrollment/store', [EnrollmentController::class, 'store'])->name('enrollment.store');
     Route::patch('enrollment/{enrollment}/status', [EnrollmentController::class, 'updateStatus'])->name('enrollment.status');
@@ -64,8 +69,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('programacion-y-operaciones');
 
     Route::get('users', [UsersController::class, 'index'])->name('users.index');
-    Route::get('profile', [UsersController::class, 'profile'])->name('users.profile');
-    Route::put('profile', [UsersController::class, 'updateProfile'])->name('users.profile.update');
     Route::get('users/{id}/edit', [UsersController::class, 'edit'])->name('users.edit');
     Route::put('users/{id}', [UsersController::class, 'update'])->name('users.update');
     Route::delete('users/{id}', [UsersController::class, 'destroy'])->name('users.destroy');
@@ -91,4 +94,14 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('calendar', [CoursesController::class, 'calendar'])->name('calendar.index');
     Route::get('calendar/events', [CoursesController::class, 'calendarEvents'])->name('calendar.events');
+});
+
+Route::middleware(['auth', 'role:Padre'])->group(function () {
+    Route::get('mi-panel', [ParentPortalController::class, 'index'])->name('parent.portal');
+});
+
+Route::middleware(['auth', 'role:Coach'])->group(function () {
+    Route::get('coach/calendario', [CoachPortalController::class, 'calendar'])->name('coach.calendar');
+    Route::get('coach/calendario/events', [CoachPortalController::class, 'events'])->name('coach.calendar.events');
+    Route::post('coach/clases/{class}/attendance', [CoachPortalController::class, 'markAttendance'])->name('coach.classes.attendance');
 });

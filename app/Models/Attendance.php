@@ -7,14 +7,24 @@ use App\Models\{LBClass, Student};
 
 class Attendance extends Model
 {
+    protected $fillable = [
+        'student_id',
+        'class_id',
+        'date',
+        'status',
+    ];
+
+    protected $casts = [
+        'date' => 'date',
+    ];
 
     public function class()
     {
-        return $this->belongsToMany(LBClass::class, 'class_id');
+        return $this->belongsTo(LBClass::class, 'class_id');
     }
 
     public function student()
     {
-        return $this->belongsToMany(Student::class, 'student_id');
+        return $this->belongsTo(Student::class, 'student_id');
     }
 }
