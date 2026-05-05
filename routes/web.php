@@ -5,6 +5,13 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 
+// Rutas públicas para páginas legales
+Route::view('/terms', 'terms-and-condition')->name('legal.terms');
+Route::view('/privacy', 'privacy-policy')->name('legal.privacy');
+
+// API ocupación de curso
+Route::get('courses/{id}/occupancy', [CoursesController::class, 'occupancy'])->name('courses.occupancy');
+
 Route::get('/', [LandingController::class, 'index'])->name('landing.index');
 Route::post('/contacto', [LandingController::class, 'contact'])->name('landing.contact');
 

@@ -419,3 +419,67 @@ Lógica:
 4. Endpoint bulkUpdate en Laravel
 5. Eliminación del botón individual de status
 6. Mejora del flujo de detalle de inscripción
+
+
+=========================================================
+¿Qué feature falta por desarrollar?
+
+Modulo 1
+Objetivo: Centralizar el registro, control y seguimiento de los niños.
+Funciones:
+•	Formulario digital de inscripción (nombre, edad, representante, alergias, nivel, etc.).
+•	Firma digital de términos y condiciones / políticas de privacidad.
+•	Control de cupos por grupo y horario.
+•	Registro de pagos (automático al pagar online o manual si se paga en persona).
+•	Panel para ver lista de jugadores activos/inactivos.
+•	Historial de participación por temporada.
+•	Sistema de renovación automática (recordatorios por correo).
+Interfaz Padre:
+•	Ver estado de cuenta.
+•	Ver clases programadas, asistencias y reportes.
+•	Recibir notificaciones (inicio de temporada, torneos, eventos).
+
+Modulo 2
+MÓDULO FINANCIERO Y FACTURACIÓN (Tiempo estimado: 3 semanas)
+Objetivo: Llevar control total de ingresos, gastos y reportes.
+Funciones:
+•	Facturación automática al completar una inscripción o venta.
+•	Integración con Stripe.
+•	Control de pagos pendientes.
+•	Dashboard con ingresos por mes, por sede o por categoría.
+•	Exportar reportes contables.
+•	Generación de recibos digitales personalizados (con logo de la franquicia).
+•	Control de royalties automáticos (si es franquicia): porcentaje fijo o variable.
+
+Modulo 3
+3.	MÓDULO DE PROGRAMACIÓN Y OPERACIONES
+Objetivo: Gestionar las clases, entrenadores y horarios.
+Funciones:
+•	Crear calendarios de clases (por categoría y sede).
+•	Asignar entrenadores a cada grupo.
+•	Control de asistencia digital (con check-in de cada niño).
+•	Enviar recordatorios automáticos a padres y entrenadores.
+•	Ver disponibilidad de espacios / horarios.
+•	Reporte de ocupación de clases (% de cupos llenos).
+
+====================================================================
+
+1. La firma digital es el checkbox de terminos y condiciones 
+en todo caso falta crear la pagina de terminos y condiciones, el checkbox cuenta como firma
+
+2. el Historial por temporada realmente son las inscripciones de los estudiante en cada temporada
+por lo que creo que ya esta implementado en los detalles de cada estudiante
+
+3. la renovacion automatica por stripe si es muy Importante, y creo que ya la implementamos
+(con lo que ya existe de este modulo ya es suficiente creo) Dashboard financiero por mes y por categoría: actualmente el resumen está agregado general y filtro por sede; no vi segmentación temporal/categoría en backend del dashboard. Ve
+
+4. Esto aun no es necesario: Royalties automáticos de franquicia (fijo/variable): no hay lógica ni referencias en código (búsqueda sin resultados).
+
+5. Estos recibos no son fiscales son simples pdf por lo que tambien podria darse por implementado: Facturación automática formal (tipo invoice fiscal): hay ledger, cobranzas y recibos PDF, pero no un módulo de facturación fiscal completo con numeración/serie/impuestos.
+
+6. Reporte de ocupación de clases en porcentaje (% cupos llenos): hay cupos y conteos parciales, pero no reporte consolidado de ocupación por clase/curso/sede. creo que esto es importante simplemente agregarlo a cada detalle del curso
+es decir, el porcentaje de inscritos vs la capacidad del curso es decir, un progress bar de cuanto va el curso en cuanto a inscritos en relacion con la capacidad en porcentaje
+
+7. Recordatorios automáticos a padres y entrenadores para clases: hay notificaciones de eventos y cuotas, pero no un flujo claro de recordatorio previo por clase para ambos roles. (esto si debemos finiquitarlo, es el recordatorio de las clases por correo yo creo que ya implementamos este feature)
+
+

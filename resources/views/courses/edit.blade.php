@@ -36,6 +36,35 @@
                             value="{{ old('title', $course->title) }}" required>
                     </div>
                     <div class="col-md-3"></div>
+
+                        <!-- Barra de ocupación -->
+                        <div class="mb-3 col-md-12">
+                            <label class="form-label">Ocupación actual</label>
+                            <div id="occupancy-bar" class="progress" style="height: 28px;">
+                                <div id="occupancy-bar-inner" class="progress-bar bg-success" role="progressbar" style="width: 0%">Cargando...</div>
+                            </div>
+                            <div class="small text-muted mt-1" id="occupancy-info"></div>
+                        </div>
+
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                fetch("{{ route('courses.occupancy', $course->id) }}")
+                                    .then(r => r.json())
+                                    .then(data => {
+                                        let percent = data.percent;
+                                        let enrolled = data.enrolled;
+                                        let capacity = data.capacity;
+                                        let bar = document.getElementById('occupancy-bar-inner');
+                                        let info = document.getElementById('occupancy-info');
+                                        bar.style.width = percent + '%';
+                                        bar.textContent = percent + '% (' + enrolled + '/' + capacity + ' inscritos)';
+                                        if (percent < 60) bar.classList.add('bg-success');
+                                        else if (percent < 90) bar.classList.add('bg-warning');
+                                        else bar.classList.add('bg-danger');
+                                        info.textContent = 'Inscritos: ' + enrolled + ' / Capacidad: ' + capacity;
+                                    });
+                            });
+                        </script>
                     <div class="mb-3 col-md-9">
                         <label for="description" class="form-label">Descripción</label>
                         <textarea name="description" id="description" class="form-control" rows="2">{{ old('description', $course->description) }}</textarea>

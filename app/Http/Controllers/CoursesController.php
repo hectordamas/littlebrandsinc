@@ -8,6 +8,24 @@ use App\Models\{Course, Branch, LBClass, User};
 
 class CoursesController extends Controller
 {
+    /**
+     * Devuelve el porcentaje de ocupación del curso.
+     */
+    public function occupancy($id)
+    {
+        $course = Course::withCount(['enrollments' => function ($q) {
+            $q->where('status', '!=', 'cancelled');
+        }])->findOrFail($id);
+        $capacity = $course->capacity ?? 0;
+        $enrolled = $course->enrollments_count;
+        $percent = $capacity > 0 ? round(($enrolled / $capacity) * 100) : 0;
+        return response()->json([
+            'capacity' => $capacity,
+            'enrolled' => $enrolled,
+            'percent' => $percent,
+        ]);
+    }
+
     public function calendar()
     {
         $branches = Branch::orderBy('name')->get();
