@@ -16,7 +16,13 @@ class EnsureRole
             abort(401);
         }
 
-        if (empty($roles) || in_array($user->role, $roles, true)) {
+        $userRole = mb_strtolower(trim((string) $user->role));
+        $allowedRoles = array_map(
+            fn (string $role): string => mb_strtolower(trim($role)),
+            $roles
+        );
+
+        if (empty($allowedRoles) || in_array($userRole, $allowedRoles, true)) {
             return $next($request);
         }
 

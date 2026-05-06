@@ -81,7 +81,7 @@ class CoachPortalController extends Controller
         return response()->json($events);
     }
 
-    public function markAttendance(Request $request, LBClass $class): RedirectResponse
+    public function markAttendance(Request $request, LBClass $class): RedirectResponse|JsonResponse
     {
         $coachId = (int) Auth::id();
 
@@ -90,11 +90,11 @@ class CoachPortalController extends Controller
         }
 
         $validated = $request->validate([
-            'attendance' => 'required|array',
+            'attendance' => 'nullable|array',
             'attendance.*' => 'required|in:present,absent,late,pending',
         ]);
 
-        foreach ($validated['attendance'] as $studentId => $status) {
+        foreach (($validated['attendance'] ?? []) as $studentId => $status) {
             Attendance::query()->updateOrCreate(
                 [
                     'class_id' => $class->id,
@@ -105,6 +105,12 @@ class CoachPortalController extends Controller
                     'status' => $status,
                 ]
             );
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Asistencia actualizada correctamente.',
+            ]);
         }
 
         return back()->with('success', 'Asistencia actualizada correctamente.');

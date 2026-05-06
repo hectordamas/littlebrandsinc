@@ -28,12 +28,13 @@ class HomeController extends Controller
     public function index()
     {
         $user = Auth::user();
+        $userRole = $user ? mb_strtolower(trim((string) $user->role)) : null;
 
-        if ($user && $user->role === 'Padre') {
+        if ($userRole === 'padre') {
             return redirect()->route('parent.portal');
         }
 
-        if ($user && $user->role === 'Coach') {
+        if ($userRole === 'coach') {
             return redirect()->route('coach.calendar');
         }
 

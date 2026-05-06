@@ -46,7 +46,17 @@ class CoursesController extends Controller
         $branchId = isset($validated['branch_id']) ? (int) $validated['branch_id'] : null;
 
         $classes = LBClass::query()
-            ->with(['course', 'branch', 'coach'])
+            ->with([
+                'course' => function ($query) {
+                    $query->withCount([
+                        'enrollments as active_enrollments_count' => function ($enrollmentsQuery) {
+                            $enrollmentsQuery->where('status', '!=', 'cancelled');
+                        },
+                    ]);
+                },
+                'branch',
+                'coach',
+            ])
             ->when($branchId, function ($query) use ($branchId) {
                 $query->where('branch_id', $branchId);
             })
@@ -64,8 +74,9 @@ class CoursesController extends Controller
             $courseTitle = optional($class->course)->title ?? 'Clase';
             $branchName = optional($class->branch)->name ?? 'Sin sede';
             $coachName = optional($class->coach)->name ?? 'Sin coach';
-            $start = $class->date . 'T' . $class->start_time;
-            $end = $class->date . 'T' . $class->end_time;
+            $date = optional($class->date)->format('Y-m-d') ?: (string) $class->date;
+            $start = $date . 'T' . $class->start_time;
+            $end = $date . 'T' . $class->end_time;
 
             return [
                 'id' => $class->id,
@@ -73,6 +84,13 @@ class CoursesController extends Controller
                 'start' => $start,
                 'end' => $end,
                 'extendedProps' => [
+                    'course_description' => optional($class->course)->description,
+                    'course_start_date' => optional($class->course)->start_date,
+                    'course_end_date' => optional($class->course)->end_date,
+                    'course_price' => optional($class->course)->price,
+                    'course_monthly_fee' => optional($class->course)->monthly_fee,
+                    'course_capacity' => optional($class->course)->capacity,
+                    'enrolled_children' => (int) (optional($class->course)->active_enrollments_count ?? 0),
                     'branch' => $branchName,
                     'coach' => $coachName,
                     'time' => substr((string) $class->start_time, 0, 5) . ' - ' . substr((string) $class->end_time, 0, 5),

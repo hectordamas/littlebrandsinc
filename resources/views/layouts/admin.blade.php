@@ -245,7 +245,11 @@
                                     </a>
                                 </li>
 
-                                @if (Auth::user()->role === 'Administrador')
+                                @php
+                                    $currentRole = mb_strtolower(trim((string) Auth::user()->role));
+                                @endphp
+
+                                @if ($currentRole === 'administrador')
                                     <li class="pcoded-hasmenu">
                                         <a href="javascript:void(0)">
                                             <span class="pcoded-micon">
@@ -342,14 +346,14 @@
                                             <span class="pcoded-mtext">Sedes</span>
                                         </a>
                                     </li>
-                                @elseif (Auth::user()->role === 'Padre')
+                                @elseif ($currentRole === 'padre')
                                     <li>
                                         <a href="{{ route('parent.portal') }}">
                                             <span class="pcoded-micon"><i class="fas fa-user-friends"></i></span>
                                             <span class="pcoded-mtext">Portal de Familia</span>
                                         </a>
                                     </li>
-                                @elseif (Auth::user()->role === 'Coach')
+                                @elseif ($currentRole === 'coach')
                                     <li>
                                         <a href="{{ route('coach.calendar') }}">
                                             <span class="pcoded-micon"><i class="fas fa-calendar-days"></i></span>
