@@ -101,6 +101,32 @@
             border: 0;
             box-shadow: none;
         }
+
+        #inscripcionesModal .modal-content {
+            max-height: calc(100vh - 3.5rem);
+            display: flex;
+            flex-direction: column;
+        }
+
+        #inscripcionesModal #enrollmentForm {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            flex: 1;
+        }
+
+        #inscripcionesModal .modal-body {
+            overflow-y: auto;
+            min-height: 0;
+        }
+
+        #inscripcionesModal .modal-footer {
+            position: sticky;
+            bottom: 0;
+            background: #fff;
+            border-top: 1px solid #dee2e6;
+            z-index: 2;
+        }
     </style>
 @endsection
 
@@ -110,7 +136,7 @@
     @endif
 
     <div class="modal fade" id="inscripcionesModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
 
                 <form method="POST" action="{{ route('enrollment.store') }}" id="enrollmentForm">
@@ -147,27 +173,41 @@
                             <div id="userForm" class="col-12 d-none">
                                 <div class="row g-2">
                                     <div class="col-md-6">
-                                        <input type="text" name="user[name]" class="form-control" placeholder="Nombre">
+                                        <label class="form-label mb-1">Nombre del representante</label>
+                                        <input type="text" name="user[name]" class="form-control"
+                                            placeholder="Ej: Maria Fernanda Perez">
                                         @error('user.name')
                                             <div class="text-danger small mt-1">{{ $message }}</div>
                                         @enderror
                                     </div>
                                     <div class="col-md-6">
-                                        <input type="email" name="user[email]" class="form-control" placeholder="Email">
+                                        <label class="form-label mb-1">Correo del representante</label>
+                                        <input type="email" name="user[email]" class="form-control"
+                                            placeholder="Ej: madre@email.com">
                                         @error('user.email')
                                             <div class="text-danger small mt-1">{{ $message }}</div>
                                         @enderror
                                     </div>
                                     <div class="col-md-6">
-                                        <input type="text" name="user[whatsapp]" class="form-control"
-                                            placeholder="WhatsApp">
+                                        <label class="form-label mb-1">WhatsApp del representante</label>
+                                        <div class="input-group">
+                                            <select name="user[dial_code]" class="form-select" style="max-width: 130px;">
+                                                @include('partials.dialcode_create')
+                                            </select>
+                                            <input type="text" name="user[whatsapp]" class="form-control"
+                                                placeholder="Ej: 4121234567">
+                                        </div>
+                                        @error('user.dial_code')
+                                            <div class="text-danger small mt-1">{{ $message }}</div>
+                                        @enderror
                                         @error('user.whatsapp')
                                             <div class="text-danger small mt-1">{{ $message }}</div>
                                         @enderror
                                     </div>
                                     <div class="col-md-6">
+                                        <label class="form-label mb-1">Contraseña temporal</label>
                                         <input type="password" name="user[password]" class="form-control"
-                                            placeholder="Contraseña">
+                                            placeholder="Ej: Temporal2026">
                                         @error('user.password')
                                             <div class="text-danger small mt-1">{{ $message }}</div>
                                         @enderror
@@ -198,21 +238,24 @@
                             <div id="studentForm" class="col-12 d-none">
                                 <div class="row g-2">
                                     <div class="col-md-6">
+                                        <label class="form-label mb-1">Nombre del estudiante</label>
                                         <input type="text" name="student[name]" class="form-control"
-                                            placeholder="Nombre">
+                                            placeholder="Ej: Sofia Martinez">
                                         @error('student.name')
                                             <div class="text-danger small mt-1">{{ $message }}</div>
                                         @enderror
                                     </div>
                                     <div class="col-md-6">
+                                        <label class="form-label mb-1">Fecha de nacimiento</label>
                                         <input type="date" name="student[birthdate]" class="form-control">
                                         @error('student.birthdate')
                                             <div class="text-danger small mt-1">{{ $message }}</div>
                                         @enderror
                                     </div>
                                     <div class="col-md-6">
+                                        <label class="form-label mb-1">Notas medicas (opcional)</label>
                                         <input type="text" name="student[medical_notes]" class="form-control"
-                                            placeholder="Notas médicas">
+                                            placeholder="Ej: Alergia al mani">
                                         @error('student.medical_notes')
                                             <div class="text-danger small mt-1">{{ $message }}</div>
                                         @enderror

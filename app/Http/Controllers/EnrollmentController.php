@@ -44,6 +44,7 @@ class EnrollmentController extends Controller
             'payment_status' => ['required', Rule::in(['pending', 'paid'])],
             'user.name' => ['nullable', 'string', 'max:255'],
             'user.email' => ['nullable', 'email', 'max:255'],
+            'user.dial_code' => ['nullable', 'string', 'max:6'],
             'user.whatsapp' => ['nullable', 'string', 'max:30'],
             'user.password' => ['nullable', 'string', 'min:8'],
             'student.name' => ['nullable', 'string', 'max:255'],
@@ -421,6 +422,7 @@ class EnrollmentController extends Controller
             'user.name' => ['required', 'string', 'max:255'],
             'user.email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'user.password' => ['required', 'string', 'min:8'],
+            'user.dial_code' => ['nullable', 'string', 'max:6'],
             'user.whatsapp' => ['nullable', 'string', 'max:30'],
         ]);
 
@@ -428,6 +430,7 @@ class EnrollmentController extends Controller
             'name' => $request->input('user.name'),
             'email' => $request->input('user.email'),
             'password' => Hash::make($request->input('user.password')),
+            'dial_code' => $request->input('user.dial_code'),
             'whatsapp' => $request->input('user.whatsapp'),
             'role' => 'Padre',
         ]);
