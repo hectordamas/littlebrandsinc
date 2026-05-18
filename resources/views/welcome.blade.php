@@ -9,13 +9,15 @@
         <section id="inicio" class="hero">
             <div class="container hero-grid">
                 <div class="reveal hero-copy">
-                    <span class="eyebrow">Holding deportivo infantil</span>
-                    <h1>Entrenamos atletas pequeños con una marca que inspira confianza real.</h1>
+                    <span class="eyebrow">Desarrollando confianza a través del deporte</span>
+                    <h1>En Little Brands Inc creamos experiencias deportivas diseñadas especialmente para la primera
+                        infancia.</h1>
                     <p class="hero-lead">
-                        En Little Brands Inc desarrollamos experiencias deportivas que fortalecen cuerpo, mente y
-                        confianza.
-                        Unimos metodología, acompañamiento familiar y diversión en dos marcas especializadas:
-                        Little Strikers y Little Paddlers.
+                        A través de nuestras marcas Little Strikers y Little Paddlers, ayudamos a niños pequeños a
+                        desarrollar coordinación, confianza y amor por el movimiento en un ambiente seguro, divertido y
+                        acompañado por sus familias.
+                        Más que clases deportivas, construimos experiencias que impactan positivamente el desarrollo físico,
+                        social y emocional de cada niño.
                     </p>
                     <div class="hero-actions">
                         <a class="btn-main" href="#contacto">Quiero información</a>
@@ -24,16 +26,16 @@
 
                     <div class="hero-metrics">
                         <article class="metric-card">
-                            <strong>2</strong>
-                            <span>marcas especializadas en fútbol y pádel infantil</span>
+                            <strong>⚽🎾</strong>
+                            <span>Marcas especializadas en fútbol y pádel infantil</span>
                         </article>
                         <article class="metric-card">
-                            <strong>360</strong>
-                            <span>grados de acompañamiento para niños y familias</span>
+                            <strong>❤️ </strong>
+                            <span>Acompañamiento integral para niños y familias</span>
                         </article>
                         <article class="metric-card">
-                            <strong>1</strong>
-                            <span>metodología coherente para crecer con seguridad y alegría</span>
+                            <strong>🌟</strong>
+                            <span>Metodología diseñada para aprender jugando</span>
                         </article>
                     </div>
                 </div>
@@ -44,25 +46,26 @@
                             <article class="slide active">
                                 <div class="slide-bg"></div>
                                 <div class="slide-content">
-                                    <strong>Formación completa para cada etapa</strong>
-                                    <p>Programas por edades, objetivos claros y progreso visible para que cada niño
-                                        disfrute y mejore a su ritmo.</p>
+                                    <strong>Formación diseñada para cada etapa</strong>
+                                    <p>Programas adaptados por edad, con objetivos claros y una metodología que permite a
+                                        cada niño crecer, disfrutar y desarrollar confianza a su propio ritmo.</p>
                                 </div>
                             </article>
                             <article class="slide">
                                 <div class="slide-bg"></div>
                                 <div class="slide-content">
-                                    <strong>Equipo docente especializado en infancia</strong>
-                                    <p>Entrenadores con enfoque pedagógico, acompañamiento cercano y comunicación
-                                        constante con las familias.</p>
+                                    <strong>Equipo especializado en primera infancia</strong>
+                                    <p>Entrenadores con enfoque pedagógico, acompañamiento cercano y una conexión constante
+                                        con las familias para apoyar el desarrollo de cada niño dentro y fuera de la cancha.
+                                    </p>
                                 </div>
                             </article>
                             <article class="slide">
                                 <div class="slide-bg"></div>
                                 <div class="slide-content">
-                                    <strong>Disciplina, confianza y diversión</strong>
-                                    <p>Impulsamos habilidades deportivas y socioemocionales para formar niños seguros,
-                                        activos y felices.</p>
+                                    <strong>Confianza, movimiento y diversión</strong>
+                                    <p>Impulsamos el desarrollo deportivo, social y emocional de cada niño para ayudarlos a
+                                        crecer seguros, activos y felices.</p>
                                 </div>
                             </article>
                         </div>
@@ -76,98 +79,109 @@
             </div>
         </section>
 
-        <section id="acerca" class="section-muted">
-            <div class="container">
-                <div class="section-head reveal">
-                    <span class="section-kicker">Acerca de</span>
-                    <h2>Acerca de Little Brands Inc</h2>
-                    <p>
-                        Somos un holding dedicado a la formación deportiva infantil. Diseñamos ecosistemas de
-                        aprendizaje
-                        donde cada marca aporta metodología especializada para que los niños construyan hábitos
-                        saludables,
-                        autoestima y habilidades sociales desde el deporte.
-                    </p>
-                </div>
+        <!--
+            <section id="acerca" class="section-muted">
+                <div class="container">
+                    <div class="section-head reveal">
+                        <span class="section-kicker">Acerca de</span>
+                        <h2>Acerca de Little Brands Inc</h2>
+                        <p>
+                            Somos un holding dedicado a la formación deportiva infantil. Diseñamos ecosistemas de
+                            aprendizaje
+                            donde cada marca aporta metodología especializada para que los niños construyan hábitos
+                            saludables,
+                            autoestima y habilidades sociales desde el deporte.
+                        </p>
+                    </div>
 
-                <div class="about-grid">
-                    <article class="panel reveal">
-                        <h3>Un grupo, dos marcas, un mismo propósito</h3>
-                        <p>
-                            Little Brands Inc integra programas de fútbol y pádel infantil bajo estándares compartidos
-                            de calidad,
-                            seguridad y acompañamiento familiar. Nuestro objetivo es que cada familia encuentre un
-                            espacio confiable
-                            para el crecimiento integral de sus hijos.
-                        </p>
-                        <p>
-                            Trabajamos con evaluaciones periódicas, metas por nivel y experiencias de juego que
-                            convierten el
-                            entrenamiento en un momento esperado por los pequeños.
-                        </p>
-                        <div class="about-points">
-                            <div class="about-point">
-                                <strong>Método claro</strong>
-                                <span>Procesos simples, expectativas transparentes y seguimiento visible para cada
-                                    familia.</span>
+                    <div class="about-grid">
+                        <article class="panel reveal">
+                            <h3>Un grupo, dos marcas, un mismo propósito</h3>
+                            <p>
+                                Little Brands Inc integra programas de fútbol y pádel infantil bajo estándares compartidos
+                                de calidad,
+                                seguridad y acompañamiento familiar. Nuestro objetivo es que cada familia encuentre un
+                                espacio confiable
+                                para el crecimiento integral de sus hijos.
+                            </p>
+                            <p>
+                                Trabajamos con evaluaciones periódicas, metas por nivel y experiencias de juego que
+                                convierten el
+                                entrenamiento en un momento esperado por los pequeños.
+                            </p>
+                            <div class="about-points">
+                                <div class="about-point">
+                                    <strong>Método claro</strong>
+                                    <span>Procesos simples, expectativas transparentes y seguimiento visible para cada
+                                        familia.</span>
+                                </div>
+                                <div class="about-point">
+                                    <strong>Experiencia cuidada</strong>
+                                    <span>Una marca consistente desde el primer contacto hasta la evolución del
+                                        alumno.</span>
+                                </div>
                             </div>
-                            <div class="about-point">
-                                <strong>Experiencia cuidada</strong>
-                                <span>Una marca consistente desde el primer contacto hasta la evolución del
-                                    alumno.</span>
+                        </article>
+
+                        <aside class="panel reveal" aria-label="Logos de marcas del holding">
+                            <h3>Nuestras marcas</h3>
+                            <div class="logos">
+                                <div class="logo-card">
+                                    <img src="{{ $holdingLogo }}" alt="Logo Little Brands Inc">
+                                </div>
+                                @foreach ($brands as $brand)
+    <div class="logo-card">
+                                        <img src="{{ $brand['logo'] }}" alt="Logo {{ $brand['name'] }}">
+                                    </div>
+    @endforeach
                             </div>
-                        </div>
+                        </aside>
+                    </div>
+                </div>
+            </section>
+
+            <section id="valores">
+                <div class="container mv-grid">
+                    <article class="mv-card mision reveal">
+                        <h3>Misión</h3>
+                        <p>
+                            Formar niños y niñas a través del deporte con programas seguros, dinámicos y motivadores que
+                            fomenten
+                            disciplina, autonomía, trabajo en equipo y disfrute del movimiento como parte de su desarrollo
+                            integral.
+                        </p>
                     </article>
 
-                    <aside class="panel reveal" aria-label="Logos de marcas del holding">
-                        <h3>Nuestras marcas</h3>
-                        <div class="logos">
-                            <div class="logo-card">
-                                <img src="{{ $holdingLogo }}" alt="Logo Little Brands Inc">
-                            </div>
-                            @foreach ($brands as $brand)
-                                <div class="logo-card">
-                                    <img src="{{ $brand['logo'] }}" alt="Logo {{ $brand['name'] }}">
-                                </div>
-                            @endforeach
-                        </div>
-                    </aside>
+                    <article class="mv-card vision reveal">
+                        <h3>Visión</h3>
+                        <p>
+                            Consolidarnos como el holding líder en formación deportiva infantil en la región, reconocidos
+                            por
+                            nuestro impacto positivo en miles de familias y por la excelencia metodológica de nuestras
+                            marcas.
+                        </p>
+                    </article>
                 </div>
-            </div>
-        </section>
+            </section>
+        -->
 
-        <section id="valores">
-            <div class="container mv-grid">
-                <article class="mv-card mision reveal">
-                    <h3>Misión</h3>
-                    <p>
-                        Formar niños y niñas a través del deporte con programas seguros, dinámicos y motivadores que
-                        fomenten
-                        disciplina, autonomía, trabajo en equipo y disfrute del movimiento como parte de su desarrollo
-                        integral.
-                    </p>
-                </article>
-
-                <article class="mv-card vision reveal">
-                    <h3>Visión</h3>
-                    <p>
-                        Consolidarnos como el holding líder en formación deportiva infantil en la región, reconocidos
-                        por
-                        nuestro impacto positivo en miles de familias y por la excelencia metodológica de nuestras
-                        marcas.
-                    </p>
-                </article>
-            </div>
-        </section>
-
-        <section id="marcas">
+        <section id="marcas" class="section-muted">
             <div class="container">
                 <div class="section-head reveal">
-                    <span class="section-kicker">Marcas</span>
-                    <h2>Nuestras marcas deportivas</h2>
+                    <span class="section-kicker">Programas</span>
+                    <h2>Nuestros programas deportivos</h2>
                     <p>
-                        Cada programa tiene identidad propia, pero ambos comparten una cultura de aprendizaje,
-                        respeto y mejora continua. Descarga sus brochures para conocer detalles.
+                        Cada una de nuestros programas está diseñada específicamente para acompañar el desarrollo de los
+                        niños durante sus primeros años, combinando aprendizaje, deporte y diversión en experiencias
+                        adaptadas a cada etapa.
+                    </p>
+                    <p>
+                        Aunque cada programa tiene su propia identidad y metodología, todos comparten la misma visión:
+                        ayudar a los niños a crecer con confianza, desarrollar habilidades físicas y sociales, y descubrir
+                        el deporte en un ambiente seguro, positivo y lleno de motivación.
+                    </p>
+                    <p>
+                        Conoce más sobre Little Strikers y Little Paddlers descargando nuestros brochures.
                     </p>
                 </div>
 
@@ -224,8 +238,7 @@
                         </div>
                     </article>
 
-                    <form class="contact-form reveal" action="{{ route('landing.contact') }}" method="POST"
-                        novalidate>
+                    <form class="contact-form reveal" action="{{ route('landing.contact') }}" method="POST" novalidate>
                         @csrf
 
                         <div class="form-intro">
@@ -263,8 +276,8 @@
 
                         <div class="field">
                             <label for="phone">Teléfono</label>
-                            <input id="phone" name="phone" type="text" value="{{ old('phone') }}"
-                                required minlength="7" maxlength="25">
+                            <input id="phone" name="phone" type="text" value="{{ old('phone') }}" required
+                                minlength="7" maxlength="25">
                             @error('phone')
                                 <span class="error">{{ $message }}</span>
                             @enderror
@@ -285,4 +298,3 @@
         </section>
     </main>
 @endsection
-

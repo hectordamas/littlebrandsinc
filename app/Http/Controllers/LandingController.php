@@ -17,7 +17,7 @@ class LandingController extends Controller
             [
                 'name' => 'Little Strikers',
                 'sport' => 'Fútbol infantil',
-                'description' => 'Programa integral para niños y niñas que combina técnica, trabajo en equipo y formación en valores.',
+                'description' => 'Programa deportivo educativo para niños y niñas de 18 meses a 4 años, diseñado para introducirlos al fútbol a través del juego. Desarrolla habilidades motoras, coordinación, socialización y confianza en un ambiente seguro, divertido y guiado por profesionales.',
                 'logo' => asset('landing_page/logos/little_strikers_logo.png'),
                 'brochure' => asset('landing_page/brochures/Brochure%20Marzo%202026LS.pdf'),
                 'accent' => '#f97316',
@@ -25,7 +25,7 @@ class LandingController extends Controller
             [
                 'name' => 'Little Paddlers',
                 'sport' => 'Pádel infantil',
-                'description' => 'Entrenamiento progresivo en pádel con enfoque lúdico, motriz y competitivo para cada etapa de crecimiento.',
+                'description' => 'Programa de pádel para niños y niñas de 2 a 5 años, diseñado para introducirlos al deporte de forma progresiva a través del juego. Desarrolla habilidades motoras, coordinación, equilibrio y confianza en un entorno lúdico, seguro y adaptado a cada etapa de crecimiento.',
                 'logo' => asset('landing_page/logos/little_paddlers_logo.jpeg'),
                 'brochure' => asset('landing_page/brochures/Brochure%20LP%202026.pdf'),
                 'accent' => '#0ea5e9',

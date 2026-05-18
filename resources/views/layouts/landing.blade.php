@@ -212,17 +212,18 @@
         }
 
         .hero h1 {
-            font-size: clamp(2rem, 3vw, 3.2rem);
+            font-size: clamp(1.7rem, 2.4vw, 2.6rem);
             line-height: 0.98;
             margin-top: 0.85rem;
             margin-bottom: 1rem;
             text-wrap: balance;
+            z-index: 1000;
         }
 
         .hero p,
         .hero-lead {
             color: var(--text);
-            font-size: 1.05rem;
+            font-size: .9rem;
             line-height: 1.78;
             margin: 0 0 1.5rem;
             max-width: 58ch;
@@ -295,6 +296,7 @@
             font-size: 1.55rem;
             line-height: 1;
             margin-bottom: 0.35rem;
+            text-align: center;
         }
 
         .metric-card span {
@@ -303,6 +305,8 @@
             font-size: 0.88rem;
             line-height: 1.45;
             font-weight: 700;
+            text-align: center;
+
         }
 
         .hero-stage {
@@ -382,21 +386,21 @@
 
         .slide:nth-child(1) .slide-bg {
             background-image:
-                linear-gradient(20deg, rgba(10, 132, 255, 0.76), rgba(0, 184, 217, 0.42)),
-                url('{{ asset('landing_page/assets/slides/slide1.png') }}');
+                linear-gradient(20deg, rgba(10, 132, 255, 0.48), rgba(0, 184, 217, 0.24)),
+                url('{{ asset('landing_page/assets/slides/slide1.jpeg') }}');
         }
 
         .slide:nth-child(2) .slide-bg {
             background-image:
-                linear-gradient(30deg, rgba(35, 193, 107, 0.8), rgba(35, 193, 107, 0.35)),
-                url('{{ asset('landing_page/assets/slides/slide2.png') }}');
+                linear-gradient(30deg, rgba(35, 193, 107, 0.5), rgba(35, 193, 107, 0.2)),
+                url('{{ asset('landing_page/assets/slides/slide2.jpeg') }}');
 
         }
 
         .slide:nth-child(3) .slide-bg {
             background-image:
-                linear-gradient(35deg, rgba(255, 138, 40, 0.84), rgba(255, 111, 58, 0.45)),
-                url('{{ asset('landing_page/assets/slides/slide3.png') }}');
+                linear-gradient(35deg, rgba(255, 138, 40, 0.52), rgba(255, 111, 58, 0.25)),
+                url('{{ asset('landing_page/assets/slides/slide3.jpeg') }}');
         }
 
         .slide-content {
@@ -459,7 +463,7 @@
 
         .section-head {
             margin-bottom: 1.3rem;
-            max-width: 760px;
+           /*max-width: 760px; */
         }
 
         .section-kicker {
@@ -478,7 +482,7 @@
         }
 
         .section-head p {
-            max-width: 70ch;
+           /* max-width: 70ch;*/
             line-height: 1.78;
             color: var(--text);
             margin: 0.7rem 0 0;
@@ -1110,14 +1114,13 @@
     </header>
 
     @yield('content')
-        
+
     <footer>
         <div class="container footer-inner">
             <div class="footer-brand">
                 <img src="{{ asset('landing_page/logos/lbinc-admin.png') }}" alt="Logo Little Brands Inc">
-                <p>Formación deportiva infantil con una propuesta clara, moderna y confiable para familias que buscan
-                    crecimiento con metodología y cercanía.</p>
-                <p class="footer-note">Little Strikers | Little Paddlers</p>
+                <p>En Little Brands Inc creamos experiencias deportivas diseñadas especialmente para los más pequeños, ayudando a los niños a desarrollar coordinación, confianza y amor por el deporte en un ambiente seguro, divertido y acompañado por sus familias.</p>
+                <p class="footer-note">⚽ Little Strikers  🎾 Little Paddlers</p>
             </div>
 
             <nav class="footer-links" aria-label="Enlaces del pie de página">
