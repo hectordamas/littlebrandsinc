@@ -134,6 +134,7 @@ class FinanceController extends Controller
             'payment_date' => ['required', 'date'],
             'reference' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'payment_receipt' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:6144'],
         ]);
 
         if ((float) $validated['amount'] > (float) $receivable->balance_due) {
@@ -144,7 +145,21 @@ class FinanceController extends Controller
 
         $account = Account::query()->findOrFail($validated['account_id']);
 
-        DB::transaction(function () use ($receivable, $validated, $account) {
+        $receiptPath = null;
+        $receiptOriginalName = null;
+        if ($request->hasFile('payment_receipt')) {
+            $destinationPath = public_path('uploads/comprobantes');
+            if (! is_dir($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
+
+            $file = $request->file('payment_receipt');
+            $file->move($destinationPath, $file->hashName());
+            $receiptPath = 'uploads/comprobantes/'.$file->hashName();
+            $receiptOriginalName = $file->getClientOriginalName();
+        }
+
+        DB::transaction(function () use ($receivable, $validated, $account, $receiptPath, $receiptOriginalName) {
             Transaction::create([
                 'enrollment_id' => $receivable->enrollment_id,
                 'student_id' => optional($receivable->enrollment)->student_id,
@@ -159,6 +174,8 @@ class FinanceController extends Controller
                 'payment_method' => $account->name,
                 'reference' => $validated['reference'] ?? null,
                 'description' => $validated['notes'] ?? 'Abono de cuenta por cobrar #'.$receivable->id,
+                'payment_receipt_path' => $receiptPath,
+                'payment_receipt_original_name' => $receiptOriginalName,
                 'created_at' => $validated['payment_date'],
                 'updated_at' => $validated['payment_date'],
             ]);
@@ -237,6 +254,7 @@ class FinanceController extends Controller
             'payment_date' => ['required', 'date'],
             'reference' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'payment_receipt' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:6144'],
         ]);
 
         if ((float) $validated['amount'] > (float) $payable->balance_due) {
@@ -247,7 +265,21 @@ class FinanceController extends Controller
 
         $account = Account::query()->findOrFail($validated['account_id']);
 
-        DB::transaction(function () use ($payable, $validated, $account) {
+        $receiptPath = null;
+        $receiptOriginalName = null;
+        if ($request->hasFile('payment_receipt')) {
+            $destinationPath = public_path('uploads/comprobantes');
+            if (! is_dir($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
+
+            $file = $request->file('payment_receipt');
+            $file->move($destinationPath, $file->hashName());
+            $receiptPath = 'uploads/comprobantes/'.$file->hashName();
+            $receiptOriginalName = $file->getClientOriginalName();
+        }
+
+        DB::transaction(function () use ($payable, $validated, $account, $receiptPath, $receiptOriginalName) {
             Transaction::create([
                 'branch_id' => $payable->branch_id,
                 'account_id' => $account->id,
@@ -259,6 +291,8 @@ class FinanceController extends Controller
                 'payment_method' => $account->name,
                 'reference' => $validated['reference'] ?? null,
                 'description' => $validated['notes'] ?? 'Pago de cuenta por pagar #'.$payable->id,
+                'payment_receipt_path' => $receiptPath,
+                'payment_receipt_original_name' => $receiptOriginalName,
                 'created_at' => $validated['payment_date'],
                 'updated_at' => $validated['payment_date'],
             ]);
@@ -280,9 +314,19 @@ class FinanceController extends Controller
             'status' => ['required', Rule::in(['pending', 'completed', 'failed'])],
             'reference' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
+            'payment_receipt' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
         ]);
 
         $account = Account::query()->findOrFail($validated['account_id']);
+
+        $receiptPath = null;
+        $receiptOriginalName = null;
+        if ($request->hasFile('payment_receipt')) {
+            $file = $request->file('payment_receipt');
+            $receiptPath = $file->move(public_path('uploads/comprobantes'), $file->hashName());
+            $receiptPath = 'uploads/comprobantes/' . $file->hashName();
+            $receiptOriginalName = $file->getClientOriginalName();
+        }
 
         Transaction::create([
             'branch_id' => (int) $validated['branch_id'],
@@ -294,6 +338,8 @@ class FinanceController extends Controller
             'payment_method' => $account->name,
             'reference' => $validated['reference'] ?? null,
             'description' => $validated['description'] ?? null,
+            'payment_receipt_path' => $receiptPath,
+            'payment_receipt_original_name' => $receiptOriginalName,
         ]);
 
         return redirect()
@@ -317,7 +363,7 @@ class FinanceController extends Controller
 
     protected function transactionsQuery(?int $branchId = null)
     {
-        $query = Transaction::with(['account', 'branch'])
+        $query = Transaction::with(['account', 'branch', 'enrollment'])
             ->orderBy('created_at', 'desc');
 
         if ($branchId) {
@@ -373,6 +419,15 @@ class FinanceController extends Controller
     protected function serializeTransactions($transactions): array
     {
         return $transactions->map(function (Transaction $transaction) {
+            $receiptPath = $transaction->payment_receipt_path
+                ? 'uploads/comprobantes/' . basename($transaction->payment_receipt_path)
+                : (optional($transaction->enrollment)->payment_receipt_path
+                    ? 'uploads/comprobantes/' . basename(optional($transaction->enrollment)->payment_receipt_path)
+                    : null);
+
+            $receiptName = $transaction->payment_receipt_original_name
+                ?: optional($transaction->enrollment)->payment_receipt_original_name;
+
             return [
                 'id' => $transaction->id,
                 'created_at' => $transaction->created_at ? $transaction->created_at->format('d/m/Y h:i A') : 'N/A',
@@ -383,6 +438,8 @@ class FinanceController extends Controller
                 'branch' => optional($transaction->branch)->name ?? 'N/A',
                 'reference' => $transaction->reference ?? 'N/A',
                 'receipt_url' => route('finance.transactions.receipt', $transaction),
+                'payment_receipt_url' => $receiptPath ? asset('storage/'.$receiptPath) : null,
+                'payment_receipt_name' => $receiptName,
             ];
         })->all();
     }
@@ -430,6 +487,13 @@ class FinanceController extends Controller
             ->get();
 
         foreach ($enrollments as $enrollment) {
+            if ($enrollment->is_free_trial) {
+                AccountReceivable::query()
+                    ->where('enrollment_id', $enrollment->id)
+                    ->delete();
+                continue;
+            }
+
             $course = $enrollment->course;
             if (!$course || $course->price === null || $course->branch_id === null) {
                 continue;

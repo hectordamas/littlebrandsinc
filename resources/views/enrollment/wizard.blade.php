@@ -293,6 +293,13 @@
                                 </div>
                             </div>
 
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="is_free_trial" x-model="isFreeTrial" :disabled="paymentMethod === 'card'">
+                                <label class="form-check-label" for="is_free_trial">
+                                    Free trial / clase gratuita (omite comprobante)
+                                </label>
+                            </div>
+
                             <div x-show="paymentMethod === 'card'" x-transition>
                                 <template x-if="stripeKey">
                                     <div class="position-relative">
@@ -318,8 +325,19 @@
                                 <div class="invalid-feedback d-block" x-show="formErrors.stripe_payment_intent_id" x-text="formErrors.stripe_payment_intent_id?.[0]"></div>
                             </div>
 
-                            <div x-show="paymentMethod === 'pending'" class="alert alert-info small">
+                            <div x-show="paymentMethod === 'pending' && !isFreeTrial" class="mb-3">
+                                <label class="form-label">Comprobante de pago (PDF o imagen)</label>
+                                <input type="file" class="form-control" accept=".pdf,image/*" x-ref="paymentReceipt" @change="onReceiptChange($event)">
+                                <div class="small text-muted mt-1" x-show="paymentReceiptName" x-text="'Adjunto: ' + paymentReceiptName"></div>
+                                <div class="invalid-feedback d-block" x-show="formErrors.payment_receipt" x-text="formErrors.payment_receipt?.[0]"></div>
+                            </div>
+
+                            <div x-show="paymentMethod === 'pending' && !isFreeTrial" class="alert alert-info small">
                                 El administrador validará tu pago. La inscripción quedará en estado pendiente hasta la confirmación.
+                            </div>
+
+                            <div x-show="isFreeTrial" class="alert alert-success small">
+                                La inscripción se guardará como free trial/clase gratuita.
                             </div>
                         </div>
 
@@ -337,7 +355,7 @@
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between">
                                     <span>Pago</span>
-                                    <span x-text="paymentMethod === 'card' ? 'Tarjeta (Stripe)' : 'Manual / pendiente de validación'"></span>
+                                    <span x-text="isFreeTrial ? 'Free trial' : (paymentMethod === 'card' ? 'Tarjeta (Stripe)' : 'Manual / pendiente de validación')"></span>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between">
                                     <strong>Total inicial (inscripción + 1er mes)</strong><strong x-text="summaryInitialTotal"></strong>
@@ -356,6 +374,14 @@
                                     <a href="{{ url('privacy') }}" target="_blank" rel="noopener">Privacidad</a>
                                 </label>
                                 <div class="invalid-feedback d-block" x-show="formErrors.terms" x-text="formErrors.terms?.[0]"></div>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="image_consent_w" x-model="imageConsentAccepted" :class="{ 'is-invalid': formErrors.image_consent }">
+                                <label class="form-check-label" for="image_consent_w">
+                                    Acepto el uso de imagen del menor representado
+                                </label>
+                                <div class="invalid-feedback d-block" x-show="formErrors.image_consent" x-text="formErrors.image_consent?.[0]"></div>
                             </div>
                         </div>
 
@@ -397,6 +423,7 @@ function enrollmentWizard(cfg) {
         selectedCourseId: p.selected_course_id,
         selectedCourse: p.selected_course,
         paymentMethod: p.payment_method || 'card',
+        isFreeTrial: Boolean(p.is_free_trial),
         userType: 'new',
         emailLogin: '', passwordLogin: '',
         name: '', emailReg: '', dialCode: '+58', whatsapp: '',
@@ -404,6 +431,9 @@ function enrollmentWizard(cfg) {
         newStudentMode: false,
         newStudentName: '', newStudentBirthdate: '', newStudentMedical: '',
         termsAccepted: false,
+        imageConsentAccepted: false,
+        paymentReceiptName: p.payment_receipt_name || '',
+        paymentReceiptFile: null,
         formErrors: {},
         globalError: '',
         loading: false,
@@ -441,6 +471,8 @@ function enrollmentWizard(cfg) {
             if (data.selected_course) this.selectedCourse = data.selected_course;
             if (data.locked_course_id !== undefined) this.lockedCourseId = data.locked_course_id;
             if (data.payment_method) this.paymentMethod = data.payment_method;
+            if (data.is_free_trial !== undefined) this.isFreeTrial = Boolean(data.is_free_trial);
+            if (data.payment_receipt_name !== undefined) this.paymentReceiptName = data.payment_receipt_name || '';
         },
 
         fieldClass(name) {
@@ -490,10 +522,19 @@ function enrollmentWizard(cfg) {
         },
 
         onPaymentMethodChange() {
-            this.formErrors = { ...this.formErrors, stripe_payment_intent_id: null };
+            this.formErrors = { ...this.formErrors, stripe_payment_intent_id: null, payment_receipt: null };
+            if (this.paymentMethod === 'card') {
+                this.isFreeTrial = false;
+            }
             this.$nextTick(() => {
                 if (this.paymentMethod === 'card') this.mountStripeIfNeeded();
             });
+        },
+
+        onReceiptChange(event) {
+            const file = event?.target?.files?.[0] || null;
+            this.paymentReceiptFile = file;
+            this.paymentReceiptName = file ? file.name : this.paymentReceiptName;
         },
 
         useSimulatedCard() {
@@ -569,16 +610,20 @@ function enrollmentWizard(cfg) {
             }
             if (this.step === 4) {
                 if (this.paymentMethod === 'card') {
-                    let pm = '';
                     if (this.stripeKey) {
                         /* se rellena en goNext con createPaymentMethod */
                     } else if (!this.simulatedPi) {
                         this.formErrors.stripe_payment_intent_id = ['Usa el botón de simulación o configura Stripe'];
                     }
                 }
+
+                if (this.paymentMethod === 'pending' && !this.isFreeTrial && !this.paymentReceiptFile && !this.paymentReceiptName) {
+                    this.formErrors.payment_receipt = ['Adjunta el comprobante de pago'];
+                }
             }
             if (this.step === 5) {
                 if (!this.termsAccepted) this.formErrors.terms = ['Debes aceptar los términos'];
+                if (!this.imageConsentAccepted) this.formErrors.image_consent = ['Debes aceptar el uso de imagen'];
             }
             return Object.keys(this.formErrors).length === 0;
         },
@@ -618,12 +663,17 @@ function enrollmentWizard(cfg) {
             }
             if (this.step === 4) {
                 fd.append('payment_method', this.paymentMethod);
+                fd.append('is_free_trial', this.isFreeTrial ? '1' : '0');
                 if (this.paymentMethod === 'card') {
                     fd.append('stripe_payment_intent_id', this.pendingPaymentIntentId || this.simulatedPi || '');
+                }
+                if (this.paymentMethod === 'pending' && !this.isFreeTrial && this.paymentReceiptFile) {
+                    fd.append('payment_receipt', this.paymentReceiptFile);
                 }
             }
             if (this.step === 5) {
                 if (this.termsAccepted) fd.append('terms', '1');
+                if (this.imageConsentAccepted) fd.append('image_consent', '1');
             }
             return fd;
         },

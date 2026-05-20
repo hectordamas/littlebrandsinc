@@ -273,6 +273,11 @@
                                                     <span class="pcoded-mtext">Padres</span>
                                                 </a>
                                             </li>
+                                            <li class="">
+                                                <a href="{{ route('messages.index') }}">
+                                                    <span class="pcoded-mtext">Mensajes</span>
+                                                </a>
+                                            </li>
                                         </ul>
                                     </li>
 

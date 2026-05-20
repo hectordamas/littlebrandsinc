@@ -6,6 +6,7 @@
 
 @section('content')
     <main>
+        <!--Secion Hero -->
         <section id="inicio" class="hero">
             <div class="container hero-grid">
                 <div class="reveal hero-copy">
@@ -20,14 +21,14 @@
                         social y emocional de cada niño.
                     </p>
                     <div class="hero-actions">
-                        <a class="btn-main" href="#contacto">Quiero información</a>
-                        <a class="btn-soft" href="#marcas">Conocer nuestras marcas</a>
+                        <a class="btn-main" href="#contacto">Quiero Información</a>
+                        <a class="btn-soft" href="#programas">Conoce Nuestros Programas</a>
                     </div>
 
                     <div class="hero-metrics">
                         <article class="metric-card">
                             <strong>⚽🎾</strong>
-                            <span>Marcas especializadas en fútbol y pádel infantil</span>
+                            <span>Programas especializadas en fútbol y pádel infantil</span>
                         </article>
                         <article class="metric-card">
                             <strong>❤️ </strong>
@@ -79,93 +80,10 @@
             </div>
         </section>
 
-        <!--
-            <section id="acerca" class="section-muted">
-                <div class="container">
-                    <div class="section-head reveal">
-                        <span class="section-kicker">Acerca de</span>
-                        <h2>Acerca de Little Brands Inc</h2>
-                        <p>
-                            Somos un holding dedicado a la formación deportiva infantil. Diseñamos ecosistemas de
-                            aprendizaje
-                            donde cada marca aporta metodología especializada para que los niños construyan hábitos
-                            saludables,
-                            autoestima y habilidades sociales desde el deporte.
-                        </p>
-                    </div>
 
-                    <div class="about-grid">
-                        <article class="panel reveal">
-                            <h3>Un grupo, dos marcas, un mismo propósito</h3>
-                            <p>
-                                Little Brands Inc integra programas de fútbol y pádel infantil bajo estándares compartidos
-                                de calidad,
-                                seguridad y acompañamiento familiar. Nuestro objetivo es que cada familia encuentre un
-                                espacio confiable
-                                para el crecimiento integral de sus hijos.
-                            </p>
-                            <p>
-                                Trabajamos con evaluaciones periódicas, metas por nivel y experiencias de juego que
-                                convierten el
-                                entrenamiento en un momento esperado por los pequeños.
-                            </p>
-                            <div class="about-points">
-                                <div class="about-point">
-                                    <strong>Método claro</strong>
-                                    <span>Procesos simples, expectativas transparentes y seguimiento visible para cada
-                                        familia.</span>
-                                </div>
-                                <div class="about-point">
-                                    <strong>Experiencia cuidada</strong>
-                                    <span>Una marca consistente desde el primer contacto hasta la evolución del
-                                        alumno.</span>
-                                </div>
-                            </div>
-                        </article>
 
-                        <aside class="panel reveal" aria-label="Logos de marcas del holding">
-                            <h3>Nuestras marcas</h3>
-                            <div class="logos">
-                                <div class="logo-card">
-                                    <img src="{{ $holdingLogo }}" alt="Logo Little Brands Inc">
-                                </div>
-                                @foreach ($brands as $brand)
-    <div class="logo-card">
-                                        <img src="{{ $brand['logo'] }}" alt="Logo {{ $brand['name'] }}">
-                                    </div>
-    @endforeach
-                            </div>
-                        </aside>
-                    </div>
-                </div>
-            </section>
-
-            <section id="valores">
-                <div class="container mv-grid">
-                    <article class="mv-card mision reveal">
-                        <h3>Misión</h3>
-                        <p>
-                            Formar niños y niñas a través del deporte con programas seguros, dinámicos y motivadores que
-                            fomenten
-                            disciplina, autonomía, trabajo en equipo y disfrute del movimiento como parte de su desarrollo
-                            integral.
-                        </p>
-                    </article>
-
-                    <article class="mv-card vision reveal">
-                        <h3>Visión</h3>
-                        <p>
-                            Consolidarnos como el holding líder en formación deportiva infantil en la región, reconocidos
-                            por
-                            nuestro impacto positivo en miles de familias y por la excelencia metodológica de nuestras
-                            marcas.
-                        </p>
-                    </article>
-                </div>
-            </section>
-        -->
-
-        <section id="marcas" class="section-muted">
+        <!--Seccion Programas -->
+        <section id="programas" class="section-muted">
             <div class="container">
                 <div class="section-head reveal">
                     <span class="section-kicker">Programas</span>
@@ -204,46 +122,160 @@
             </div>
         </section>
 
+
+        <!--Seccion Clases y sedes-->
+        <section id="clases-sedes" class="classes-venues">
+            <div class="container">
+                <div class="section-head reveal classes-venues-head">
+                    <span class="section-kicker">Clases y sedes</span>
+                    <h2>Clases y Sedes</h2>
+                    <p>
+                        En Little Brands ofrecemos experiencias deportivas diseñadas especialmente para la primera
+                        infancia, en espacios seguros, dinámicos y adaptados para el desarrollo de cada niño.
+                    </p>
+                    <p>
+                        Actualmente, nuestras clases están disponibles en Caracas, en tres ubicaciones estratégicas de la
+                        ciudad:
+                    </p>
+                </div>
+
+                <aside class="classes-venues-locations reveal" aria-label="Sedes disponibles en Caracas">
+                    <ul class="classes-venues-list">
+                        <li><span>📍</span> San Luis</li>
+                        <li><span>📍</span> Los Campitos</li>
+                        <li><span>📍</span> Los Chorros</li>
+                    </ul>
+                    <div class="classes-venues-copy">
+                        <p>
+                            Cada sede ha sido seleccionada para ofrecer un ambiente cómodo, accesible y óptimo para que los
+                            niños aprendan, jueguen y se desarrollen con libertad.
+                        </p>
+                        <p>
+                            A través de nuestros programas Little Strikers y Little Paddlers, los más pequeños disfrutan de
+                            actividades guiadas por coaches especializados, en grupos reducidos y con atención
+                            personalizada,
+                            asegurando una experiencia positiva desde el primer día.
+                        </p>
+                    </div>
+                </aside>
+
+                <div class="classes-venues-panel reveal">
+                    <h3>⚽🎾 Explora nuestras clases:</h3>
+
+                    <div class="classes-venues-grid">
+                        <article class="classes-venues-card" style="--venue-color: #f97316;">
+                            <div class="classes-venues-card-media"
+                                style="background-image: url('{{ asset('landing_page/assets/images/img6.jpeg') }}');"></div>
+                            <div class="classes-venues-card-body">
+                                <h4>⚽ Little Strikers</h4>
+                                <p>Fútbol para niños de 18 meses a 4 años</p>
+                                <a class="classes-venues-btn" href="/clases#little-strikers">👉 Ver clases</a>
+                            </div>
+                        </article>
+
+                        <article class="classes-venues-card" style="--venue-color: #0ea5e9;">
+                            <div class="classes-venues-card-media"
+                                style="background-image: url('{{ asset('landing_page/assets/images/img4.jpeg') }}');"></div>
+                            <div class="classes-venues-card-body">
+                                <h4>🎾 Little Paddlers</h4>
+                                <p>Pádel para niños de 2 a 5 años</p>
+                                <a class="classes-venues-btn" href="/clases#little-paddlers">👉 Ver clases</a>
+                            </div>
+                        </article>
+                    </div>
+
+                    <div class="classes-venues-bottom">
+                        <p>
+                            Agenda una clase de prueba y permite que tu hijo/a descubra la diversión, el aprendizaje y la
+                            emoción de nuestros programas deportivos en un ambiente seguro y diseñado especialmente para su
+                            edad.
+                        </p>
+                        <a class="classes-venues-cta-btn" href="/clases">👉 Ver clases</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!--Seccion Cumpleaños -->
+        <section id="cumpleanos" class="birthday-section">
+            <div class="container">
+                <div class="birthday-wrap reveal">
+                    <div class="birthday-head">
+                        <span class="section-kicker">Cumpleaños</span>
+                        <h2 style="margin-bottom: 10px;">Cumpleaños</h2>
+                        <p class="birthday-hero">⚽🎉 ¡Celebra un cumpleaños inolvidable con Nosotros! 🎂🥳</p>
+                        <p>
+                            ¿Buscas una forma divertida y única de festejar el cumpleaños de tu bebe? En Little Brands,
+                            hacemos de su día especial una experiencia llena de alegría, deporte y momentos inolvidables.
+                        </p>
+                    </div>
+
+                    <div class="birthday-grid">
+                        <article class="birthday-point">
+                            <span>🎈</span>
+                            <p>Paquetes personalizados para adaptarse a tu celebración.</p>
+                        </article>
+                        <article class="birthday-point">
+                            <span>⚽</span>
+                            <p>Juegos y dinámicas diseñadas para la edad de los niños.</p>
+                        </article>
+                        <article class="birthday-point">
+                            <span>😃</span>
+                            <p>Entrenadores especializados que garantizan diversión y seguridad.</p>
+                        </article>
+                    </div>
+
+                    <div class="birthday-actions">
+                        <a class="birthday-btn" href="#contacto">Mas información</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!--Seccion Contacto -->
         <section id="contacto">
             <div class="container">
                 <div class="section-head reveal">
                     <span class="section-kicker">Contacto</span>
                     <h2>Contacto</h2>
                     <p>
-                        Cuéntanos la edad de tu hijo y tus objetivos. Nuestro equipo te ayudará a elegir la mejor opción
-                        entre Little Strikers y Little Paddlers.
+                        Cuéntanos un poco sobre tu hijo/a y nuestro equipo te ayudará a elegir el programa ideal entre
+                        Little Strikers y Little Paddlers.
+                    
+                        Queremos acompañarte desde el primer momento para que vivan una experiencia deportiva divertida,
+                        segura y adaptada a cada etapa de crecimiento.
                     </p>
                 </div>
 
-                <div class="contact-wrap">
-                    <article class="contact-panel reveal">
-                        <h3 style="margin-bottom: 2rem;">Hablemos de su próximo paso deportivo</h3>
-                        <p style="margin-bottom: 2rem;">
-                            Te responderemos por correo para brindarte horarios, sedes disponibles y recomendaciones
-                            según la etapa de aprendizaje de tu hijo.
+                <div class="contact-layout">
+                    <aside class="contact-info reveal">
+                        <h3>Te acompañamos en el siguiente paso</h3>
+                        <p>
+                            Nuestro equipo revisará tu información para recomendarte el programa y la sede más adecuada
+                            según la etapa de tu hijo/a.
                         </p>
-                        {{-- <p>
-                            Destinatario configurable desde entorno: MAIL_TO_ADDRESS
-                        </p> --}}
-                        <div class="contact-points">
-                            <div class="contact-point">
-                                <strong>Respuesta clara</strong>
-                                <span>Recibirás orientación sobre programa, edad recomendada y siguiente paso.</span>
+                        <div class="contact-info-points">
+                            <div class="contact-info-point">
+                                <strong>Recomendación personalizada</strong>
+                                <span>Orientación práctica según edad, objetivos y disponibilidad.</span>
                             </div>
-                            <div class="contact-point">
-                                <strong>Proceso simple</strong>
-                                <span>Completa el formulario y el equipo continuará la conversación contigo por
-                                    correo.</span>
+                            <div class="contact-info-point">
+                                <strong>Proceso rápido</strong>
+                                <span>Te respondemos con los siguientes pasos para comenzar.</span>
+                            </div>
+                            <div class="contact-info-point">
+                                <strong>Acompañamiento cercano</strong>
+                                <span>Seguimiento claro para que tomes una decisión con confianza.</span>
                             </div>
                         </div>
-                    </article>
+                    </aside>
 
                     <form class="contact-form reveal" action="{{ route('landing.contact') }}" method="POST" novalidate>
                         @csrf
 
                         <div class="form-intro">
                             <h3>Escríbenos</h3>
-                            <p>Comparte tus datos y el contexto de tu hijo para recomendarte la opción más adecuada.</p>
+                            <p>Para ayudarte mejor, completa el siguiente formulario:</p>
                         </div>
 
                         @if (session('success'))
@@ -256,10 +288,60 @@
 
                         <div class="row">
                             <div class="field">
-                                <label for="name">Nombre</label>
-                                <input id="name" name="name" type="text" value="{{ old('name') }}"
-                                    required minlength="3" maxlength="120">
-                                @error('name')
+                                <label for="representative_name">Nombre del representante</label>
+                                <input id="representative_name" name="representative_name" type="text"
+                                    value="{{ old('representative_name') }}" required minlength="3" maxlength="120">
+                                @error('representative_name')
+                                    <span class="error">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <div class="field">
+                                <label for="child_name">Nombre del niño/a</label>
+                                <input id="child_name" name="child_name" type="text" value="{{ old('child_name') }}"
+                                    required maxlength="160">
+                                @error('child_name')
+                                    <span class="error">{{ $message }}</span>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="field">
+                                <label for="child_age">Edad del niño/a</label>
+                                <input id="child_age" name="child_age" type="number" value="{{ old('child_age') }}"
+                                    required min="1" max="18">
+                                @error('child_age')
+                                    <span class="error">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <div class="field">
+                                <label for="program_id">Programa de interés</label>
+                                <select id="program_id" name="program_id" required>
+                                    <option value="">Selecciona una opción</option>
+                                    @foreach ($programs ?? [] as $program)
+                                        <option value="{{ $program->id }}" @selected((int) old('program_id') === (int) $program->id)>
+                                            {{ $program->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('program_id')
+                                    <span class="error">{{ $message }}</span>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="field">
+                                <label for="branch_id">Sede de preferencia</label>
+                                <select id="branch_id" name="branch_id" required>
+                                    <option value="">Selecciona una sede</option>
+                                    @foreach ($branches ?? [] as $branch)
+                                        <option value="{{ $branch->id }}" @selected((int) old('branch_id') === (int) $branch->id)>
+                                            {{ $branch->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('branch_id')
                                     <span class="error">{{ $message }}</span>
                                 @enderror
                             </div>
@@ -284,9 +366,9 @@
                         </div>
 
                         <div class="field">
-                            <label for="message">Mensaje</label>
-                            <textarea id="message" name="message" required minlength="12" maxlength="1200">{{ old('message') }}</textarea>
-                            @error('message')
+                            <label for="comment">Objetivo o comentario adicional</label>
+                            <textarea id="comment" name="comment" required minlength="12" maxlength="1200">{{ old('comment') }}</textarea>
+                            @error('comment')
                                 <span class="error">{{ $message }}</span>
                             @enderror
                         </div>

@@ -1,0 +1,95 @@
+En este sistema ya construido necesito ajustar los siguientes features:
+
+1. Inscripciones y movimientos:
+
+* Comprobantes de pago: en el wizard de inscripción al ejecutar un pago manual el cliente debe poder adjuntar
+de manera obligatoria un pdf o imagen con el comprobante de pago.
+
+* Al consultar los movimientos debo ver los compobantes de pago en un modal en el modulo financiero 
+y en todas las vistas en las que aparezca el pago, este modal se despliega a través de un boton en cada item 
+(movimiento financiero)
+
+* Debe existir un checkbox para free trial o clases gratuita, en este caso se puede omitir el comprobante de pago
+(esto debe verse en el detalle de inscripción)
+
+* Al aceptar los términos y condiciones de inscripción debe existir otro checkbox para aceptar
+el uso de imagen del menor representado (esto debe verse en el detalle de inscripcion)
+
+2. Operaciones
+
+* Nueva tabla para guardar Programas: Actualmente son dos programas "Little Strikers" y "Little Paddlers", 
+cada curso debe pertenecer a uno de estos programas, Programas tendrá una relación de uno a muchos con cursos 
+donde cursos pertenece a programas y programas tiene varios cursos
+
+* Debo poder agregar múltiples entrenadores al crear o editar un curso.
+
+* Cuando se marca las asistencias por dia también se debe colocar observaciones por cada asistencia
+
+* Programación por recurrencia con previsualización editable:
+    ### Objetivo
+    Permitir crear múltiples clases automáticamente definiendo reglas de recurrencia, con previsualización y edición individual antes de guardar.
+
+    ### Flujo actual (problema)
+    - Cada clase se crea manualmente una por una
+    - No hay manera de crear 20 clases de un solo golpe
+
+    ### Flujo deseado
+
+    #### Paso 1: Configurar recurrencia
+    El usuario puede elegir entre dos modos:
+
+    **Modo A: Programación por recurrencia (automático)**
+    - Seleccionar fechas de inicio y fin del curso (rango)
+    - Seleccionar días de la semana: checkboxes [Lun, Mar, Mié, Jue, Vie, Sáb, Dom]
+    - Seleccionar hora por dia: `hora de inicio` y `hora final` (ej: 06:00 - 08:00)
+
+    **Modo B: Programación manual (actual)**
+    - Crear cada clase individualmente con fecha y hora
+
+    #### Paso 2: Previsualizar (CRÍTICO)
+    Antes de guardar, el sistema debe mostrar una tabla/lista con:
+    - Todas las clases que se crearán
+    - Para cada clase: fecha, hora_inicio, hora_fin, día de semana
+    - Ejemplo de visualización:
+    □ Lunes 03/06/2024 | 06:00 - 08:00
+    □ Lunes 10/06/2024 | 06:00 - 08:00
+    □ Lunes 17/06/2024 | 06:00 - 08:00
+    □ Lunes 24/06/2024 | 06:00 - 08:00
+
+3. Mensajes: 
+
+* En el contact form del landing page se envian mensajes al correo, necesito que también se guarden en la 
+base de datos y los pueda consultar en un apartado mensajes dentro de mi panel administrativo y que
+se indiquen de forma estetica de ui ux si el mensaje fue leido o no, 
+los campos del mensaje del contact form son: 
+
+Información de contacto
+Para ayudarte mejor, completa el siguiente formulario:
+•	Nombre del representante 
+•	Nombre y edad del niño/a 
+•	Programa de interés (de la tabla programa creada anteriomente)
+o	⚽ Little Strikers 
+o	🎾 Little Paddlers 
+•	Sede de preferencia (de la tabla sedes)
+o	📍 San Luis 
+o	📍 Los Campitos 
+o	📍 Los Chorros 
+•	Número de teléfono 
+•	Correo electrónico 
+•	Objetivo o comentario adicional
+(ej. socialización, coordinación, actividad física, clase de prueba, etc.)
+
+
+Correcciones:
+
+1. Cursos
+
+Cursos ya tiene el campo start_date y end_time por lo que la programacion por recurrencia no necesita
+nuevamente estos campos recurrence_start, recurrence_end
+
+Por otra parte lo que necesito realmente es que a cada uno de los dias se les asigne la hora
+ por ejemplo lunes de 6am a 8am y martes de 9am a 10am POR CADA DIA, como cuando creamos un horario
+ la idea es organizar el horario de clases
+
+ Los entrenadores no se seleccionan multiple, me gustaria que se pudiera, y que por favor añadas este campo
+ una especie de select2 multiple para que se vea mas estetico

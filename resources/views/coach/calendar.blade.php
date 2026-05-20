@@ -158,6 +158,10 @@
             user-select: none;
         }
 
+        .attendance-note {
+            margin-top: 0.5rem;
+        }
+
         .attendance-check input[type="checkbox"] {
             width: 1.1rem;
             height: 1.1rem;
@@ -280,6 +284,7 @@
 
             function buildAttendancePayload() {
                 const attendance = {};
+                const notes = {};
                 getAttendanceCheckboxes().forEach(function(checkbox) {
                     const studentId = checkbox.dataset.studentId;
                     if (!studentId) {
@@ -287,10 +292,14 @@
                     }
 
                     attendance[studentId] = checkbox.checked ? 'present' : 'absent';
+
+                    const noteInput = attendanceRowsEl.querySelector(`textarea[data-note-student-id="${studentId}"]`);
+                    notes[studentId] = noteInput ? noteInput.value : '';
                 });
 
                 return {
                     attendance: attendance,
+                    notes: notes,
                 };
             }
 
@@ -475,8 +484,21 @@
                         checkLabel.appendChild(check);
                         checkLabel.appendChild(checkText);
 
+                        const noteWrap = document.createElement('div');
+                        noteWrap.className = 'attendance-note w-100';
+
+                        const noteInput = document.createElement('textarea');
+                        noteInput.className = 'form-control form-control-sm';
+                        noteInput.rows = 2;
+                        noteInput.placeholder = 'Observaciones de asistencia';
+                        noteInput.dataset.noteStudentId = String(student.student_id);
+                        noteInput.value = student.notes || '';
+
+                        noteWrap.appendChild(noteInput);
+
                         row.appendChild(name);
                         row.appendChild(checkLabel);
+                        row.appendChild(noteWrap);
                         attendanceRowsEl.appendChild(row);
                     });
 
@@ -493,7 +515,7 @@
 
             attendanceRowsEl.addEventListener('change', function(event) {
                 const target = event.target;
-                if (!target.matches('input[type="checkbox"].attendance-item-checkbox')) {
+                if (!target.matches('input[type="checkbox"].attendance-item-checkbox') && !target.matches('textarea[data-note-student-id]')) {
                     return;
                 }
 

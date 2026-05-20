@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\{AccountsController, BranchesController, CoachPortalController, CoursesController, EnrollmentController, EnrollmentWizardController, FinanceController, HomeController, LandingController, ParentPortalController, StripeWebhookController, StudentsController, UsersController};
+use App\Http\Controllers\{AccountsController, BranchesController, CoachPortalController, ContactMessageController, CoursesController, EnrollmentController, EnrollmentWizardController, FinanceController, HomeController, LandingController, ParentPortalController, StripeWebhookController, StudentsController, UsersController};
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
@@ -67,6 +67,9 @@ Route::middleware(['auth', 'role:Administrador'])->group(function () {
     Route::post('finanzas-y-facturacion/cuentas-por-pagar/{payable}/abonos', [FinanceController::class, 'storePayablePayment'])->name('finance.payables.payments.store');
     Route::post('finanzas-y-facturacion/movimientos', [FinanceController::class, 'storeTransaction'])->name('finance.transactions.store');
     Route::get('finanzas-y-facturacion/movimientos/{transaction}/comprobante', [FinanceController::class, 'downloadTransactionReceipt'])->name('finance.transactions.receipt');
+    Route::get('mensajes', [ContactMessageController::class, 'index'])->name('messages.index');
+    Route::patch('mensajes/{message}/read', [ContactMessageController::class, 'markAsRead'])->name('messages.read');
+    Route::patch('mensajes/{message}/unread', [ContactMessageController::class, 'markAsUnread'])->name('messages.unread');
 
     Route::get('accounts', [AccountsController::class, 'index'])->name('accounts.index');
     Route::post('accounts', [AccountsController::class, 'store'])->name('accounts.store');

@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Stripe\Exception\ApiErrorException;
 use Stripe\StripeClient;
@@ -412,7 +413,9 @@ class EnrollmentWizardController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'payment_method' => 'required|in:card,pending',
+            'is_free_trial' => 'nullable|boolean',
             'stripe_payment_intent_id' => 'nullable|string|max:255',
+            'payment_receipt' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:6144',
         ]);
 
         if ($validator->fails()) {
@@ -420,6 +423,17 @@ class EnrollmentWizardController extends Controller
         }
 
         $paymentMethod = $request->input('payment_method');
+        $isFreeTrial = (bool) $request->boolean('is_free_trial');
+        if ($paymentMethod === 'card') {
+            $isFreeTrial = false;
+        }
+
+        if ($paymentMethod === 'pending' && ! $isFreeTrial && ! $request->hasFile('payment_receipt') && ! $request->session()->has('payment_receipt_path')) {
+            $validator = Validator::make([], []);
+            $validator->errors()->add('payment_receipt', 'Adjunta el comprobante (PDF o imagen) para pagos manuales.');
+
+            return $this->wizardValidationError($request, $validator);
+        }
 
         if ($paymentMethod === 'card' && ! $request->filled('stripe_payment_intent_id')) {
             $validator = Validator::make([], []);
@@ -429,6 +443,22 @@ class EnrollmentWizardController extends Controller
         }
 
         $request->session()->put('payment_method', $paymentMethod);
+        $request->session()->put('is_free_trial', $isFreeTrial);
+
+        if ($request->hasFile('payment_receipt')) {
+            $previousPath = $request->session()->get('payment_receipt_path');
+            if ($previousPath && file_exists(public_path('uploads/comprobantes/' . basename($previousPath)))) {
+                unlink(public_path('uploads/comprobantes/' . basename($previousPath)));
+            }
+
+            $file = $request->file('payment_receipt');
+            $storedPath = $file->move(public_path('uploads/comprobantes'), $file->hashName());
+            $request->session()->put('payment_receipt_path', 'uploads/comprobantes/' . $file->hashName());
+            $request->session()->put('payment_receipt_original_name', $file->getClientOriginalName());
+        } elseif ($paymentMethod === 'card' || $isFreeTrial) {
+            $request->session()->forget(['payment_receipt_path', 'payment_receipt_original_name']);
+        }
+
         if ($paymentMethod === 'card') {
             $request->session()->put('stripe_payment_intent_id', $request->input('stripe_payment_intent_id'));
         } else {
@@ -448,6 +478,7 @@ class EnrollmentWizardController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'terms' => 'accepted',
+            'image_consent' => 'accepted',
         ]);
 
         if ($validator->fails()) {
@@ -457,7 +488,20 @@ class EnrollmentWizardController extends Controller
         $studentId = $request->session()->get('selected_student_id');
         $courseId = $request->session()->get('selected_course_id');
         $paymentMethod = $request->session()->get('payment_method');
+        $isFreeTrial = (bool) $request->session()->get('is_free_trial', false);
+        $paymentReceiptPath = $request->session()->get('payment_receipt_path');
+        $paymentReceiptOriginalName = $request->session()->get('payment_receipt_original_name');
         $stripePaymentIntentId = $request->session()->get('stripe_payment_intent_id');
+
+        if ($paymentMethod === 'pending' && ! $isFreeTrial && ! $paymentReceiptPath) {
+            return $this->wizardJsonOrRedirect($request, [
+                'success' => false,
+                'message' => 'Debes adjuntar un comprobante para el pago manual.',
+                'errors' => ['payment_receipt' => ['Debes adjuntar un comprobante para el pago manual.']],
+            ], redirect()->route('enrollment.wizard')->withErrors([
+                'payment_receipt' => 'Debes adjuntar un comprobante para el pago manual.',
+            ]));
+        }
 
         if (! $studentId || ! $courseId || ! $paymentMethod) {
             return $this->wizardJsonOrRedirect($request, [
@@ -542,15 +586,37 @@ class EnrollmentWizardController extends Controller
         }
 
         try {
-            $enrollment = DB::transaction(function () use ($studentId, $courseId, $paymentMethod, $student, $course, $stripePaymentIntentId) {
+            $enrollment = DB::transaction(function () use ($studentId, $courseId, $paymentMethod, $student, $course, $stripePaymentIntentId, $isFreeTrial, $paymentReceiptPath, $paymentReceiptOriginalName) {
+            $isCardPayment = $paymentMethod === 'card';
+            $effectivePaymentMethod = $isFreeTrial ? 'free_trial' : $paymentMethod;
+            $paymentStatus = ($isCardPayment || $isFreeTrial) ? 'paid' : 'pending';
+
             $enrollment = new Enrollment;
             $enrollment->student_id = $studentId;
             $enrollment->course_id = $courseId;
             $enrollment->parent_id = Auth::id();
-            $enrollment->status = $paymentMethod === 'pending' ? 'pending' : 'completed';
-            $enrollment->payment_method = $paymentMethod;
-            $enrollment->payment_status = $paymentMethod === 'pending' ? 'pending' : 'paid';
+            $enrollment->status = $paymentStatus === 'paid' ? 'completed' : 'pending';
+            $enrollment->payment_method = $effectivePaymentMethod;
+            $enrollment->payment_status = $paymentStatus;
+            $enrollment->is_free_trial = $isFreeTrial;
+            $enrollment->terms_accepted = true;
+            $enrollment->image_consent_accepted = true;
+            $enrollment->payment_receipt_path = $paymentReceiptPath;
+            $enrollment->payment_receipt_original_name = $paymentReceiptOriginalName;
             $enrollment->save();
+
+            if ($isFreeTrial) {
+                EnrollmentBillingProfile::updateOrCreate(
+                    ['enrollment_id' => $enrollment->id],
+                    [
+                        'billing_mode' => 'manual',
+                        'auto_pay_enabled' => false,
+                        'status' => 'active',
+                    ]
+                );
+
+                return $enrollment;
+            }
 
             $installmentMonths = $this->calculateInstallmentMonths($course);
             $enrollmentFee = (float) ($course->price ?? 0);
@@ -586,6 +652,8 @@ class EnrollmentWizardController extends Controller
                     'payment_method' => $paymentMethod === 'card' ? 'stripe' : $paymentMethod,
                     'reference' => $stripePaymentIntentId,
                     'description' => 'Pago de inscripción + 1er mes: '.$course->title,
+                    'payment_receipt_path' => $paymentReceiptPath,
+                    'payment_receipt_original_name' => $paymentReceiptOriginalName,
                 ]);
 
                 $firstInstallment = EnrollmentInstallment::query()
@@ -643,7 +711,10 @@ class EnrollmentWizardController extends Controller
             'course_enrollment_fee',
             'course_monthly_fee',
             'payment_method',
+            'is_free_trial',
             'stripe_payment_intent_id',
+            'payment_receipt_path',
+            'payment_receipt_original_name',
             'wizard_locked_course_id',
         ]);
 
@@ -672,7 +743,10 @@ class EnrollmentWizardController extends Controller
             'course_enrollment_fee',
             'course_monthly_fee',
             'payment_method',
+            'is_free_trial',
             'stripe_payment_intent_id',
+            'payment_receipt_path',
+            'payment_receipt_original_name',
             'wizard_locked_course_id',
         ];
         foreach ($keys as $key) {
@@ -765,6 +839,8 @@ class EnrollmentWizardController extends Controller
             'course_monthly_fee' => $request->session()->get('course_monthly_fee'),
             'locked_course_id' => $lockedCourseId ? (int) $lockedCourseId : null,
             'payment_method' => $request->session()->get('payment_method'),
+            'is_free_trial' => (bool) $request->session()->get('is_free_trial', false),
+            'payment_receipt_name' => $request->session()->get('payment_receipt_original_name'),
         ];
     }
 

@@ -180,6 +180,27 @@
 
                     <div class="row g-3">
                         <div class="col-md-4">
+                            <label class="form-label text-muted">Free trial / clase gratuita</label>
+                            <input type="text" class="form-control" value="{{ $enrollment->is_free_trial ? 'Si' : 'No' }}" readonly>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Consentimiento de imagen</label>
+                            <input type="text" class="form-control" value="{{ $enrollment->image_consent_accepted ? 'Aceptado' : 'No aceptado' }}" readonly>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Comprobante adjunto</label>
+                            @if ($enrollment->payment_receipt_path)
+                                <div>
+                                    <a class="btn btn-sm btn-outline-primary" href="{{ asset('storage/'.$enrollment->payment_receipt_path) }}" target="_blank" rel="noopener">
+                                        Ver comprobante
+                                    </a>
+                                </div>
+                            @else
+                                <input type="text" class="form-control" value="No adjunto" readonly>
+                            @endif
+                        </div>
+
+                        <div class="col-md-4">
                             <label class="form-label">Estado de pago</label>
                             <select name="payment_status" class="form-control">
                                 <option value="pending" @selected($enrollment->payment_status === 'pending')>Pendiente</option>

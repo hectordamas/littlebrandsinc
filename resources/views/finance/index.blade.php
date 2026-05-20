@@ -102,10 +102,24 @@
 @endsection
 
 @section('content')
+    <div class="modal fade" id="paymentProofModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="mb-0">Comprobante de pago</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="paymentProofContainer" class="text-center"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="transactionModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
-                <form method="POST" action="{{ route('finance.transactions.store') }}">
+                <form method="POST" action="{{ route('finance.transactions.store') }}" enctype="multipart/form-data">
                     @csrf
                     <input type="hidden" name="return_branch_id" id="transactionReturnBranchId" value="{{ $selectedBranchId }}">
 
@@ -155,6 +169,11 @@
                             <div class="col-md-3">
                                 <label class="form-label">Referencia</label>
                                 <input type="text" name="reference" value="{{ old('reference') }}" class="form-control" placeholder="Factura, recibo, transferencia...">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Comprobante de pago</label>
+                                <input type="file" name="payment_receipt" class="form-control" accept=".jpg,.jpeg,.png,.pdf">
+                                <small class="text-muted">Formatos permitidos: JPG, JPEG, PNG, PDF. Tamaño máximo: 2 MB.</small>
                             </div>
                             <div class="col-md-12">
                                 <label class="form-label">Descripcion</label>
@@ -409,6 +428,16 @@
             return `<a href="${escapeHtml(transaction.receipt_url)}" class="btn btn-sm btn-inverse" target="_blank" rel="noopener noreferrer"><i class="fas fa-file-pdf"></i></a>`;
         }
 
+        function renderPaymentProofButton(transaction) {
+            if (!transaction.payment_receipt_url) {
+                return '<span class="text-muted">Sin comp.</span>';
+            }
+
+            const url = escapeHtml(transaction.payment_receipt_url);
+            const name = escapeHtml(transaction.payment_receipt_name || 'Comprobante');
+            return `<button type="button" class="btn btn-sm btn-outline-primary js-open-proof" data-proof-url="${url}" data-proof-name="${name}"><i class="fas fa-paperclip"></i></button>`;
+        }
+
         function renderTransactionsRows(transactions) {
             const rowsHtml = (transactions || []).map(function(transaction) {
                 return `
@@ -421,7 +450,12 @@
                         <td>${escapeHtml(transaction.account)}</td>
                         <td>${escapeHtml(transaction.branch)}</td>
                         <td>${escapeHtml(transaction.reference)}</td>
-                        <td>${renderReceiptButton(transaction)}</td>
+                        <td>
+                            <div class="d-flex gap-1 justify-content-end">
+                                ${renderPaymentProofButton(transaction)}
+                                ${renderReceiptButton(transaction)}
+                            </div>
+                        </td>
                     </tr>
                 `;
             }).join('');
@@ -499,6 +533,23 @@
             $('#financeBranchFilter').on('change', function() {
                 $('#transactionReturnBranchId').val($(this).val());
                 loadFinanceData($(this).val());
+            });
+
+            $(document).on('click', '.js-open-proof', function() {
+                const proofUrl = $(this).data('proof-url');
+                const proofName = $(this).data('proof-name') || 'Comprobante';
+                if (!proofUrl) {
+                    return;
+                }
+
+                const isPdf = String(proofUrl).toLowerCase().includes('.pdf');
+                const html = isPdf
+                    ? `<iframe src="${proofUrl}" style="width:100%;height:70vh;border:0;"></iframe>`
+                    : `<img src="${proofUrl}" alt="${proofName}" class="img-fluid rounded border" style="max-height:70vh;">`;
+
+                $('#paymentProofContainer').html(html);
+                const modal = new bootstrap.Modal(document.getElementById('paymentProofModal'));
+                modal.show();
             });
 
             @if ($errors->any())

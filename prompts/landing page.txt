@@ -1,0 +1,66 @@
+Ajuste en Landing page
+
+Debajo de la seccion de programas agregaremos una nueva seccion para sedes y clases, justo debajo de este
+comentario: <!--Seccion Clases y sedes-->
+
+Estilos layouts.landing.blade.php contiene los estilos de lo que se ha creado hasta ahora para una correcta
+armonia entre lo que esta ahora y lo nuevo
+
+Por los momentos no haremos consultas a base de datos en esta seccion concretamente ya que no disponemos de esa data sin embargo en 
+unas proximas secciones si consultaremos algunas cosas
+
+1. Agregar a la página principal sección de clases y sedes
+
+Titulo: Clases y Sedes
+Contenido: En Little Brands ofrecemos experiencias deportivas diseñadas especialmente para la primera infancia, en espacios seguros, dinámicos y adaptados para el desarrollo de cada niño.
+Actualmente, nuestras clases están disponibles en Caracas, en tres ubicaciones estratégicas de la ciudad:
+
+📍 San Luis
+📍 Los Campitos
+📍 Los Chorros
+
+Cada sede ha sido seleccionada para ofrecer un ambiente cómodo, accesible y óptimo para que los niños aprendan, jueguen y se desarrollen con libertad.
+A través de nuestros programas Little Strikers y Little Paddlers, los más pequeños disfrutan de actividades guiadas por coaches especializados, en grupos reducidos y con atención personalizada, asegurando una experiencia positiva desde el primer día.
+
+CTA :
+
+⚽🎾 Explora nuestras clases:
+
+COLUMNA 2
+
+⚽ Little Strikers
+Fútbol para niños de 18 meses a 4 años
+
+Boton:
+👉 Ver clases: Enlace a Página interna de clases enlazada a la sección de little Strikers (pagina por crear).
+
+
+COLUMNA 2
+
+🎾 Little Paddlers
+
+Pádel para niños de 2 a 5 años
+👉 Ver clases: Enlace a Página interna de clases enlazada a la sección de little Paddlers (pagina por crear).
+
+NUEVA FILA
+Agenda una clase de prueba y permite que tu hijo/a descubra la diversión, el aprendizaje y la emoción de nuestros programas deportivos en un ambiente seguro y diseñado especialmente para su edad.
+
+Boton:
+👉 Ver clases: misma página interna de clases.
+
+
+
+Seccion Cumpleaños
+
+Debemos crear una nueva seccion esteticamente alineada y coherente a la pagina con la seccíòn cumpleaños, 
+el contenido es la siguiente:
+
+CUMPLEANOS
+⚽🎉 ¡Celebra un cumpleaños inolvidable con Nosotros! 🎂🥳
+¿Buscas una forma divertida y única de festejar el cumpleaños de tu bebe? En Little Brands, hacemos de su día especial una experiencia llena de alegría, deporte y momentos inolvidables.
+🎈 Paquetes personalizados para adaptarse a tu celebración.
+⚽ Juegos y dinámicas diseñadas para la edad de los niños.
+😃 Entrenadores especializados que garantizan diversión y seguridad.
+
+Boton (Mas información)– Mas informacion que te lleve a contact form
+

@@ -22,7 +22,7 @@ class LandingContactMailable extends Mailable
         return new Envelope(
             subject: 'Nuevo contacto desde Little Brands Inc',
             replyTo: [
-                new Address($this->payload['email'], $this->payload['name']),
+                new Address($this->payload['email'], $this->payload['representative_name']),
             ],
         );
     }

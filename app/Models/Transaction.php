@@ -22,6 +22,8 @@ class Transaction extends Model
         'payment_method',
         'reference',
         'description',
+        'payment_receipt_path',
+        'payment_receipt_original_name',
     ];
 
     public function account()

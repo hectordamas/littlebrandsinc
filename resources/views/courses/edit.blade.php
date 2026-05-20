@@ -30,12 +30,23 @@
                 <form action="{{ route('courses.update', $course) }}" method="POST" class="row">
                     @csrf
                     @method('PUT')
-                    <div class="mb-3 col-md-9">
+                    <div class="mb-3 col-md-6">
+                        <label for="program_id" class="form-label">Programa</label>
+                        <select name="program_id" id="program_id" class="form-control" required>
+                            <option value="">Selecciona un programa</option>
+                            @foreach ($programs as $program)
+                                <option value="{{ $program->id }}" {{ (int) old('program_id', $course->program_id) === (int) $program->id ? 'selected' : '' }}>
+                                    {{ $program->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="mb-3 col-md-6">
                         <label for="title" class="form-label">Título del curso</label>
                         <input type="text" name="title" id="title" class="form-control"
                             value="{{ old('title', $course->title) }}" required>
                     </div>
-                    <div class="col-md-3"></div>
 
                         <!-- Barra de ocupación -->
                         <div class="mb-3 col-md-12">
@@ -65,11 +76,12 @@
                                     });
                             });
                         </script>
-                    <div class="mb-3 col-md-9">
+
+                    <div class="mb-3 col-md-12">
                         <label for="description" class="form-label">Descripción</label>
                         <textarea name="description" id="description" class="form-control" rows="2">{{ old('description', $course->description) }}</textarea>
                     </div>
-                    <div class="col-md-3"></div>
+
                     <div class="mb-3 col-md-3">
                         <label for="min_age" class="form-label">Edad Mínima</label>
                         <input type="number" name="min_age" id="min_age" class="form-control"
@@ -129,16 +141,19 @@
                             </option>
                         </select>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <label for="coach_id" class="form-label">Coach</label>
-                        <select name="coach_id" id="coach_id" class="form-control" required>
-                            <option value="">Sin asignar</option>
+                    <div class="col-md-6 mb-3">
+                        <label for="coach_ids" class="form-label">Entrenadores del curso</label>
+                        <select name="coach_ids[]" id="coach_ids" class="form-control select2" multiple required>
                             @foreach ($coaches as $coach)
-                                <option value="{{ $coach->id }}"
-                                    {{ old('coach_id', $course->coach_id) == $coach->id ? 'selected' : '' }}>
-                                    {{ $coach->name }}</option>
+                                @php
+                                    $selectedCoachIdsInput = old('coach_ids', $selectedCoachIds ?? []);
+                                @endphp
+                                <option value="{{ $coach->id }}" {{ in_array((int) $coach->id, array_map('intval', (array) $selectedCoachIdsInput), true) ? 'selected' : '' }}>
+                                    {{ $coach->name }}
+                                </option>
                             @endforeach
                         </select>
+                        <small class="text-muted">Puedes seleccionar varios entrenadores.</small>
                     </div>
                     <div class="col-md-12">
                         <button type="submit" class="btn btn-primary">Guardar cambios</button>
@@ -216,6 +231,17 @@
                                                         <input type="time" name="end_time" class="form-control"
                                                             value="{{ $class->end_time }}">
                                                     </div>
+                                                    <div class="col-md-12 mb-3">
+                                                        <label>Entrenador</label>
+                                                        <select name="coach_id" class="form-control">
+                                                            <option value="">Sin asignar</option>
+                                                            @foreach ($coaches as $coach)
+                                                                @if (in_array((int) $coach->id, array_map('intval', (array) ($selectedCoachIds ?? [])), true))
+                                                                    <option value="{{ $coach->id }}" {{ (int) $class->coach_id === (int) $coach->id ? 'selected' : '' }}>{{ $coach->name }}</option>
+                                                                @endif
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div class="modal-footer">
@@ -239,7 +265,6 @@
                                     @csrf
 
                                     <input type="hidden" name="branch_id" value="{{ $course->branch_id }}">
-                                    <input type="hidden" name="coach_id" value="{{ $course->coach_id }}">
                                     <input type="hidden" name="course_id" value="{{ $course->id }}">
                                     <!-- HEADER -->
                                     <div class="modal-header">
@@ -269,6 +294,17 @@
                                             </div>
                                         </div>
 
+                                        <div class="mb-3">
+                                            <label class="form-label">Entrenador</label>
+                                            <select name="coach_id" class="form-control">
+                                                <option value="">Sin asignar</option>
+                                                @foreach ($coaches as $coach)
+                                                    @if (in_array((int) $coach->id, array_map('intval', (array) ($selectedCoachIds ?? [])), true))
+                                                        <option value="{{ $coach->id }}">{{ $coach->name }}</option>
+                                                    @endif
+                                                @endforeach
+                                            </select>
+                                        </div>
                                     </div>
 
                                     <!-- FOOTER -->
@@ -296,6 +332,13 @@
 @section('scripts')
     <script>
         $(document).ready(function() {
+            if ($.fn.select2) {
+                $('#coach_ids').select2({
+                    placeholder: 'Selecciona uno o más entrenadores',
+                    width: '100%'
+                });
+            }
+
             $('#price').on('input', function() {
                 let value = parseFloat($(this).val());
                 if (isNaN(value)) value = 0;

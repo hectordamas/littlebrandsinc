@@ -28,10 +28,16 @@ class CoachPortalController extends Controller
         $classes = LBClass::query()
             ->with([
                 'course.enrollments.student',
+                'course.coaches',
                 'branch',
                 'attendances',
             ])
-            ->where('coach_id', $coachId)
+            ->where(function ($query) use ($coachId) {
+                $query->where('coach_id', $coachId)
+                    ->orWhereHas('course.coaches', function ($coachQuery) use ($coachId) {
+                        $coachQuery->where('users.id', $coachId);
+                    });
+            })
             ->when(isset($validated['start']), function ($query) use ($validated) {
                 $query->whereDate('date', '>=', $validated['start']);
             })
@@ -55,6 +61,7 @@ class CoachPortalController extends Controller
                             'student_id' => optional($student)->id,
                             'student_name' => optional($student)->name ?? 'Sin nombre',
                             'check_in' => $attendance->status ?? 'pending',
+                            'notes' => $attendance->notes,
                         ];
                     })
                     ->filter(fn ($row) => ! empty($row['student_id']))
@@ -85,13 +92,20 @@ class CoachPortalController extends Controller
     {
         $coachId = (int) Auth::id();
 
-        if ((int) $class->coach_id !== $coachId) {
+        $isAllowedCoach = (int) $class->coach_id === $coachId || $class->course()
+            ->whereHas('coaches', function ($query) use ($coachId) {
+                $query->where('users.id', $coachId);
+            })->exists();
+
+        if (! $isAllowedCoach) {
             abort(403);
         }
 
         $validated = $request->validate([
             'attendance' => 'nullable|array',
             'attendance.*' => 'required|in:present,absent,late,pending',
+            'notes' => 'nullable|array',
+            'notes.*' => 'nullable|string|max:500',
         ]);
 
         foreach (($validated['attendance'] ?? []) as $studentId => $status) {
@@ -103,6 +117,7 @@ class CoachPortalController extends Controller
                 [
                     'date' => $class->date,
                     'status' => $status,
+                    'notes' => data_get($validated, 'notes.'.$studentId),
                 ]
             );
         }

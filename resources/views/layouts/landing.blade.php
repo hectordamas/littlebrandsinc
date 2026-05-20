@@ -463,7 +463,7 @@
 
         .section-head {
             margin-bottom: 1.3rem;
-           /*max-width: 760px; */
+            /*max-width: 760px; */
         }
 
         .section-kicker {
@@ -482,10 +482,11 @@
         }
 
         .section-head p {
-           /* max-width: 70ch;*/
+            /* max-width: 70ch;*/
             line-height: 1.78;
             color: var(--text);
             margin: 0.7rem 0 0;
+            font-size: 0.95rem;
         }
 
         .about-grid {
@@ -691,25 +692,490 @@
             z-index: 1;
         }
 
-        .contact-wrap {
-            display: grid;
-            grid-template-columns: 0.95fr 1.05fr;
-            gap: 1.1rem;
+        .classes-venues {
+            position: relative;
+            background:
+                radial-gradient(circle at 10% 16%, rgba(42, 199, 216, 0.16), transparent 36%),
+                radial-gradient(circle at 88% 8%, rgba(245, 193, 93, 0.18), transparent 32%),
+                linear-gradient(180deg, #f5f9fd 0%, #edf4fb 56%, #f4f9fd 100%);
+            border-top: 0;
+            border-bottom: 0;
+            margin-top: -30px;
+            padding-top: 108px;
         }
 
-        .contact-panel {
-            border-radius: 30px;
-            padding: 1.5rem;
+        .classes-venues::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(rgba(9, 23, 34, 0.028) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(9, 23, 34, 0.028) 1px, transparent 1px);
+            background-size: 52px 52px;
+            mask-image: radial-gradient(circle at center, black 42%, transparent 96%);
+            pointer-events: none;
+        }
+
+        .classes-venues::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(180deg, rgba(244, 249, 253, 0.2) 0%, rgba(238, 245, 251, 0.45) 28%, rgba(244, 249, 253, 0.86) 100%),
+                url('{{ asset('landing_page/assets/images/img4.jpeg') }}') center top / cover no-repeat;
+            opacity: 0.14;
+            pointer-events: none;
+        }
+
+        .classes-venues .container {
+            position: relative;
+            z-index: 1;
+        }
+
+        .classes-venues-head {
+            margin-bottom: 1.2rem;
+            text-align: center;
+        }
+
+        .classes-venues-head p {
+            max-width: 74ch;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .classes-venues-locations {
+            border-radius: 24px;
+            padding: 1.25rem;
+            background:
+                linear-gradient(155deg, rgba(14, 40, 60, 0.9) 0%, rgba(25, 77, 112, 0.88) 56%, rgba(27, 136, 214, 0.82) 100%),
+                url('{{ asset('landing_page/assets/images/img3.jpeg') }}') center / cover no-repeat;
+            color: #fff;
+            box-shadow: 0 20px 48px rgba(9, 23, 34, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: minmax(220px, 0.42fr) minmax(0, 1fr);
+            gap: 1rem;
+            align-items: start;
+        }
+
+        .classes-venues-locations::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, rgba(255, 255, 255, 0.14), transparent 42%);
+            pointer-events: none;
+        }
+
+        .classes-venues-list {
+            list-style: none;
+            padding: 0;
+            margin: 0.1rem 0 0;
+            display: grid;
+            gap: 0.6rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .classes-venues-list li {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.75rem 0.9rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            font-weight: 700;
+        }
+
+        .classes-venues-list li span {
+            display: inline-grid;
+            place-items: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.16);
+        }
+
+        .classes-venues-locations p {
+            margin: 0;
+            line-height: 1.7;
+            opacity: 0.96;
+            position: relative;
+            z-index: 1;
+        }
+
+        .classes-venues-locations p+p {
+            margin-top: 0.8rem;
+        }
+
+        .classes-venues-copy {
+            position: relative;
+            z-index: 1;
+            border-left: 1px solid rgba(255, 255, 255, 0.24);
+            padding-left: 1.05rem;
+        }
+
+        .classes-venues-panel {
+            margin-top: 1rem;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(246, 250, 253, 0.9));
+            border: 1px solid rgba(9, 23, 34, 0.1);
+            border-radius: 24px;
+            box-shadow: 0 18px 42px rgba(9, 23, 34, 0.13);
+            backdrop-filter: blur(8px);
+            padding: 1.45rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .classes-venues-panel::before {
+            content: '';
+            position: absolute;
+            width: 220px;
+            height: 220px;
+            right: -90px;
+            top: -70px;
+            border-radius: 999px;
+            background: radial-gradient(circle, rgba(12, 127, 242, 0.16), transparent 68%);
+            pointer-events: none;
+        }
+
+        .classes-venues-panel h3 {
+            text-align: left;
+            font-size: clamp(1.35rem, 2vw, 1.75rem);
+            margin: 0 0 0.95rem;
+            border-bottom: 1px solid rgba(9, 23, 34, 0.1);
+            padding-bottom: 0.7rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .classes-venues-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+            margin-top: 0.1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .classes-venues-card {
+            background: #ffffff;
+            border: 1px solid rgba(9, 23, 34, 0.1);
+            border-radius: 16px;
+            padding: 1.1rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            display: grid;
+            grid-template-columns: 120px minmax(0, 1fr);
+            gap: 0.9rem;
+            align-items: stretch;
+            min-height: 190px;
+        }
+
+        .classes-venues-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--venue-color, var(--brand-blue)), color-mix(in srgb, var(--venue-color, var(--brand-blue)) 70%, #fff));
+        }
+
+        .classes-venues-card:hover {
+            transform: translateY(-3px);
+            border-color: color-mix(in srgb, var(--venue-color, var(--brand-blue)) 45%, rgba(9, 23, 34, 0.12));
+            box-shadow: 0 12px 28px rgba(9, 23, 34, 0.12);
+        }
+
+        .classes-venues-card h4 {
+            margin: 0.15rem 0 0;
+            font-size: 1.9rem;
+            line-height: 1;
+            position: relative;
+            z-index: 1;
+        }
+
+        .classes-venues-card h4 span {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 1.8rem;
+        }
+
+        .classes-venues-card p {
+            margin: 0.45rem 0 1rem;
+            line-height: 1.6;
+            color: var(--text);
+            position: relative;
+            z-index: 1;
+        }
+
+        .classes-venues-card-media {
+            width: 100%;
+            height: 100%;
+            min-height: 154px;
+            border-radius: 12px;
+            background-size: cover;
+            background-position: center center;
+            border: 1px solid rgba(9, 23, 34, 0.08);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+            position: relative;
+            z-index: 1;
+        }
+
+        .classes-venues-card-body {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .classes-venues-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            text-decoration: none;
+            font-weight: 800;
+            padding: 0.72rem 1rem;
+            border-radius: 12px;
+            color: color-mix(in srgb, var(--venue-color, var(--brand-blue)) 70%, #08243a);
+            background: color-mix(in srgb, var(--venue-color, var(--brand-blue)) 13%, #ffffff);
+            border: 1px solid color-mix(in srgb, var(--venue-color, var(--brand-blue)) 30%, rgba(9, 23, 34, 0.2));
+            position: relative;
+            z-index: 1;
+            margin-top: auto;
+        }
+
+        .classes-venues-bottom {
+            margin-top: 1.25rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.95rem;
+            border-top: 1px dashed rgba(9, 23, 34, 0.14);
+            padding: 1.1rem 0.8rem 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        #programas.section-muted {
+            border-bottom-color: transparent;
+            padding-bottom: 104px;
+        }
+
+        .classes-venues-bottom p {
+            margin: 0;
+            color: var(--text);
+            line-height: 1.72;
+            max-width: 76ch;
+        }
+
+        .classes-venues-cta-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            line-height: 1;
+            margin-top: 0;
+            position: relative;
+            z-index: 2;
+            text-decoration: none;
+            font-weight: 800;
+            color: #fff;
+            background: linear-gradient(135deg, #081723, #153d5f 55%, #0d7acc);
+            border-radius: 14px;
+            padding: 0.9rem 1.2rem;
+            box-shadow: 0 12px 28px rgba(9, 23, 34, 0.21);
+            transition: transform 0.24s ease, box-shadow 0.24s ease;
+        }
+
+        .classes-venues-cta-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 32px rgba(9, 23, 34, 0.24);
+        }
+
+        .birthday-section {
+            position: relative;
+            padding-top: 88px;
+            padding-bottom: 62px;
+            background:
+                radial-gradient(circle at 10% 14%, rgba(245, 193, 93, 0.2), transparent 34%),
+                radial-gradient(circle at 86% 82%, rgba(42, 199, 216, 0.18), transparent 31%),
+                linear-gradient(180deg, #f5f9fd 0%, #edf4fa 54%, #f7fbff 100%);
+        }
+
+        .birthday-section::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+                linear-gradient(rgba(9, 23, 34, 0.026) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(9, 23, 34, 0.026) 1px, transparent 1px);
+            background-size: 56px 56px;
+            mask-image: radial-gradient(circle at center, black 40%, transparent 96%);
+        }
+
+        .birthday-section::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 120px;
+            pointer-events: none;
+            background: linear-gradient(180deg, rgba(247, 251, 255, 0) 0%, rgba(242, 248, 252, 0.96) 100%);
+        }
+
+        .birthday-wrap {
+            position: relative;
+            z-index: 1;
+            border-radius: 28px;
+            padding: 1.6rem;
+            border: 1px solid rgba(255, 255, 255, 0.88);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(244, 249, 253, 0.9));
+            box-shadow: 0 20px 48px rgba(9, 23, 34, 0.11);
+            backdrop-filter: blur(10px);
+        }
+
+        .birthday-head {
+            max-width: 78ch;
+        }
+
+        .birthday-head h2 {
+            font-size: clamp(2rem, 3vw, 3rem);
+            line-height: 0.95;
+        }
+
+        .birthday-hero {
+            margin: 0.7rem 0 0.78rem;
+            color: #0b3554;
+            font-weight: 800;
+            line-height: 1.5;
+        }
+
+        .birthday-head p {
+            margin: 0;
+            color: var(--text);
+            line-height: 1.72;
+            font-size: 1.02rem;
+        }
+
+        .birthday-grid {
+            margin-top: 1.1rem;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.9rem;
+        }
+
+        .birthday-point {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.62rem;
+            border-radius: 16px;
+            padding: 0.92rem 0.95rem;
+            background: rgba(255, 255, 255, 0.84);
+            border: 1px solid rgba(9, 23, 34, 0.08);
+            box-shadow: 0 8px 18px rgba(9, 23, 34, 0.08);
+        }
+
+        .birthday-point span {
+            font-size: 1.22rem;
+            line-height: 1;
+            transform: translateY(1px);
+        }
+
+        .birthday-point p {
+            margin: 0;
+            color: #224b67;
+            line-height: 1.58;
+            font-weight: 700;
+            font-size: 0.96rem;
+        }
+
+        .birthday-actions {
+            margin-top: 1.08rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .birthday-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            font-weight: 800;
+            border-radius: 14px;
+            padding: 0.9rem 1.24rem;
+            color: #fff;
+            background: linear-gradient(135deg, #091722, #153e61 58%, #0d7acc);
+            box-shadow: 0 12px 28px rgba(9, 23, 34, 0.22);
+            transition: transform 0.24s ease, box-shadow 0.24s ease;
+        }
+
+        .birthday-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 32px rgba(9, 23, 34, 0.25);
+        }
+
+        #contacto {
+            position: relative;
+            padding-top: 64px;
+            padding-bottom: 90px;
+            background:
+                radial-gradient(circle at 14% 14%, rgba(42, 199, 216, 0.14), transparent 34%),
+                radial-gradient(circle at 84% 84%, rgba(245, 193, 93, 0.18), transparent 30%),
+                linear-gradient(180deg, rgba(243, 248, 252, 0.96) 0%, rgba(241, 247, 252, 0.92) 100%);
+        }
+
+        #contacto::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: linear-gradient(120deg, rgba(255, 255, 255, 0.28), transparent 34%);
+            opacity: 0.08;
+        }
+
+        #contacto::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 78px;
+            pointer-events: none;
+            background: linear-gradient(180deg, rgba(241, 247, 252, 0) 0%, rgba(8, 23, 35, 0.44) 100%);
+            opacity: 0.22;
+        }
+
+        .contact-layout {
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 0.95fr 1.05fr;
+            gap: 1.15rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .contact-info {
+            border-radius: 28px;
+            padding: 1.75rem 1.65rem;
             color: #fff;
             background:
-                radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 28%),
+                radial-gradient(circle at 84% 8%, rgba(255, 255, 255, 0.2), transparent 32%),
                 linear-gradient(155deg, #081723, #12304a 48%, #0d86d9 100%);
             box-shadow: 0 28px 70px rgba(9, 23, 34, 0.22);
             position: relative;
             overflow: hidden;
         }
 
-        .contact-panel::after {
+        .contact-info::after {
             content: '';
             position: absolute;
             right: -36px;
@@ -720,49 +1186,58 @@
             background: rgba(255, 255, 255, 0.08);
         }
 
-        .contact-panel p {
-            margin: 0.8rem 0 0;
-            line-height: 1.75;
+        .contact-info h3 {
+            margin: 0;
+            font-size: clamp(1.65rem, 2.4vw, 2.1rem);
+            line-height: 0.98;
+            max-width: 16ch;
+            position: relative;
+            z-index: 1;
+        }
+
+        .contact-info p {
+            margin: 0.82rem 0 0;
+            line-height: 1.7;
             opacity: 0.97;
             position: relative;
             z-index: 1;
         }
 
-        .contact-panel h3 {
-            font-size: 2rem;
-            line-height: 0.98;
-            position: relative;
-            z-index: 1;
-        }
-
-        .contact-points {
+        .contact-info-points {
+            margin-top: 1.15rem;
             display: grid;
-            gap: 0.75rem;
-            margin-top: 1.2rem;
+            gap: 0.8rem;
             position: relative;
             z-index: 1;
         }
 
-        .contact-point {
+        .contact-info-point {
             padding: 0.95rem 1rem;
-            border-radius: 18px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.11);
+            border: 1px solid rgba(255, 255, 255, 0.16);
         }
 
-        .contact-point strong {
+        .contact-info-point strong {
             display: block;
             margin-bottom: 0.28rem;
             font-size: 0.94rem;
         }
 
+        .contact-info-point span {
+            display: block;
+            font-size: 0.86rem;
+            line-height: 1.45;
+            opacity: 0.96;
+        }
+
         .contact-form {
             background: rgba(255, 255, 255, 0.86);
-            border: 1px solid rgba(255, 255, 255, 0.9);
-            border-radius: 30px;
-            padding: 1.5rem;
-            box-shadow: var(--shadow-soft);
-            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.96);
+            border-radius: 28px;
+            padding: 1.55rem;
+            box-shadow: 0 20px 48px rgba(9, 23, 34, 0.12);
+            backdrop-filter: blur(16px);
         }
 
         .form-intro {
@@ -796,26 +1271,28 @@
         }
 
         input,
-        textarea {
+        textarea,
+        select {
             width: 100%;
             border: 1px solid rgba(72, 97, 115, 0.18);
             background: rgba(246, 248, 251, 0.92);
-            border-radius: 16px;
-            padding: 0.9rem 0.95rem;
+            border-radius: 10px;
+            padding: 0.5rem 0.5rem;
             font: inherit;
             color: var(--ink);
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
         input:focus,
-        textarea:focus {
+        textarea:focus,
+        select:focus {
             border-color: var(--brand-blue);
             box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.12);
             outline: none;
         }
 
         textarea {
-            min-height: 136px;
+            min-height: 80px;
             resize: vertical;
         }
 
@@ -861,51 +1338,95 @@
             background: linear-gradient(135deg, #091722, #15436a);
             box-shadow: 0 16px 35px rgba(9, 23, 34, 0.2);
             cursor: pointer;
+            transition: transform 0.22s ease, box-shadow 0.22s ease;
+        }
+
+        .submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 38px rgba(9, 23, 34, 0.26);
         }
 
         footer {
-            margin-top: 28px;
-            padding-bottom: 28px;
+            position: relative;
+            margin-top: 0;
+            padding: 22px 0 30px;
+            background:
+                radial-gradient(circle at 10% 10%, rgba(18, 72, 112, 0.22), transparent 32%),
+                radial-gradient(circle at 88% 82%, rgba(33, 194, 212, 0.22), transparent 30%),
+                linear-gradient(165deg, #081723 0%, #0f2a3f 46%, #123a5a 100%);
+            overflow: hidden;
+        }
+
+        footer::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+                linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+            background-size: 56px 56px;
+            mask-image: radial-gradient(circle at center, black 44%, transparent 95%);
+            opacity: 0.28;
         }
 
         .footer-inner {
             display: grid;
-            grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.75fr) minmax(0, 0.95fr);
+            grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.72fr) minmax(0, 0.94fr) minmax(0, 0.94fr);
             gap: 1.2rem;
-            color: #355066;
-            padding: 1.35rem;
+            color: #d8e8f3;
+            padding: 1.5rem;
             border-radius: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.78);
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(244, 248, 251, 0.88));
-            box-shadow: var(--shadow-soft);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.04));
+            box-shadow: 0 20px 56px rgba(4, 12, 22, 0.35);
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .footer-orbit {
+            position: absolute;
+            width: 330px;
+            height: 330px;
+            right: -130px;
+            bottom: -150px;
+            border-radius: 999px;
+            border: 24px solid rgba(255, 255, 255, 0.08);
+            pointer-events: none;
         }
 
         .footer-brand {
             display: flex;
             flex-direction: column;
-            gap: 0.8rem;
+            gap: 0.78rem;
+            position: relative;
+            z-index: 1;
         }
 
         .footer-brand img {
-            width: 164px;
-            height: 58px;
+            width: 174px;
+            height: 62px;
             object-fit: contain;
             display: block;
+            filter: brightness(1.25);
         }
 
         .footer-brand p,
         .footer-note,
         .footer-links a,
+        .footer-social a,
         .footer-cta p {
             margin: 0;
-            color: var(--text);
+            color: rgba(224, 237, 248, 0.9);
             line-height: 1.72;
         }
 
         .footer-title {
             display: block;
             margin-bottom: 0.65rem;
-            color: var(--ink);
+            color: #ffffff;
             font-size: 0.82rem;
             font-weight: 800;
             text-transform: uppercase;
@@ -916,25 +1437,60 @@
             display: grid;
             gap: 0.7rem;
             align-content: start;
+            position: relative;
+            z-index: 1;
+        }
+
+        .footer-social {
+            display: grid;
+            gap: 0.7rem;
+            align-content: start;
+            position: relative;
+            z-index: 1;
         }
 
         .footer-links a {
             text-decoration: none;
             font-weight: 700;
-            transition: color 0.2s ease, transform 0.2s ease;
+            transition: color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .footer-social a {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.55rem;
+            text-decoration: none;
+            font-weight: 700;
+            transition: color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .social-icon {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        .footer-social a:hover {
+            color: #ffffff;
+            opacity: 1;
+            transform: translateX(2px);
         }
 
         .footer-links a:hover {
-            color: var(--brand-blue);
+            color: #ffffff;
+            opacity: 1;
             transform: translateX(2px);
         }
 
         .footer-cta {
             padding: 1rem;
             border-radius: 24px;
-            background: linear-gradient(145deg, #0a1d2d, #133e62 58%, #0c7ff2);
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.08));
+            border: 1px solid rgba(255, 255, 255, 0.22);
             color: #fff;
-            box-shadow: 0 20px 44px rgba(9, 23, 34, 0.18);
+            box-shadow: 0 14px 34px rgba(4, 12, 22, 0.3);
+            position: relative;
+            z-index: 1;
         }
 
         .footer-cta .footer-title,
@@ -947,25 +1503,54 @@
             align-items: center;
             justify-content: center;
             margin-top: 0.9rem;
-            padding: 0.82rem 1rem;
+            padding: 0.84rem 1.02rem;
             border-radius: 14px;
-            background: #fff;
-            color: var(--ink);
+            background: linear-gradient(135deg, #ffffff, #f2f8ff);
+            color: #0b2233;
             font-weight: 800;
             text-decoration: none;
+            box-shadow: 0 12px 24px rgba(4, 12, 22, 0.2);
         }
 
         .footer-bottom {
             margin-top: 1rem;
             padding-top: 1rem;
-            border-top: 1px solid rgba(9, 23, 34, 0.08);
+            border-top: 1px solid rgba(255, 255, 255, 0.16);
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 0.8rem;
             flex-wrap: wrap;
             font-size: 0.88rem;
-            color: var(--muted);
+            color: rgba(216, 232, 243, 0.84);
+        }
+
+        .whatsapp-float {
+            position: fixed;
+            right: 18px;
+            bottom: max(18px, calc(env(safe-area-inset-bottom) + 10px));
+            width: 56px;
+            height: 56px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(145deg, #27d667, #18b452);
+            color: #fff;
+            box-shadow: 0 14px 30px rgba(18, 132, 59, 0.42);
+            z-index: 3000;
+            text-decoration: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .whatsapp-float:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 18px 36px rgba(18, 132, 59, 0.48);
+        }
+
+        .whatsapp-float svg {
+            width: 30px;
+            height: 30px;
         }
 
         .reveal {
@@ -979,7 +1564,42 @@
             transform: translateY(0);
         }
 
+
+
         @media (max-width: 980px) {
+
+            .birthday-section {
+                padding-bottom: 46px;
+            }
+
+            .birthday-section::after {
+                height: 76px;
+            }
+
+            #contacto {
+                padding-top: 52px;
+                padding-bottom: 28px;
+            }
+
+            #contacto::after {
+                height: 56px;
+            }
+
+            .birthday-head p {
+                font-size: 0.98rem;
+            }
+
+            .birthday-point p {
+                font-size: 0.94rem;
+            }
+
+            .contact-info {
+                padding: 1.35rem 1.2rem;
+            }
+
+            .contact-layout {
+                grid-template-columns: 1fr;
+            }
 
             .topbar-inner {
                 padding: 0.65rem 0.75rem;
@@ -1019,11 +1639,56 @@
             .about-grid,
             .mv-grid,
             .brands-grid,
-            .contact-wrap,
+            .birthday-grid,
+            .classes-venues-grid,
+            .contact-layout,
             .row,
             .hero-metrics,
             .about-points {
                 grid-template-columns: 1fr;
+            }
+
+            .classes-venues-head,
+            .classes-venues-locations,
+            .classes-venues-panel {
+                border-radius: 22px;
+            }
+
+            .classes-venues {
+                margin-top: -24px;
+                padding-top: 96px;
+            }
+
+            .classes-venues-locations {
+                grid-template-columns: 1fr;
+                gap: 0.9rem;
+            }
+
+            .classes-venues-copy {
+                border-left: 0;
+                padding-left: 0;
+            }
+
+            .classes-venues-card {
+                min-height: 0;
+                grid-template-columns: 1fr;
+            }
+
+            .classes-venues-card-media {
+                min-height: 128px;
+            }
+
+            .classes-venues-bottom {
+                gap: 0.75rem;
+                padding-top: 0.95rem;
+            }
+
+            .classes-venues-cta-btn {
+                width: min(260px, 100%);
+            }
+
+            .classes-venues-panel h3 {
+                text-align: center;
             }
 
             .hero {
@@ -1061,7 +1726,7 @@
                 padding: 68px 0;
             }
 
-            .contact-panel h3,
+            .contact-info h3,
             .hero h1 {
                 max-width: none;
             }
@@ -1069,14 +1734,29 @@
             .metric-card,
             .panel,
             .brand-card,
-            .contact-panel,
+            .contact-info,
             .contact-form,
             .footer-inner {
                 border-radius: 22px;
             }
 
+            .footer-orbit {
+                width: 220px;
+                height: 220px;
+                right: -92px;
+                bottom: -102px;
+                border-width: 16px;
+            }
+
             .footer-inner {
                 grid-template-columns: 1fr;
+            }
+
+            .whatsapp-float {
+                right: max(12px, calc(env(safe-area-inset-right) + 8px));
+                bottom: max(12px, calc(env(safe-area-inset-bottom) + 8px));
+                width: 52px;
+                height: 52px;
             }
 
             .footer-cta {
@@ -1095,8 +1775,9 @@
 
             <nav class="topnav" aria-label="Navegacion principal">
                 <a href="/#inicio">Inicio</a>
-                <a href="/#acerca">Acerca de</a>
-                <a href="/#valores">Valores</a>
+                <a href="/#programas">Programas</a>
+                <a href="/#clases-sedes">Clases</a>
+                <a href="/#cumpleanos">Cumpleaños</a>
                 <a href="/#contacto">Contacto</a>
                 <a href="{{ route('login') }}">Ingresar</a>
             </nav>
@@ -1117,19 +1798,59 @@
 
     <footer>
         <div class="container footer-inner">
+            <div class="footer-orbit" aria-hidden="true"></div>
+
             <div class="footer-brand">
                 <img src="{{ asset('landing_page/logos/lbinc-admin.png') }}" alt="Logo Little Brands Inc">
-                <p>En Little Brands Inc creamos experiencias deportivas diseñadas especialmente para los más pequeños, ayudando a los niños a desarrollar coordinación, confianza y amor por el deporte en un ambiente seguro, divertido y acompañado por sus familias.</p>
-                <p class="footer-note">⚽ Little Strikers  🎾 Little Paddlers</p>
+                <h3>Programas educacionales a través del deporte</h3>
+                <p>En Little Brands Inc creamos experiencias deportivas diseñadas especialmente para los más pequeños,
+                    ayudando a los niños a desarrollar coordinación, confianza y amor por el deporte en un ambiente
+                    seguro, divertido y acompañado por sus familias.</p>
+                <p class="footer-note">⚽ Little Strikers  🎾 Little Paddlers</p>
             </div>
 
             <nav class="footer-links" aria-label="Enlaces del pie de página">
                 <span class="footer-title">Navegación</span>
-                <a href="#inicio">Inicio</a>
-                <a href="#acerca">Acerca de</a>
-                <a href="#marcas">Marcas</a>
-                <a href="#contacto">Contacto</a>
+                <a href="/#inicio">Inicio</a>
+                <a href="/#programas">Programas</a>
+                <a href="/#clases-sedes">Clases</a>
+                <a href="/#cumpleanos">Cumpleaños</a>
+                <a href="/#contacto">Contacto</a>
             </nav>
+
+            <div class="footer-social" aria-label="Redes sociales">
+                <span class="footer-title">Redes Sociales</span>
+                <a href="https://www.instagram.com/littlestrikers/" target="_blank" rel="noopener noreferrer">
+                    <svg class="social-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <rect x="3.5" y="3.5" width="17" height="17" rx="5" stroke="currentColor" stroke-width="1.8" />
+                        <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8" />
+                        <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" />
+                    </svg>
+                    Little Strikers Instagram
+                </a>
+                <a href="https://www.instagram.com/littlepaddlersve/" target="_blank" rel="noopener noreferrer">
+                    <svg class="social-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <rect x="3.5" y="3.5" width="17" height="17" rx="5" stroke="currentColor" stroke-width="1.8" />
+                        <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8" />
+                        <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" />
+                    </svg>
+                    Little Paddlers Instagram
+                </a>
+                <a href="https://www.tiktok.com/@little.paddlers" target="_blank" rel="noopener noreferrer">
+                    <svg class="social-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M14 4v7.2a3.8 3.8 0 1 1-2.8-3.65" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M14 4c1.3 2 2.6 2.9 4.8 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" />
+                    </svg>
+                    Little Paddlers TikTok
+                </a>
+                <a href="https://api.whatsapp.com/send?phone=584141501108" target="_blank" rel="noopener noreferrer">
+                    <svg class="social-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M12.2 3.6c-4.7 0-8.5 3.8-8.5 8.5 0 1.6.4 3.1 1.2 4.4l-1.2 3.9 4-.9a8.5 8.5 0 0 0 4.5 1.3c4.7 0 8.5-3.8 8.5-8.5s-3.8-8.7-8.5-8.7Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                        <path d="M9.3 8.8c.2-.5.5-.5.8-.5h.7c.2 0 .4.1.5.4l.8 1.8c.1.2.1.4 0 .5l-.4.6c-.1.2-.1.4 0 .6.4.8 1.1 1.5 1.9 2 .2.1.4.1.6 0l.6-.4c.2-.1.4-.1.6 0l1.7.8c.3.1.4.3.4.5v.7c0 .3-.1.6-.5.8-.5.2-1.6.3-3.1-.3a7.8 7.8 0 0 1-4.2-4.2c-.6-1.5-.5-2.6-.3-3.1Z" fill="currentColor" />
+                    </svg>
+                    WhatsApp Little Brands
+                </a>
+            </div>
 
             <div class="footer-cta">
                 <span class="footer-title">Siguiente paso</span>
@@ -1139,6 +1860,14 @@
             </div>
         </div>
     </footer>
+
+    <a class="whatsapp-float" href="https://api.whatsapp.com/send?phone=584141501108" target="_blank"
+        rel="noopener noreferrer" aria-label="Escribir por WhatsApp">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12.2 3.4c-4.8 0-8.7 3.9-8.7 8.7 0 1.6.4 3.2 1.2 4.5l-1.2 3.9 4-.9a8.7 8.7 0 0 0 4.6 1.3c4.8 0 8.7-3.9 8.7-8.7s-3.9-8.8-8.6-8.8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+            <path d="M9.3 8.8c.2-.5.5-.5.8-.5h.7c.2 0 .4.1.5.4l.8 1.8c.1.2.1.4 0 .5l-.4.6c-.1.2-.1.4 0 .6.4.8 1.1 1.5 1.9 2 .2.1.4.1.6 0l.6-.4c.2-.1.4-.1.6 0l1.7.8c.3.1.4.3.4.5v.7c0 .3-.1.6-.5.8-.5.2-1.6.3-3.1-.3a7.8 7.8 0 0 1-4.2-4.2c-.6-1.5-.5-2.6-.3-3.1Z" fill="currentColor" />
+        </svg>
+    </a>
 
     <script>
         (function() {

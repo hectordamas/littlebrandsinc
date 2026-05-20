@@ -42,6 +42,9 @@ class EnrollmentController extends Controller
             'student_id' => ['nullable', 'integer', 'exists:students,id'],
             'course_id' => ['required', 'integer', 'exists:courses,id'],
             'payment_status' => ['required', Rule::in(['pending', 'paid'])],
+            'is_free_trial' => ['nullable', 'boolean'],
+            'image_consent_accepted' => ['nullable', 'boolean'],
+            'payment_receipt' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:6144'],
             'user.name' => ['nullable', 'string', 'max:255'],
             'user.email' => ['nullable', 'email', 'max:255'],
             'user.dial_code' => ['nullable', 'string', 'max:6'],
@@ -58,13 +61,28 @@ class EnrollmentController extends Controller
             $course = $this->validateCourseForStudent($request, $student);
 
             $paymentStatus = $request->string('payment_status')->toString();
+            $isFreeTrial = (bool) $request->boolean('is_free_trial');
+            $receiptPath = null;
+            $receiptOriginalName = null;
+
+            if ($request->hasFile('payment_receipt')) {
+                $file = $request->file('payment_receipt');
+                $receiptPath = $file->store('payment-receipts', 'public');
+                $receiptOriginalName = $file->getClientOriginalName();
+            }
+
             $enrollment = Enrollment::create([
                 'student_id' => $student->id,
                 'course_id' => $course->id,
                 'parent_id' => $parent->id,
-                'status' => $paymentStatus === 'paid' ? 'completed' : 'pending',
-                'payment_method' => 'manual',
-                'payment_status' => $paymentStatus,
+                'status' => ($paymentStatus === 'paid' || $isFreeTrial) ? 'completed' : 'pending',
+                'payment_method' => $isFreeTrial ? 'free_trial' : 'manual',
+                'payment_status' => $isFreeTrial ? 'paid' : $paymentStatus,
+                'is_free_trial' => $isFreeTrial,
+                'terms_accepted' => true,
+                'image_consent_accepted' => (bool) $request->boolean('image_consent_accepted'),
+                'payment_receipt_path' => $receiptPath ? 'uploads/comprobantes/' . basename($receiptPath) : null,
+                'payment_receipt_original_name' => $receiptOriginalName,
             ]);
 
             $this->syncEnrollmentReceivableState($enrollment);
@@ -261,6 +279,15 @@ class EnrollmentController extends Controller
 
     protected function syncEnrollmentIncomeTransaction(Enrollment $enrollment): void
     {
+        if ($enrollment->is_free_trial) {
+            Transaction::query()
+                ->where('enrollment_id', $enrollment->id)
+                ->where('type', 'income')
+                ->delete();
+
+            return;
+        }
+
         if (! $enrollment->student || ! $enrollment->course) {
             return;
         }
@@ -287,6 +314,8 @@ class EnrollmentController extends Controller
             'payment_method' => $enrollment->payment_method ?: 'manual',
             'reference' => 'admin-enrollment-'.$enrollment->id,
             'description' => 'Pago confirmado de inscripcion + 1er mes: '.$enrollment->course->title,
+            'payment_receipt_path' => $enrollment->payment_receipt_path,
+            'payment_receipt_original_name' => $enrollment->payment_receipt_original_name,
         ];
 
         if ($incomeTransaction) {
@@ -315,6 +344,14 @@ class EnrollmentController extends Controller
 
     protected function syncEnrollmentReceivableState(Enrollment $enrollment): void
     {
+        if ($enrollment->is_free_trial) {
+            AccountReceivable::query()
+                ->where('enrollment_id', $enrollment->id)
+                ->delete();
+
+            return;
+        }
+
         if (! $enrollment->course || $enrollment->course->price === null || $enrollment->course->branch_id === null) {
             return;
         }
@@ -409,6 +446,12 @@ class EnrollmentController extends Controller
             'parent_name' => optional($parent)->name,
             'parent_email' => optional($parent)->email,
             'parent_whatsapp' => optional($parent)->whatsapp,
+            'is_free_trial' => (bool) $enrollment->is_free_trial,
+            'terms_accepted' => (bool) $enrollment->terms_accepted,
+            'image_consent_accepted' => (bool) $enrollment->image_consent_accepted,
+            'payment_receipt_path' => $enrollment->payment_receipt_path,
+            'payment_receipt_original_name' => $enrollment->payment_receipt_original_name,
+            'payment_receipt_url' => $enrollment->payment_receipt_path ? asset('storage/'.$enrollment->payment_receipt_path) : null,
         ];
     }
 

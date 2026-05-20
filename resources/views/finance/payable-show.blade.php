@@ -33,7 +33,7 @@
                 <h6 class="mb-1">Registrar pago</h6>
             </div>
             <div class="card-block">
-                <form method="POST" action="{{ route('finance.payables.payments.store', $payable) }}">
+                <form method="POST" action="{{ route('finance.payables.payments.store', $payable) }}" enctype="multipart/form-data">
                     @csrf
                     <div class="row g-3">
                         <div class="col-md-3">
@@ -57,9 +57,14 @@
                             <label class="form-label">Referencia</label>
                             <input type="text" name="reference" value="{{ old('reference') }}" class="form-control">
                         </div>
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <label class="form-label">Notas</label>
                             <textarea name="notes" rows="2" class="form-control">{{ old('notes') }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Comprobante de pago</label>
+                            <input type="file" name="payment_receipt" class="form-control" accept=".jpg,.jpeg,.png,.pdf">
+                            <small class="text-muted">Formatos permitidos: JPG, JPEG, PNG, PDF.</small>
                         </div>
                         <div class="col-md-12 text-end">
                             <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Registrar pago</button>
@@ -83,6 +88,7 @@
                                 <th>Monto</th>
                                 <th>Cuenta</th>
                                 <th>Referencia</th>
+                                <th>Comprobante</th>
                                 <th>Movimiento</th>
                             </tr>
                         </thead>
@@ -94,11 +100,18 @@
                                     <td>${{ number_format((float) $payment->amount, 2) }}</td>
                                     <td>{{ optional($payment->account)->name ?? 'N/A' }}</td>
                                     <td>{{ $payment->reference ?? 'N/A' }}</td>
+                                    <td>
+                                        @if ($payment->payment_receipt_path)
+                                            <a href="{{ asset($payment->payment_receipt_path) }}" class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener">Ver</a>
+                                        @else
+                                            <span class="text-muted">N/A</span>
+                                        @endif
+                                    </td>
                                     <td>#{{ $payment->id }}</td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted">No hay pagos registrados.</td>
+                                    <td colspan="7" class="text-center text-muted">No hay pagos registrados.</td>
                                 </tr>
                             @endforelse
                         </tbody>

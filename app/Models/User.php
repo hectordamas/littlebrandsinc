@@ -55,4 +55,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(Student::class);
     }
+
+    public function coachedCourses()
+    {
+        return $this->belongsToMany(Course::class, 'course_coach', 'coach_id', 'course_id')
+            ->withTimestamps();
+    }
 }

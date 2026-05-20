@@ -67,6 +67,7 @@
                                 <tr>
                                     <th>ID</th>
                                     <th>Nombre</th>
+                                    <th>Programa</th>
                                     <th>Edad Mínima</th>
                                     <th>Edad Máxima</th>
                                     <th>Inscripción</th>
@@ -83,6 +84,7 @@
                                     <tr>
                                         <td>{{ $course->id }}</td>
                                         <td>{{ $course->title }}</td>
+                                        <td>{{ optional($course->program)->name ?? 'N/A' }}</td>
                                         <td>{{ $course->min_age ?? 'N/A' }}</td>
                                         <td>{{ $course->max_age ?? 'N/A' }}</td>
                                         <td>{{ $course->price ? '$' . number_format($course->price, 2) : 'N/A' }}</td>
@@ -117,7 +119,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="12">No se encontraron cursos.</td>
+                                        <td colspan="13">No se encontraron cursos.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -133,7 +135,7 @@
 @section('scripts')
     <script>
         function courseExportColumns() {
-            return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+            return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
         }
 
         $(document).ready(function() {
@@ -195,7 +197,7 @@
                     }
                 ],
                 columnDefs: [{
-                    targets: [10],
+                    targets: [11],
                     orderable: false,
                     searchable: false
                 }],

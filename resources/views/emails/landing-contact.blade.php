@@ -15,12 +15,15 @@
         </tr>
         <tr>
             <td style="padding:24px;">
-                <p style="margin:0 0 12px;"><strong>Nombre:</strong> {{ $payload['name'] }}</p>
+                <p style="margin:0 0 12px;"><strong>Representante:</strong> {{ $payload['representative_name'] }}</p>
+                <p style="margin:0 0 12px;"><strong>Nino o nina:</strong> {{ $payload['child_name'] }} ({{ $payload['child_age'] }} anos)</p>
+                <p style="margin:0 0 12px;"><strong>Programa:</strong> {{ $payload['program_name'] ?? $payload['program_id'] }}</p>
+                <p style="margin:0 0 12px;"><strong>Sede:</strong> {{ $payload['branch_name'] ?? $payload['branch_id'] }}</p>
                 <p style="margin:0 0 12px;"><strong>Email:</strong> {{ $payload['email'] }}</p>
                 <p style="margin:0 0 12px;"><strong>Telefono:</strong> {{ $payload['phone'] }}</p>
                 <p style="margin:0 0 8px;"><strong>Mensaje:</strong></p>
                 <div style="padding:14px;border:1px solid #e5e7eb;border-radius:8px;background:#f9fafb;white-space:pre-line;">
-                    {{ $payload['message'] }}
+                    {{ $payload['comment'] }}
                 </div>
             </td>
         </tr>
