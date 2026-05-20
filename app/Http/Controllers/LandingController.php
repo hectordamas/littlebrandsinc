@@ -46,6 +46,63 @@ class LandingController extends Controller
         ]);
     }
 
+    public function classes(): View
+    {
+        $strikersSchedules = [
+            [
+                'branch' => 'SEDE SAN LUIS',
+                'items' => [
+                    'Baby Strikers (18 a 24 meses): Lunes 4:00 p.m. • Miércoles 4:00 p.m. • Sábados 9:00 a.m.',
+                    'Mini Strikers (24 a 36 meses): Lunes 4:00 p.m. • Miércoles 4:00 p.m. • Sábados 10:00 a.m.',
+                    'Súper Strikers (36 a 48 meses): Lunes 5:00 p.m. • Miércoles 5:00 p.m. • Sábados 11:00 a.m.',
+                ],
+            ],
+            [
+                'branch' => 'SEDE LOS CAMPITOS',
+                'items' => [
+                    'Baby Strikers (18 a 24 meses): Martes 4:00 p.m. • Jueves 4:00 p.m.',
+                    'Mini Strikers (24 a 36 meses): Martes 4:00 p.m. • Jueves 4:00 p.m.',
+                    'Súper Strikers (36 a 48 meses): Martes 5:00 p.m. • Jueves 5:00 p.m.',
+                ],
+            ],
+            [
+                'branch' => 'SEDE LOS CHORROS',
+                'items' => [
+                    'Baby Strikers (18 a 24 meses): Sábados 9:00 a.m.',
+                    'Mini Strikers (24 a 36 meses): Sábados 9:00 a.m.',
+                    'Súper Strikers (36 a 48 meses): Sábados 10:00 a.m.',
+                ],
+            ],
+        ];
+
+        $paddlersSchedules = [
+            [
+                'branch' => 'SEDE LOS CHORROS',
+                'items' => [
+                    'Baby Paddlers (2 a 3 años): Martes 4:00 p.m.',
+                    'Mini Paddlers (3 a 4 años): Martes 4:00 p.m.',
+                    'Súper Paddlers (4 a 5 años): Martes 5:00 p.m.',
+                ],
+            ],
+            [
+                'branch' => 'SEDE LOS CAMPITOS',
+                'items' => [
+                    'Baby Paddlers (2 a 3 años): Miércoles 4:00 p.m.',
+                    'Mini Paddlers (3 a 4 años): Miércoles 4:00 p.m.',
+                    'Súper Paddlers (4 a 5 años): Miércoles 5:00 p.m.',
+                ],
+            ],
+        ];
+
+        $freeTrialUrl = route('enrollment.wizard', ['is_free_trial' => 1]);
+
+        return view('classes.index', [
+            'freeTrialUrl' => $freeTrialUrl,
+            'strikersSchedules' => $strikersSchedules,
+            'paddlersSchedules' => $paddlersSchedules,
+        ]);
+    }
+
     public function contact(LandingContactRequest $request): RedirectResponse
     {
         $payload = $request->validated();

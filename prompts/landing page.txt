@@ -64,3 +64,86 @@ CUMPLEANOS
 
 Boton (Mas información)– Mas informacion que te lleve a contact form
 
+
+
+
+PAGINA INTERNA – CLASES Y SEDES
+
+Vamos a crear una pagina interna de clases la cual debe tener la linea grafica de la pagina principal
+vamos a extender el layout de layouts/landing.blade.php, crearemos un hero con imagenes que ya te propocione
+
+FOTOS DEL PROGRAMA EN Un Hero
+
+(Usamos el mismo layout que se usa para welcome.blade.php layouts.Landing)
+
+Contenido: 
+
+Cada una de nuestros programas está diseñada específicamente para acompañar el desarrollo de los niños durante sus primeros años, combinando aprendizaje, deporte y diversión en experiencias adaptadas a cada etapa.
+Aunque cada programa tiene su propia identidad y metodología, todos comparten la misma visión: ayudar a los niños a crecer con confianza, desarrollar habilidades físicas y sociales, y descubrir el deporte en un ambiente seguro, positivo y lleno de motivación.
+
+📍 Sedes en Caracas:
+
+San Luis • Los Campitos • Los Chorros
+
+🎁 Clases de prueba gratuita disponible (LLeva a el formulario wirzard de inscripcion)
+________________________________________
+
+2. SECCIÓN – HORARIOS Y CLASES DISPONIBLES
+
+⚽ Little Strikers
+
+Fútbol para niños de 18 meses a 4 años
+
+Aca poner lista de clases en un formato que se vea fácil para poner el link de inscripción de cada clase.
+
+SEDE SAN LUIS
+
+Baby Strikers(18 a 24 meses): Lunes 4:00 p.m. Miércoles 4:00 p.m. Sábados 9:00 a.m. 
+Mini Strikers(24 a 36 meses): Lunes 4:00 p.m. Miércoles 4:00 p.m. Sábados 10:00 a.m. 
+Súper Strikers(36 a 48 meses): Lunes 5:00 p.m. Miércoles 5:00 p.m. Sábados 11:00 a.m.
+
+SEDE LOS CAMPITOS
+
+Baby Strikers(18 a 24 meses): Martes 4:00 p.m. Jueves 4:00 p.m.  
+Mini Strikers(24 a 36 meses): Martes 4:00 p.m. Jueves 4:00 p.m.  
+Súper Strikers(36 a 48 meses): Martes 5:00 p.m. Jueves 5:00 p.m.
+
+SEDE LOS CHORROS
+
+Baby Strikers(18 a 24 meses): Sabados 9:00 a.m 
+Mini Strikers(24 a 36 meses): Sabados 9:00 a.m
+Súper Strikers(36 a 48 meses): Sabados 10:00 a.m
+________________________________________
+
+🎾 Little Paddlers
+
+Pádel para niños de 2 a 5 años
+
+Aca poner lista de clases en un formato que se vea fácil para poner el link de inscripción de cada clase.
+
+SEDE LOS CHORROS
+
+Baby Paddlers(2 a 3 años): Martes 4:00 p.m. 
+Mini Paddlers(3 a 4 años): Martes 4:00 p.m. 
+Súper Paddlers(4 a 5 anios): Martes 5:00 p.m. 
+SEDE LOS CAMPITOS
+Baby Paddlers(2 a 3 años): Miércoles 4:00 p.m. 
+Mini Paddlers(3 a 4 años): Miércoles 4:00 p.m. 
+Súper Paddlers(4 a 5 anios): Miércoles 5:00 p.m.
+
+________________________________________
+
+3. SECCIÓN – CTA FINAL (CIERRE)
+
+🎁 Agenda una CLASE DE PRUBA GRATUITA
+Descubre por qué nuestras clases ofrecen una experiencia única para los más pequeños. A través de una metodología dinámica y un currículo de ejercicios especialmente diseñado para cada etapa, ayudamos a los niños a aprender, moverse y desarrollar confianza mientras se divierten.
+Permite que tu hijo/a viva la experiencia de nuestros programas en un ambiente seguro, activo y lleno de aprendizaje.
+
+👉 Agendar Clase de Little Strikers(Futbol)
+
+👉 Agendar Clase de Little Paddlers(Padel)
+
+👉 Aquí puedes:
+
+Debemos mandar al wizard de clases, y en el wizard de clases crearemos un checkbox donde diremos si la persona solicito una clase gratuita (esto debe verse en la parte administrativa como informacion)
+

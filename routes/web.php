@@ -13,6 +13,7 @@ Route::view('/privacy', 'privacy-policy')->name('legal.privacy');
 Route::get('courses/{id}/occupancy', [CoursesController::class, 'occupancy'])->name('courses.occupancy');
 
 Route::get('/', [LandingController::class, 'index'])->name('landing.index');
+Route::get('/clases', [LandingController::class, 'classes'])->name('classes.index');
 Route::post('/contacto', [LandingController::class, 'contact'])->name('landing.contact');
 
 Auth::routes();

@@ -489,6 +489,211 @@
             font-size: 0.95rem;
         }
 
+        .classes-page-hero {
+            padding-top: 146px;
+            padding-bottom: 74px;
+            background:
+                radial-gradient(circle at 12% 12%, rgba(42, 199, 216, 0.14), transparent 30%),
+                radial-gradient(circle at 88% 14%, rgba(245, 193, 93, 0.16), transparent 28%),
+                linear-gradient(180deg, rgba(246, 250, 253, 0.98), rgba(240, 247, 252, 0.92));
+        }
+
+        .classes-page-hero-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+            gap: 1.2rem;
+            align-items: stretch;
+        }
+
+        .classes-page-copy h1 {
+            font-size: clamp(2rem, 3vw, 3rem);
+            line-height: 0.95;
+            margin: 0;
+        }
+
+        .classes-page-copy p {
+            margin: 0.72rem 0 0;
+            color: var(--text);
+            line-height: 1.72;
+        }
+
+        .classes-page-chip-wrap {
+            margin: 1rem 0 1.1rem;
+            display: grid;
+            gap: 0.6rem;
+        }
+
+        .classes-page-chip {
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            max-width: 100%;
+            border-radius: 999px;
+            padding: 0.5rem 0.9rem;
+            font-size: 0.88rem;
+            color: #194567;
+            background: rgba(12, 127, 242, 0.1);
+            border: 1px solid rgba(12, 127, 242, 0.14);
+            font-weight: 700;
+        }
+
+        .classes-page-gallery {
+            border-radius: 28px;
+            border: 1px solid rgba(255, 255, 255, 0.78);
+            background: rgba(255, 255, 255, 0.62);
+            box-shadow: var(--shadow-soft);
+            padding: 0.95rem;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-rows: 170px 170px;
+            gap: 0.75rem;
+        }
+
+        .classes-page-gallery-item {
+            border-radius: 18px;
+            background-size: cover;
+            background-position: center;
+            border: 1px solid rgba(9, 23, 34, 0.08);
+        }
+
+        .classes-page-gallery-item:first-child {
+            grid-column: 1 / -1;
+        }
+
+        .classes-page-schedules {
+            background: linear-gradient(180deg, rgba(243, 248, 252, 0.88), rgba(241, 247, 252, 0.96));
+            padding-top: 72px;
+            padding-bottom: 68px;
+        }
+
+        .classes-program-block {
+            margin-top: 1rem;
+            border-radius: 26px;
+            padding: 1.3rem;
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(246, 250, 253, 0.94));
+            box-shadow: 0 18px 44px rgba(9, 23, 34, 0.1);
+        }
+
+        .classes-program-block+.classes-program-block {
+            margin-top: 1.15rem;
+        }
+
+        .classes-program-head h3 {
+            margin: 0;
+            font-size: clamp(1.45rem, 2.2vw, 2rem);
+            line-height: 1;
+        }
+
+        .classes-program-head p {
+            margin: 0.42rem 0 0;
+            color: var(--text);
+            line-height: 1.65;
+            font-weight: 600;
+        }
+
+        .classes-branch-grid {
+            margin-top: 0.95rem;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.75rem;
+        }
+
+        .classes-branch-grid--two {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .classes-branch-card {
+            border-radius: 16px;
+            padding: 0.95rem;
+            background: #ffffff;
+            border: 1px solid rgba(9, 23, 34, 0.1);
+            box-shadow: 0 10px 22px rgba(9, 23, 34, 0.08);
+        }
+
+        .classes-branch-card h4 {
+            margin: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #194567;
+            font-size: 0.92rem;
+            letter-spacing: 0.3px;
+        }
+
+        .classes-branch-card ul {
+            margin: 0.72rem 0 0;
+            padding: 0;
+            list-style: none;
+            display: grid;
+            gap: 0.5rem;
+        }
+
+        .classes-branch-card li {
+            border-radius: 10px;
+            padding: 0.58rem 0.62rem;
+            background: rgba(12, 127, 242, 0.06);
+            border: 1px solid rgba(12, 127, 242, 0.12);
+            color: #294e69;
+            line-height: 1.45;
+            font-size: 0.86rem;
+            font-weight: 600;
+        }
+
+        .classes-program-cta {
+            margin-top: 0.92rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            border-radius: 12px;
+            padding: 0.78rem 1rem;
+            color: #fff;
+            background: linear-gradient(135deg, #091722, #15436a);
+            font-weight: 800;
+            box-shadow: 0 12px 28px rgba(9, 23, 34, 0.18);
+        }
+
+        .classes-page-cta {
+            padding-top: 72px;
+            padding-bottom: 92px;
+            background:
+                radial-gradient(circle at 86% 18%, rgba(12, 127, 242, 0.12), transparent 30%),
+                linear-gradient(180deg, rgba(241, 247, 252, 0.95), rgba(236, 244, 250, 0.98));
+        }
+
+        .classes-page-cta-wrap {
+            border-radius: 28px;
+            border: 1px solid rgba(255, 255, 255, 0.92);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(246, 250, 253, 0.95));
+            box-shadow: 0 20px 46px rgba(9, 23, 34, 0.1);
+            padding: 1.5rem;
+        }
+
+        .classes-page-cta-wrap h2 {
+            font-size: clamp(1.7rem, 2.6vw, 2.35rem);
+            line-height: 0.98;
+            margin: 0;
+        }
+
+        .classes-page-cta-wrap p {
+            margin: 0.78rem 0 0;
+            color: var(--text);
+            line-height: 1.72;
+        }
+
+        .classes-page-cta-actions {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.72rem;
+            flex-wrap: wrap;
+        }
+
+        .classes-page-cta-note {
+            margin-top: 0.85rem;
+            color: #24506f;
+            font-weight: 700;
+            font-size: 0.92rem;
+        }
+
         .about-grid {
             display: grid;
             gap: 1.1rem;
@@ -1041,6 +1246,23 @@
             background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(244, 249, 253, 0.9));
             box-shadow: 0 20px 48px rgba(9, 23, 34, 0.11);
             backdrop-filter: blur(10px);
+            display: grid;
+            grid-template-columns: minmax(220px, 0.33fr) minmax(0, 1fr);
+            gap: 1.2rem;
+            align-items: stretch;
+        }
+
+        .birthday-media {
+            border-radius: 18px;
+            min-height: 100%;
+            background-size: cover;
+            background-position: center;
+            border: 1px solid rgba(9, 23, 34, 0.1);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+        }
+
+        .birthday-content {
+            min-width: 0;
         }
 
         .birthday-head {
@@ -1063,7 +1285,6 @@
             margin: 0;
             color: var(--text);
             line-height: 1.72;
-            font-size: 1.02rem;
         }
 
         .birthday-grid {
@@ -1095,7 +1316,7 @@
             color: #224b67;
             line-height: 1.58;
             font-weight: 700;
-            font-size: 0.96rem;
+            font-size: 0.92rem;
         }
 
         .birthday-actions {
@@ -1165,7 +1386,7 @@
 
         .contact-info {
             border-radius: 28px;
-            padding: 1.75rem 1.65rem;
+            padding: 1.55rem;
             color: #fff;
             background:
                 radial-gradient(circle at 84% 8%, rgba(255, 255, 255, 0.2), transparent 32%),
@@ -1206,7 +1427,7 @@
         .contact-info-points {
             margin-top: 1.15rem;
             display: grid;
-            gap: 0.8rem;
+            gap: 0.7rem;
             position: relative;
             z-index: 1;
         }
@@ -1528,7 +1749,7 @@
         .whatsapp-float {
             position: fixed;
             right: 18px;
-            bottom: max(18px, calc(env(safe-area-inset-bottom) + 10px));
+            bottom: 18px;
             width: 56px;
             height: 56px;
             border-radius: 999px;
@@ -1572,6 +1793,15 @@
                 padding-bottom: 46px;
             }
 
+            .birthday-wrap {
+                grid-template-columns: 1fr;
+                gap: 0.9rem;
+            }
+
+            .birthday-media {
+                min-height: 170px;
+            }
+
             .birthday-section::after {
                 height: 76px;
             }
@@ -1583,18 +1813,6 @@
 
             #contacto::after {
                 height: 56px;
-            }
-
-            .birthday-head p {
-                font-size: 0.98rem;
-            }
-
-            .birthday-point p {
-                font-size: 0.94rem;
-            }
-
-            .contact-info {
-                padding: 1.35rem 1.2rem;
             }
 
             .contact-layout {
@@ -1639,6 +1857,7 @@
             .about-grid,
             .mv-grid,
             .brands-grid,
+            .classes-page-hero-grid,
             .birthday-grid,
             .classes-venues-grid,
             .contact-layout,
@@ -1646,6 +1865,29 @@
             .hero-metrics,
             .about-points {
                 grid-template-columns: 1fr;
+            }
+
+            .classes-page-gallery {
+                grid-template-columns: 1fr;
+                grid-template-rows: none;
+            }
+
+            .classes-page-gallery-item {
+                min-height: 170px;
+            }
+
+            .classes-page-gallery-item:first-child {
+                grid-column: auto;
+            }
+
+            .classes-branch-grid,
+            .classes-branch-grid--two {
+                grid-template-columns: 1fr;
+            }
+
+            .classes-page-cta-actions {
+                flex-direction: column;
+                align-items: stretch;
             }
 
             .classes-venues-head,
@@ -1753,8 +1995,8 @@
             }
 
             .whatsapp-float {
-                right: max(12px, calc(env(safe-area-inset-right) + 8px));
-                bottom: max(12px, calc(env(safe-area-inset-bottom) + 8px));
+                right: 12px;
+                bottom: 12px;
                 width: 52px;
                 height: 52px;
             }
@@ -1774,11 +2016,11 @@
             </a>
 
             <nav class="topnav" aria-label="Navegacion principal">
-                <a href="/#inicio">Inicio</a>
-                <a href="/#programas">Programas</a>
-                <a href="/#clases-sedes">Clases</a>
-                <a href="/#cumpleanos">Cumpleaños</a>
-                <a href="/#contacto">Contacto</a>
+                <a href="{{ route('landing.index') }}#inicio">Inicio</a>
+                <a href="{{ route('landing.index') }}#programas">Programas</a>
+                <a href="{{ route('classes.index') }}">Clases</a>
+                <a href="{{ route('landing.index') }}#cumpleanos">Cumpleaños</a>
+                <a href="{{ route('landing.index') }}#contacto">Contacto</a>
                 <a href="{{ route('login') }}">Ingresar</a>
             </nav>
 
@@ -1790,7 +2032,7 @@
                 </svg>
             </button>
 
-            <a class="cta-pill" href="#contacto">Inscribir a mi hijo</a>
+            <a class="cta-pill" href="{{ route('enrollment.wizard', ['is_free_trial' => 1]) }}">Inscribir a mi hijo</a>
         </div>
     </header>
 
@@ -1811,11 +2053,11 @@
 
             <nav class="footer-links" aria-label="Enlaces del pie de página">
                 <span class="footer-title">Navegación</span>
-                <a href="/#inicio">Inicio</a>
-                <a href="/#programas">Programas</a>
-                <a href="/#clases-sedes">Clases</a>
-                <a href="/#cumpleanos">Cumpleaños</a>
-                <a href="/#contacto">Contacto</a>
+                <a href="{{ route('landing.index') }}#inicio">Inicio</a>
+                <a href="{{ route('landing.index') }}#programas">Programas</a>
+                <a href="{{ route('classes.index') }}">Clases</a>
+                <a href="{{ route('landing.index') }}#cumpleanos">Cumpleaños</a>
+                <a href="{{ route('landing.index') }}#contacto">Contacto</a>
             </nav>
 
             <div class="footer-social" aria-label="Redes sociales">
@@ -1856,7 +2098,7 @@
                 <span class="footer-title">Siguiente paso</span>
                 <p>Si quieres conocer horarios, edades y disponibilidad, escribe al equipo y te orientamos según la
                     etapa de tu hijo.</p>
-                <a href="#contacto">Solicitar información</a>
+                <a href="{{ route('landing.index') }}#contacto">Solicitar información</a>
             </div>
         </div>
     </footer>

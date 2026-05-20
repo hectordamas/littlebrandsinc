@@ -169,7 +169,7 @@
                             <div class="classes-venues-card-body">
                                 <h4>⚽ Little Strikers</h4>
                                 <p>Fútbol para niños de 18 meses a 4 años</p>
-                                <a class="classes-venues-btn" href="/clases#little-strikers">👉 Ver clases</a>
+                                <a class="classes-venues-btn" href="{{ route('classes.index') }}#little-strikers">👉 Ver clases</a>
                             </div>
                         </article>
 
@@ -179,7 +179,7 @@
                             <div class="classes-venues-card-body">
                                 <h4>🎾 Little Paddlers</h4>
                                 <p>Pádel para niños de 2 a 5 años</p>
-                                <a class="classes-venues-btn" href="/clases#little-paddlers">👉 Ver clases</a>
+                                <a class="classes-venues-btn" href="{{ route('classes.index') }}#little-paddlers">👉 Ver clases</a>
                             </div>
                         </article>
                     </div>
@@ -190,7 +190,7 @@
                             emoción de nuestros programas deportivos en un ambiente seguro y diseñado especialmente para su
                             edad.
                         </p>
-                        <a class="classes-venues-cta-btn" href="/clases">👉 Ver clases</a>
+                        <a class="classes-venues-cta-btn" href="{{ route('classes.index') }}">👉 Ver clases</a>
                     </div>
                 </div>
             </div>
@@ -200,33 +200,38 @@
         <section id="cumpleanos" class="birthday-section">
             <div class="container">
                 <div class="birthday-wrap reveal">
-                    <div class="birthday-head">
-                        <span class="section-kicker">Cumpleaños</span>
-                        <h2 style="margin-bottom: 10px;">Cumpleaños</h2>
-                        <p class="birthday-hero">⚽🎉 ¡Celebra un cumpleaños inolvidable con Nosotros! 🎂🥳</p>
-                        <p>
-                            ¿Buscas una forma divertida y única de festejar el cumpleaños de tu bebe? En Little Brands,
-                            hacemos de su día especial una experiencia llena de alegría, deporte y momentos inolvidables.
-                        </p>
-                    </div>
+                    <div class="birthday-media"
+                        style="background-image: url('{{ asset('landing_page/assets/images/img1.jpeg') }}');"></div>
 
-                    <div class="birthday-grid">
-                        <article class="birthday-point">
-                            <span>🎈</span>
-                            <p>Paquetes personalizados para adaptarse a tu celebración.</p>
-                        </article>
-                        <article class="birthday-point">
-                            <span>⚽</span>
-                            <p>Juegos y dinámicas diseñadas para la edad de los niños.</p>
-                        </article>
-                        <article class="birthday-point">
-                            <span>😃</span>
-                            <p>Entrenadores especializados que garantizan diversión y seguridad.</p>
-                        </article>
-                    </div>
+                    <div class="birthday-content">
+                        <div class="birthday-head">
+                            <span class="section-kicker">Cumpleaños</span>
+                            <h2 style="margin-bottom: 10px;">Cumpleaños</h2>
+                            <p class="birthday-hero">⚽🎉 ¡Celebra un cumpleaños inolvidable con Nosotros! 🎂🥳</p>
+                            <p>
+                                ¿Buscas una forma divertida y única de festejar el cumpleaños de tu bebe? En Little Brands,
+                                hacemos de su día especial una experiencia llena de alegría, deporte y momentos inolvidables.
+                            </p>
+                        </div>
 
-                    <div class="birthday-actions">
-                        <a class="birthday-btn" href="#contacto">Mas información</a>
+                        <div class="birthday-grid">
+                            <article class="birthday-point">
+                                <span>🎈</span>
+                                <p>Paquetes personalizados para adaptarse a tu celebración.</p>
+                            </article>
+                            <article class="birthday-point">
+                                <span>⚽</span>
+                                <p>Juegos y dinámicas diseñadas para la edad de los niños.</p>
+                            </article>
+                            <article class="birthday-point">
+                                <span>😃</span>
+                                <p>Entrenadores especializados que garantizan diversión y seguridad.</p>
+                            </article>
+                        </div>
+
+                        <div class="birthday-actions">
+                            <a class="birthday-btn" href="#contacto">Mas información</a>
+                        </div>
                     </div>
                 </div>
             </div>
