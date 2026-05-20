@@ -2018,7 +2018,7 @@
             <nav class="topnav" aria-label="Navegacion principal">
                 <a href="{{ route('landing.index') }}#inicio">Inicio</a>
                 <a href="{{ route('landing.index') }}#programas">Programas</a>
-                <a href="{{ route('classes.index') }}">Clases</a>
+                <a href="{{ route('landing.index') }}#clases">Clases</a>
                 <a href="{{ route('landing.index') }}#cumpleanos">Cumpleaños</a>
                 <a href="{{ route('landing.index') }}#contacto">Contacto</a>
                 <a href="{{ route('login') }}">Ingresar</a>
@@ -2055,7 +2055,7 @@
                 <span class="footer-title">Navegación</span>
                 <a href="{{ route('landing.index') }}#inicio">Inicio</a>
                 <a href="{{ route('landing.index') }}#programas">Programas</a>
-                <a href="{{ route('classes.index') }}">Clases</a>
+                <a href="{{ route('landing.index') }}#clases">Clases</a>
                 <a href="{{ route('landing.index') }}#cumpleanos">Cumpleaños</a>
                 <a href="{{ route('landing.index') }}#contacto">Contacto</a>
             </nav>
