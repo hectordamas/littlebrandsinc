@@ -694,6 +694,233 @@
             font-size: 0.92rem;
         }
 
+        /* Classes and venues page visual upgrade */
+        .classes-page-hero {
+            position: relative;
+            overflow: hidden;
+            padding-top: 152px;
+            padding-bottom: 82px;
+            background:
+                radial-gradient(circle at 8% 10%, rgba(20, 77, 131, 0.24), transparent 34%),
+                radial-gradient(circle at 88% 12%, rgba(255, 141, 63, 0.2), transparent 26%),
+                linear-gradient(160deg, #f8fbff 0%, #edf4fb 48%, #f8fbff 100%);
+        }
+
+        .classes-page-hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(9, 23, 34, 0.028) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(9, 23, 34, 0.028) 1px, transparent 1px);
+            background-size: 62px 62px;
+            mask-image: linear-gradient(180deg, black 0%, rgba(0, 0, 0, 0.35) 70%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .classes-page-copy {
+            position: relative;
+            z-index: 1;
+        }
+
+        .classes-page-copy h1 {
+            font-size: clamp(2.2rem, 3.3vw, 3.4rem);
+            line-height: 0.9;
+            letter-spacing: 0.2px;
+            text-wrap: balance;
+        }
+
+        .classes-page-chip {
+            background: rgba(255, 255, 255, 0.86);
+            border: 1px solid rgba(16, 70, 119, 0.18);
+            box-shadow: 0 8px 22px rgba(9, 23, 34, 0.08);
+            color: #123c62;
+            font-size: 0.84rem;
+            font-weight: 800;
+            letter-spacing: 0.2px;
+        }
+
+        .classes-page-gallery {
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.82);
+            background: linear-gradient(160deg, rgba(255, 255, 255, 0.8), rgba(240, 247, 252, 0.86));
+            box-shadow: 0 24px 52px rgba(9, 23, 34, 0.14);
+            padding: 1rem;
+            transform: rotate(-1.2deg);
+        }
+
+        .classes-page-gallery-item {
+            border-radius: 20px;
+            border: 1px solid rgba(9, 23, 34, 0.1);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+            transition: transform 0.28s ease, box-shadow 0.28s ease;
+        }
+
+        .classes-page-gallery-item:hover {
+            transform: translateY(-3px) scale(1.01);
+            box-shadow: 0 16px 28px rgba(9, 23, 34, 0.2);
+        }
+
+        .classes-page-schedules {
+            background:
+                radial-gradient(circle at 12% 0%, rgba(12, 127, 242, 0.1), transparent 28%),
+                linear-gradient(180deg, rgba(243, 248, 252, 0.96), rgba(239, 246, 251, 0.98));
+        }
+
+        .classes-program-block {
+            margin-top: 1.2rem;
+            padding: 1.45rem;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.92);
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(246, 250, 253, 0.98));
+            box-shadow: 0 24px 48px rgba(9, 23, 34, 0.1);
+        }
+
+        #little-strikers {
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(246, 250, 253, 0.98)),
+                radial-gradient(circle at 8% 8%, rgba(249, 115, 22, 0.08), transparent 22%);
+        }
+
+        #little-paddlers {
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(246, 250, 253, 0.98)),
+                radial-gradient(circle at 10% 10%, rgba(14, 165, 233, 0.1), transparent 24%);
+        }
+
+        .classes-program-head {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px dashed rgba(9, 23, 34, 0.12);
+        }
+
+        .classes-program-head h3 {
+            font-size: clamp(1.5rem, 2.3vw, 2.08rem);
+        }
+
+        .classes-program-head p {
+            font-size: 0.9rem;
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .classes-branch-grid {
+            gap: 0.9rem;
+        }
+
+        .classes-branch-card {
+            border-radius: 20px;
+            padding: 1rem;
+            background: linear-gradient(180deg, #ffffff, #f7fbff);
+            border: 1px solid rgba(15, 57, 92, 0.13);
+            box-shadow: 0 14px 24px rgba(9, 23, 34, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .classes-branch-card::after {
+            content: '';
+            position: absolute;
+            inset: auto -36px -52px auto;
+            width: 130px;
+            height: 130px;
+            border-radius: 999px;
+            background: radial-gradient(circle, rgba(12, 127, 242, 0.14), transparent 68%);
+            pointer-events: none;
+        }
+
+        .classes-branch-card h4 {
+            font-size: 0.84rem;
+            text-transform: uppercase;
+            letter-spacing: 1.3px;
+            color: #1c4e78;
+            margin-bottom: 0.1rem;
+        }
+
+        .classes-item-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.7rem;
+            border-radius: 14px;
+            padding: 0.68rem;
+            background: rgba(12, 127, 242, 0.055);
+            border: 1px solid rgba(12, 127, 242, 0.14);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .classes-item-row:hover {
+            transform: translateY(-1px);
+            border-color: rgba(12, 127, 242, 0.26);
+            box-shadow: 0 10px 20px rgba(12, 127, 242, 0.12);
+        }
+
+        .classes-item-main {
+            min-width: 0;
+        }
+
+        .classes-item-title {
+            margin: 0;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            color: #143a5b;
+            font-weight: 800;
+            text-wrap: balance;
+        }
+
+        .classes-item-schedule {
+            margin: 0.2rem 0 0;
+            font-size: 0.78rem;
+            line-height: 1.45;
+            color: #315f83;
+            font-weight: 700;
+        }
+
+        .classes-item-link {
+            flex-shrink: 0;
+            text-decoration: none;
+            border-radius: 999px;
+            padding: 0.48rem 0.82rem;
+            font-size: 0.75rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            color: #fff;
+            background: linear-gradient(135deg, #0a2f4a, #1f6da7);
+            box-shadow: 0 8px 16px rgba(9, 23, 34, 0.16);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .classes-item-link:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 18px rgba(9, 23, 34, 0.2);
+        }
+
+        .classes-program-cta {
+            margin-top: 1rem;
+            border-radius: 14px;
+            padding: 0.82rem 1.08rem;
+            font-size: 0.9rem;
+            letter-spacing: 0.2px;
+        }
+
+        .classes-page-cta-wrap {
+            border-radius: 32px;
+            padding: 1.65rem;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 251, 254, 0.97));
+            box-shadow: 0 26px 50px rgba(9, 23, 34, 0.11);
+        }
+
+        .classes-page-cta-wrap h2 {
+            font-size: clamp(1.75rem, 2.8vw, 2.5rem);
+            line-height: 0.94;
+        }
+
         .about-grid {
             display: grid;
             gap: 1.1rem;
@@ -1885,6 +2112,20 @@
                 grid-template-columns: 1fr;
             }
 
+            .classes-program-head {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .classes-item-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .classes-item-link {
+                text-align: center;
+            }
+
             .classes-page-cta-actions {
                 flex-direction: column;
                 align-items: stretch;
@@ -2018,7 +2259,7 @@
             <nav class="topnav" aria-label="Navegacion principal">
                 <a href="{{ route('landing.index') }}#inicio">Inicio</a>
                 <a href="{{ route('landing.index') }}#programas">Programas</a>
-                <a href="{{ route('landing.index') }}#clases">Clases</a>
+                <a href="{{ route('landing.index') }}#clases-sedes">Clases</a>
                 <a href="{{ route('landing.index') }}#cumpleanos">Cumpleaños</a>
                 <a href="{{ route('landing.index') }}#contacto">Contacto</a>
                 <a href="{{ route('login') }}">Ingresar</a>
@@ -2055,7 +2296,7 @@
                 <span class="footer-title">Navegación</span>
                 <a href="{{ route('landing.index') }}#inicio">Inicio</a>
                 <a href="{{ route('landing.index') }}#programas">Programas</a>
-                <a href="{{ route('landing.index') }}#clases">Clases</a>
+                <a href="{{ route('landing.index') }}#clases-sedes">Clases</a>
                 <a href="{{ route('landing.index') }}#cumpleanos">Cumpleaños</a>
                 <a href="{{ route('landing.index') }}#contacto">Contacto</a>
             </nav>

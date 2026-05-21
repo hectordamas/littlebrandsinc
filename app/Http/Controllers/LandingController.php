@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\LandingContactRequest;
+use App\Models\Course;
 use App\Mail\LandingContactMailable;
 use App\Models\Branch;
 use App\Models\ContactMessage;
 use App\Models\Program;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -48,52 +50,35 @@ class LandingController extends Controller
 
     public function classes(): View
     {
-        $strikersSchedules = [
-            [
-                'branch' => 'SEDE SAN LUIS',
-                'items' => [
-                    'Baby Strikers (18 a 24 meses): Lunes 4:00 p.m. • Miércoles 4:00 p.m. • Sábados 9:00 a.m.',
-                    'Mini Strikers (24 a 36 meses): Lunes 4:00 p.m. • Miércoles 4:00 p.m. • Sábados 10:00 a.m.',
-                    'Súper Strikers (36 a 48 meses): Lunes 5:00 p.m. • Miércoles 5:00 p.m. • Sábados 11:00 a.m.',
-                ],
-            ],
-            [
-                'branch' => 'SEDE LOS CAMPITOS',
-                'items' => [
-                    'Baby Strikers (18 a 24 meses): Martes 4:00 p.m. • Jueves 4:00 p.m.',
-                    'Mini Strikers (24 a 36 meses): Martes 4:00 p.m. • Jueves 4:00 p.m.',
-                    'Súper Strikers (36 a 48 meses): Martes 5:00 p.m. • Jueves 5:00 p.m.',
-                ],
-            ],
-            [
-                'branch' => 'SEDE LOS CHORROS',
-                'items' => [
-                    'Baby Strikers (18 a 24 meses): Sábados 9:00 a.m.',
-                    'Mini Strikers (24 a 36 meses): Sábados 9:00 a.m.',
-                    'Súper Strikers (36 a 48 meses): Sábados 10:00 a.m.',
-                ],
-            ],
-        ];
+        $courses = Course::query()
+            ->with(['program', 'branch', 'classes'])
+            ->where('active', true)
+            ->whereDate('end_date', '>=', now()->toDateString())
+            ->whereHas('program', fn ($query) => $query->whereIn('slug', ['little-strikers', 'little-paddlers']))
+            ->get();
 
-        $paddlersSchedules = [
-            [
-                'branch' => 'SEDE LOS CHORROS',
-                'items' => [
-                    'Baby Paddlers (2 a 3 años): Martes 4:00 p.m.',
-                    'Mini Paddlers (3 a 4 años): Martes 4:00 p.m.',
-                    'Súper Paddlers (4 a 5 años): Martes 5:00 p.m.',
-                ],
-            ],
-            [
-                'branch' => 'SEDE LOS CAMPITOS',
-                'items' => [
-                    'Baby Paddlers (2 a 3 años): Miércoles 4:00 p.m.',
-                    'Mini Paddlers (3 a 4 años): Miércoles 4:00 p.m.',
-                    'Súper Paddlers (4 a 5 años): Miércoles 5:00 p.m.',
-                ],
-            ],
-        ];
+        $groupedPrograms = [];
 
+        foreach ($courses as $course) {
+            $programSlug = optional($course->program)->slug;
+            $branchName = optional($course->branch)->name;
+
+            if (! $programSlug || ! $branchName) {
+                continue;
+            }
+
+            $groupedPrograms[$programSlug][$branchName][] = [
+                'title' => $course->title,
+                'schedule' => $this->formatCourseSchedule($course),
+                'url' => route('enrollment.wizard', [
+                    'course_id' => $course->id,
+                    'is_free_trial' => 1,
+                ]),
+            ];
+        }
+
+        $strikersSchedules = $this->normalizeProgramSchedules($groupedPrograms['little-strikers'] ?? []);
+        $paddlersSchedules = $this->normalizeProgramSchedules($groupedPrograms['little-paddlers'] ?? []);
         $freeTrialUrl = route('enrollment.wizard', ['is_free_trial' => 1]);
 
         return view('classes.index', [
@@ -101,6 +86,101 @@ class LandingController extends Controller
             'strikersSchedules' => $strikersSchedules,
             'paddlersSchedules' => $paddlersSchedules,
         ]);
+    }
+
+    protected function normalizeProgramSchedules(array $branchGroups): array
+    {
+        $branchOrder = [
+            'SEDE SAN LUIS' => 1,
+            'SEDE LOS CAMPITOS' => 2,
+            'SEDE LOS CHORROS' => 3,
+        ];
+
+        $branches = collect($branchGroups)
+            ->map(function ($items, $branch) {
+                $items = collect($items)
+                    ->sortBy(fn ($item) => $this->courseTitleOrder((string) ($item['title'] ?? '')))
+                    ->map(fn ($item) => [
+                        'title' => $item['title'],
+                        'schedule' => $item['schedule'],
+                        'url' => $item['url'],
+                    ])
+                    ->values()
+                    ->all();
+
+                return [
+                    'branch' => $branch,
+                    'items' => $items,
+                ];
+            })
+            ->sortBy(fn ($branchData) => $branchOrder[$branchData['branch']] ?? 99)
+            ->values()
+            ->all();
+
+        return $branches;
+    }
+
+    protected function formatCourseSchedule(Course $course): string
+    {
+        $weekDays = [
+            1 => 'Lunes',
+            2 => 'Martes',
+            3 => 'Miércoles',
+            4 => 'Jueves',
+            5 => 'Viernes',
+            6 => 'Sábados',
+            7 => 'Domingos',
+        ];
+
+        $slots = $course->classes
+            ->map(function ($class) {
+                $date = $class->date instanceof Carbon
+                    ? $class->date
+                    : Carbon::parse($class->date);
+
+                return [
+                    'day' => (int) $date->dayOfWeekIso,
+                    'time' => substr((string) $class->start_time, 0, 5),
+                ];
+            })
+            ->unique(fn ($slot) => $slot['day'] . '|' . $slot['time'])
+            ->sortBy([
+                ['day', 'asc'],
+                ['time', 'asc'],
+            ])
+            ->values();
+
+        if ($slots->isEmpty()) {
+            return 'Horario por confirmar';
+        }
+
+        return $slots
+            ->map(function ($slot) use ($weekDays) {
+                $carbonTime = Carbon::createFromFormat('H:i', $slot['time']);
+
+                return ($weekDays[$slot['day']] ?? 'Dia') . ' ' . mb_strtolower($carbonTime->format('g:i A'));
+            })
+            ->map(fn ($value) => str_replace(['am', 'pm'], ['a.m.', 'p.m.'], $value))
+            ->implode(' • ');
+    }
+
+    protected function courseTitleOrder(string $title): int
+    {
+        $normalized = mb_strtolower($title);
+
+        if (str_contains($normalized, 'baby')) {
+            return 1;
+        }
+
+        if (str_contains($normalized, 'mini')) {
+            return 2;
+        }
+
+        if (str_contains($normalized, 'super') || str_contains($normalized, 'súper')) {
+            return 3;
+        }
+
+        return 99;
     }
 
     public function contact(LandingContactRequest $request): RedirectResponse

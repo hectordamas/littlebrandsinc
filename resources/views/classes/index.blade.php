@@ -64,7 +64,13 @@
                                 <h4>{{ $branch['branch'] }}</h4>
                                 <ul>
                                     @foreach ($branch['items'] as $item)
-                                        <li>{{ $item }}</li>
+                                        <li class="classes-item-row">
+                                            <div class="classes-item-main">
+                                                <p class="classes-item-title">{{ $item['title'] }}</p>
+                                                <p class="classes-item-schedule">{{ $item['schedule'] }}</p>
+                                            </div>
+                                            <a class="classes-item-link" href="{{ $item['url'] }}">Inscribir</a>
+                                        </li>
                                     @endforeach
                                 </ul>
                             </section>
@@ -86,7 +92,13 @@
                                 <h4>{{ $branch['branch'] }}</h4>
                                 <ul>
                                     @foreach ($branch['items'] as $item)
-                                        <li>{{ $item }}</li>
+                                        <li class="classes-item-row">
+                                            <div class="classes-item-main">
+                                                <p class="classes-item-title">{{ $item['title'] }}</p>
+                                                <p class="classes-item-schedule">{{ $item['schedule'] }}</p>
+                                            </div>
+                                            <a class="classes-item-link" href="{{ $item['url'] }}">Inscribir</a>
+                                        </li>
                                     @endforeach
                                 </ul>
                             </section>
