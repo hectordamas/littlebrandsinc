@@ -120,6 +120,7 @@
                                 <th>#</th>
                                 <th>Concepto</th>
                                 <th>Origen CxC</th>
+                                <th>Programa</th>
                                 <th>Sede</th>
                                 <th>Total</th>
                                 <th>Saldo</th>
@@ -138,6 +139,13 @@
                                             <div class="small text-muted mt-1">Inscripción #{{ $receivable->enrollment_id }}</div>
                                         @else
                                             <span class="badge bg-secondary">Manual</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if ($receivable->enrollment)
+                                            <span class="fw-semibold">{{ optional($receivable->enrollment->program)->name ?? 'N/A' }}</span>
+                                        @else
+                                            <span class="text-muted">N/A</span>
                                         @endif
                                     </td>
                                     <td>{{ optional($receivable->branch)->name ?? 'N/A' }}</td>
@@ -176,7 +184,7 @@
 @section('scripts')
     <script>
         function receivablesExportColumns() {
-            return [0, 1, 2, 3, 4, 5, 6, 7];
+            return [0, 1, 2, 3, 4, 5, 6, 7, 8];
         }
 
         function buildReceivableButtons() {

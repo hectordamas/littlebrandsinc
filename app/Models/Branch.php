@@ -7,6 +7,15 @@ use App\Models\{Enrollment, Course};
 
 class Branch extends Model
 {
+    protected $fillable = [
+        'name',
+        'address',
+        'email',
+        'phone',
+        'active',
+        'logo',
+    ];
+
     public function courses(){
         return $this->hasMany(Course::class);
     }   

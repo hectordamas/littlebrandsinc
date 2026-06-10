@@ -13,7 +13,7 @@ y en todas las vistas en las que aparezca el pago, este modal se despliega a tra
 (esto debe verse en el detalle de inscripción)
 
 * Al aceptar los términos y condiciones de inscripción debe existir otro checkbox para aceptar
-el uso de imagen del menor representado (esto debe verse en el detalle de inscripcion)
+el uso de imagen del menor representado (esto debe verse en el detalle de Inscripción)
 
 2. Operaciones
 
@@ -93,3 +93,45 @@ Por otra parte lo que necesito realmente es que a cada uno de los dias se les as
 
  Los entrenadores no se seleccionan multiple, me gustaria que se pudiera, y que por favor añadas este campo
  una especie de select2 multiple para que se vea mas estetico
+
+
+
+
+ Ajustes
+
+ * Necesito que Inscripciones este asociado a programas, ya no a cursos, de esta forma se cobra la Inscripción
+ una sola vez y se paga la mensualidad establecida en curso
+
+ * Necesito en wizard filtro por programa 
+
+ * Necesito poder seleccionar mas de un curso en el wizard y al pagar ver el total de lo que voy a pagar
+ en ese checkout
+
+ * Si la Inscripción es de prueba gratuita debe permitir poder inscribirse nuevamente
+ 
+ * La edad maxima y minima debe permitir decimales
+
+ * Debo poder ver en el detalle de la Inscripción si el padre acepto el uso de imagen y si es clase de prueba
+
+ * en el wizard cada curso debe tener el detalle de los dias y la sede, pero no colocar todos y cada uno de los dias 
+ sino un resumen como: Lunes 8am - 9 am
+
+* Debo poder agregar un attachment del pago al inscribir desde la administracion, tambien agrega el check de uso de imagen
+y clase de prueba, tambien de poder agregar varias clases y que se vea la sede y los dias 
+
+* Que en el perfil de entrenador cuando vaya a ver la asistencia de los estudiantes pueda ver que estudiante entro por clase de prueba
+
+* si se vuelve a inscribir el estudiante luego de haber pasado por la clase de prueba, que ya la clase de prueba
+de ese curso no tenga validez 
+
+* Los estudiantes que no logran obtener un cupo deben entrar en lista de espera, debo poder ver esta lista de espera en la administracion
+y debo poder pasarlos a Inscripciones una vez haga la revision, obviamente con los filtros de edad y capacidad de cada curso
+
+* En los seeders creamos un curso con varios dias de clase, mejor crear un seeder con un solo dia a la semana
+para que el usuario pueda escoger varios dias, ejemplo, curso X los lunes 8 am - 9 am, ese mismo curso x los martes 8 am - 9 am
+dos cursos por dia a la semana y no uno que contenga varios dias
+
+* Los padres desde su portal deben registrar sus pagos con comprobante de pago y afectar su cuenta por cobrar
+una vez sea aprobado el pago del padre por administracion, (poder notificar por correo al padre su pago fue aprobado)
+
+Se entiende esta tanda de cambios?

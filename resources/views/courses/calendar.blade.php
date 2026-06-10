@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('title')
-    <title>{{ config('app.name') }} - Calendario de Clases</title>
+    <title>{{ config('app.name') }} - Calendario de Sesiones de Clase</title>
 @endsection
 
 @section('styles')
@@ -234,8 +234,8 @@
     <div class="container-fluid">
         <div class="card calendar-card">
             <div class="card-header">
-                <h5 class="mb-1">Calendario General de Clases</h5>
-                <span class="text-muted">Visualiza todas las clases de todos los cursos en una sola agenda.</span>
+                <h5 class="mb-1">Calendario General de Sesiones de Clase</h5>
+                <span class="text-muted">Visualiza todas las sesiones de clase de todas las Clases en una sola agenda.</span>
             </div>
             <div class="card-body">
                 <div class="calendar-toolbar">
@@ -261,8 +261,8 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <div>
-                        <h5 class="modal-title mb-0" id="classDetailTitle">Detalle de clase</h5>
-                        <div class="modal-subtitle" id="classDetailSubtitle">Informacion completa del curso y sesion</div>
+                        <h5 class="modal-title mb-0" id="classDetailTitle">Detalle de sesión de clase</h5>
+                        <div class="modal-subtitle" id="classDetailSubtitle">Información completa de la Clase y sesión de clase</div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
@@ -297,7 +297,7 @@
                             <span class="detail-value" id="detailOccupancy">N/A</span>
                         </div>
                         <div class="class-detail-item">
-                            <span class="detail-label">Precio de inscripcion</span>
+                            <span class="detail-label">Precio de Inscripción</span>
                             <span class="detail-value" id="detailPrice">N/A</span>
                         </div>
                         <div class="class-detail-item">
@@ -305,17 +305,17 @@
                             <span class="detail-value" id="detailMonthlyFee">N/A</span>
                         </div>
                         <div class="class-detail-item">
-                            <span class="detail-label">Inicio del curso</span>
+                            <span class="detail-label">Inicio de la Clase</span>
                             <span class="detail-value" id="detailStartDate">N/A</span>
                         </div>
                         <div class="class-detail-item">
-                            <span class="detail-label">Fin del curso</span>
+                            <span class="detail-label">Fin de la Clase</span>
                             <span class="detail-value" id="detailEndDate">N/A</span>
                         </div>
                     </div>
 
                     <div class="mt-3">
-                        <span class="detail-label">Descripcion del curso</span>
+                        <span class="detail-label">Descripción de la Clase</span>
                         <div class="class-detail-item" id="detailDescription">Sin descripcion registrada.</div>
                     </div>
                 </div>
@@ -381,7 +381,7 @@
 
                 if (ratio >= 1) {
                     return {
-                        label: 'Curso lleno',
+                        label: 'Clase llena',
                         pillClass: 'occupancy-full',
                         eventBackground: '#fee2e2',
                         eventBorder: '#fca5a5',
@@ -425,7 +425,7 @@
                     day: 'Dia'
                 },
                 events: function(fetchInfo, successCallback, failureCallback) {
-                    statusEl.textContent = 'Cargando clases...';
+                    statusEl.textContent = 'Cargando sesiones de clase...';
 
                     const params = new URLSearchParams({
                         start: fetchInfo.startStr,
@@ -450,16 +450,16 @@
                         return response.json();
                     })
                     .then(function(events) {
-                        statusEl.textContent = `Mostrando ${events.length} clase(s).`;
+                        statusEl.textContent = `Mostrando ${events.length} sesión(es) de clase.`;
                         successCallback(events);
                     })
                     .catch(function(error) {
-                        statusEl.textContent = 'Error al cargar clases.';
+                        statusEl.textContent = 'Error al cargar sesiones de clase.';
                         failureCallback(error);
                         Swal.fire({
                             icon: 'error',
                             title: 'Calendario no disponible',
-                            text: 'No fue posible cargar las clases del calendario.'
+                            text: 'No fue posible cargar las sesiones de clase del calendario.'
                         });
                     });
                 },

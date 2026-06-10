@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('title')
-    <title>{{ config('app.name') }} - Cursos</title>
+    <title>{{ config('app.name') }} - Clases</title>
 @endsection
 
 @section('styles')
@@ -53,12 +53,12 @@
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <div>
-                            <h5>Todos los Cursos</h5>
-                            <span class="text-muted">Gestión y seguimiento de cursos activos en el sistema</span>
+                            <h5>Todas las Clases</h5>
+                            <span class="text-muted">Gestión y seguimiento de Clases activas en el sistema</span>
                         </div>
 
                         <a href="{{ route('courses.create') }}" class="btn btn-inverse btn-sm">
-                            <i class="fas fa-plus"></i> Agregar Curso</a>
+                            <i class="fas fa-plus"></i> Agregar Clase</a>
                     </div>
                     <div class="card-block">
                         <div class="table-responsive">
@@ -100,7 +100,7 @@
                                                 <button type="button"
                                                     class="wizard-link-chip copy-wizard-link-btn"
                                                     data-wizard-link="{{ route('enrollment.wizard', ['course_id' => $course->id]) }}"
-                                                    title="Copiar enlace del wizard de este curso">
+                                                    title="Copiar enlace del wizard de esta Clase">
                                                     <i class="fas fa-link"></i>
                                                     Wizard
                                                 </button>
@@ -119,7 +119,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="13">No se encontraron cursos.</td>
+                                        <td colspan="13">No se encontraron Clases.</td>
                                     </tr>
                                 @endforelse
                             </tbody>

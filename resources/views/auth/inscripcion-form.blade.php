@@ -53,7 +53,7 @@
         <div class="row justify-content-center">
             <div class="col-lg-6">
 
-                <form method="POST" action="{{ route('students.register') }}" id="inscripcionForm" novalidate>
+                <form method="POST" action="{{ route('students.register') }}" id="InscripciónForm" novalidate>
                     @csrf
 
                     <div class="text-center mb-4">
@@ -323,7 +323,7 @@
         (function() {
             'use strict';
 
-            const form = document.getElementById('inscripcionForm');
+            const form = document.getElementById('InscripciónForm');
 
             document.querySelectorAll('input[name="user_type"]').forEach(function(radio) {
                 radio.addEventListener('change', toggleForm);

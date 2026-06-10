@@ -1,14 +1,14 @@
 @extends('layouts.admin')
 @section('title')
-    <title>{{ config('app.name') }} - Crear Curso</title>
+    <title>{{ config('app.name') }} - Crear Clase</title>
 @endsection
 
 @section('content')
     <div class="container">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Agregar Nuevo Curso</h5>
-                <span class="text-muted">Llena los siguientes campos para registrar un nuevo curso</span>
+                <h5 class="mb-0">Agregar Nueva Clase</h5>
+                <span class="text-muted">Llena los siguientes campos para registrar una nueva Clase</span>
             </div>
             <div class="card-block">
                 <form action="{{ route('courses.store') }}" method="POST">
@@ -27,7 +27,7 @@
                         </div>
 
                         <div class="mb-3 col-md-6">
-                            <label for="title" class="form-label">Título del curso</label>
+                            <label for="title" class="form-label">Título de la Clase</label>
                             <input type="text" name="title" id="title" class="form-control"
                                 value="{{ old('title') }}" required>
                         </div>
@@ -98,7 +98,7 @@
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label for="coach_ids" class="form-label">Entrenadores del curso</label>
+                            <label for="coach_ids" class="form-label">Entrenadores de la Clase</label>
                             <select name="coach_ids[]" id="coach_ids" class="form-control select2" multiple required>
                                 @foreach ($coaches as $coach)
                                     <option value="{{ $coach->id }}" {{ in_array((string) $coach->id, (array) old('coach_ids', []), true) ? 'selected' : '' }}>
@@ -128,7 +128,7 @@
 
                     <div id="recurrence-config" class="border rounded p-3 mb-3 d-none">
                         <div class="alert alert-light border small mb-3">
-                            Se usarán automáticamente las fechas del curso (inicio/fin) para generar las clases.
+                            Se usarán automáticamente las fechas de la Clase (inicio/fin) para generar las sesiones de clase.
                         </div>
 
                         <div class="table-responsive">
@@ -246,7 +246,7 @@
                         </div>
 
                         <div class="mt-3">
-                            <button type="button" id="preview-recurrence" class="btn btn-outline-primary btn-sm">Previsualizar clases</button>
+                            <button type="button" id="preview-recurrence" class="btn btn-outline-primary btn-sm">Previsualizar sesiones de clase</button>
                         </div>
                         <div id="recurrence-preview" class="table-responsive mt-3 d-none">
                             <table class="table table-sm table-striped">
@@ -266,7 +266,7 @@
                     </div>
 
                     <div class="row">
-                        <h5 class="my-3">Clases (manual)</h5>
+                        <h5 class="my-3">Sesiones de Clase (manual)</h5>
                     </div>
 
                     <div id="manual-sessions-wrapper">
@@ -317,14 +317,14 @@
                     </div>
 
                     <button type="button" id="add-session" class="btn btn-inverse btn-sm mb-4">
-                        + Agregar clase
+                        + Agregar sesión de clase
                     </button>
 
                     </div>
 
                     <div class="row">
                         <div class="col-md-12">
-                            <button type="submit" class="btn btn-primary">Guardar curso</button>
+                            <button type="submit" class="btn btn-primary">Guardar Clase</button>
 
                             <a href="{{ route('courses.index') }}" class="btn btn-secondary">Cancelar</a>
                         </div>
@@ -396,7 +396,7 @@
                 const end = document.getElementById('end_date').value;
 
                 if (!start || !end) {
-                    Swal.fire({ icon: 'warning', text: 'Primero define fecha de inicio y fin del curso.' });
+                    Swal.fire({ icon: 'warning', text: 'Primero define fecha de inicio y fin de la Clase.' });
                     return;
                 }
 
@@ -473,7 +473,7 @@
 
                 document.getElementById('recurrence-preview').classList.toggle('d-none', rowIndex === 0);
                 if (rowIndex === 0) {
-                    Swal.fire({ icon: 'info', text: 'No hay clases en el rango para los días seleccionados.' });
+                    Swal.fire({ icon: 'info', text: 'No hay sesiones de clase en el rango para los días seleccionados.' });
                 }
             });
 

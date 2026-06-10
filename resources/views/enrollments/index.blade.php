@@ -16,6 +16,28 @@
             box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
         }
 
+        .field-error {
+            color: #dc3545;
+            font-size: 0.82rem;
+            margin-top: 0.25rem;
+            display: block;
+            animation: fadeInError 0.3s ease;
+        }
+
+        @keyframes fadeInError {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .is-invalid {
+            border-color: #dc3545 !important;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.15) !important;
+        }
+
+        #enrollmentGlobalError {
+            animation: fadeInError 0.3s ease;
+        }
+
         .wizard-share-title {
             font-weight: 700;
             color: #0f172a;
@@ -102,30 +124,107 @@
             box-shadow: none;
         }
 
-        #inscripcionesModal .modal-content {
+        #InscripcionesModal .modal-content {
             max-height: calc(100vh - 3.5rem);
             display: flex;
             flex-direction: column;
         }
 
-        #inscripcionesModal #enrollmentForm {
+        #InscripcionesModal #enrollmentForm {
             display: flex;
             flex-direction: column;
             min-height: 0;
             flex: 1;
         }
 
-        #inscripcionesModal .modal-body {
+        #InscripcionesModal .modal-body {
             overflow-y: auto;
             min-height: 0;
         }
 
-        #inscripcionesModal .modal-footer {
+        #InscripcionesModal .modal-footer {
             position: sticky;
             bottom: 0;
             background: #fff;
             border-top: 1px solid #dee2e6;
             z-index: 2;
+        }
+
+        #courseSelect+.select2 .select2-selection {
+            min-height: 46px;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.6rem;
+            background: #f8fafc;
+        }
+
+        #courseSelect+.select2 .select2-selection__choice {
+            background: #e0f2fe;
+            border: 1px solid #7dd3fc;
+            color: #0b1f3a !important;
+            font-weight: 600;
+            font-size: 0.78rem;
+            max-width: 320px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            border-radius: 999px;
+            padding: 0.15rem 0.5rem;
+        }
+
+        #courseSelect+.select2 .select2-selection__choice .select2-selection__choice__display {
+            color: #0b1f3a !important;
+        }
+
+        #courseSelect+.select2 .select2-selection__choice .select2-selection__choice__remove {
+            color: #1e3a8a !important;
+            margin-right: 4px;
+        }
+
+        #courseSelect+.select2 .select2-selection__choice .select2-selection__choice__remove:hover {
+            color: #0b1f3a !important;
+        }
+
+        #InscripcionesModal .select2-container--default .select2-results__option {
+            padding: 0.55rem 0.65rem;
+        }
+
+        .course-select2-option {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .course-select2-title {
+            color: #0f172a;
+            font-weight: 700;
+            font-size: 0.88rem;
+            line-height: 1.2;
+        }
+
+        .course-select2-meta {
+            color: #334155;
+            font-size: 0.76rem;
+            line-height: 1.2;
+        }
+
+        #InscripcionesModal .select2-container--default .select2-results__option--highlighted[aria-selected] .course-select2-title,
+        #InscripcionesModal .select2-container--default .select2-results__option--highlighted[aria-selected] .course-select2-meta {
+            color: #0f172a;
+        }
+
+        .payment-proof-hint {
+            background: #f8fafc;
+            border: 1px solid #dbeafe;
+            border-radius: 0.5rem;
+            padding: 0.6rem 0.75rem;
+        }
+
+        #totalDisplay {
+            border-left: 4px solid #0d6efd;
+        }
+
+        #totalDisplay hr {
+            opacity: 0.4;
         }
     </style>
 @endsection
@@ -135,11 +234,11 @@
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
-    <div class="modal fade" id="inscripcionesModal" tabindex="-1">
+    <div class="modal fade" id="InscripcionesModal" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
 
-                <form method="POST" action="{{ route('enrollment.store') }}" id="enrollmentForm">
+                <form method="POST" action="{{ route('enrollment.store') }}" id="enrollmentForm" enctype="multipart/form-data">
                     @csrf
 
                     <div class="modal-header">
@@ -148,6 +247,7 @@
                     </div>
 
                     <div class="modal-body">
+                        <div id="enrollmentGlobalError" class="alert alert-danger d-none mb-3"></div>
                         <div class="row g-3">
 
                             <div class="col-md-6">
@@ -205,7 +305,7 @@
                                         @enderror
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label mb-1">Contraseña temporal</label>
+                                        <label class="form-label mb-1">Contrasena temporal</label>
                                         <input type="password" name="user[password]" class="form-control"
                                             placeholder="Ej: Temporal2026">
                                         @error('user.password')
@@ -264,23 +364,23 @@
                             </div>
 
                             <div class="col-md-6 mt-3">
-                                <label>Curso</label>
-                                <select name="course_id" class="form-control select2">
-                                    <option value="">-- Seleccionar Programa --</option>
-                                    @foreach ($courses as $course)
-                                        <option value="{{ $course->id }}">
-                                            {{ $course->title }} ({{ max(0, $course->capacity - $course->enrollments_count) }} cupos)
+                                <label class="form-label">Programa <span class="text-danger">*</span></label>
+                                <select name="program_id" id="programSelect" class="form-control select2" required>
+                                    <option value="">-- Seleccionar programa --</option>
+                                    @foreach ($programs as $program)
+                                        <option value="{{ $program->id }}" data-enrollment-fee="{{ $program->enrollment_fee }}">
+                                            {{ $program->name }}
                                         </option>
                                     @endforeach
                                 </select>
-                                @error('course_id')
+                                @error('program_id')
                                     <div class="text-danger small mt-1">{{ $message }}</div>
                                 @enderror
                             </div>
 
                             <div class="col-md-6 mt-3">
-                                <label>Estado de pago</label>
-                                <select name="payment_status" class="form-control">
+                                <label class="form-label">Estado de pago</label>
+                                <select name="payment_status" id="paymentStatusSelect" class="form-control">
                                     <option value="pending">Pendiente</option>
                                     <option value="paid">Pagado</option>
                                 </select>
@@ -288,12 +388,109 @@
                                     <div class="text-danger small mt-1">{{ $message }}</div>
                                 @enderror
                             </div>
+
+                            <div class="col-12 mt-3">
+                                <label class="form-label">Clases <span class="text-danger">*</span></label>
+                                <select name="course_ids[]" id="courseSelect" class="form-control" multiple required>
+                                    @foreach ($courses as $course)
+                                        @php
+                                            $daysEs = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+                                            $scheduleText = '';
+                                            if ($course->relationLoaded('classes') && $course->classes->isNotEmpty()) {
+                                                $scheduleGroups = $course->classes->groupBy(function ($c) use ($daysEs) {
+                                                    return $daysEs[\Carbon\Carbon::parse($c->date)->dayOfWeek];
+                                                });
+                                                $scheduleText = $scheduleGroups->map(function ($group, $day) {
+                                                    $times = $group->map(function ($c) {
+                                                        return \Carbon\Carbon::parse($c->start_time)->format('H:i') . '-' . \Carbon\Carbon::parse($c->end_time)->format('H:i');
+                                                    })->unique()->join(', ');
+                                                    return $day . ' ' . $times;
+                                                })->join(' | ');
+                                            }
+                                            $spotsLeft = max(0, (int) $course->capacity - (int) $course->enrollments_count);
+                                            $branchName = $course->branch->name ?? 'N/A';
+                                            $monthlyFeeText = number_format($course->monthly_fee, 2);
+                                        @endphp
+                                        <option
+                                            value="{{ $course->id }}"
+                                            data-program-id="{{ $course->program_id }}"
+                                            data-monthly-fee="{{ $course->monthly_fee }}"
+                                            data-title="{{ e($course->title) }}"
+                                            data-branch="{{ e($branchName) }}"
+                                            data-spots-left="{{ $spotsLeft }}"
+                                            data-schedule="{{ e($scheduleText) }}"
+                                            data-monthly-fee-text="{{ $monthlyFeeText }}">
+                                            {{ $course->title }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <small id="courseSelectHelp" class="text-muted d-block mt-1">Selecciona un programa para habilitar sus clases.</small>
+                                @error('course_ids')
+                                    <div class="text-danger small mt-1">{{ $message }}</div>
+                                @enderror
+                                @error('course_ids.*')
+                                    <div class="text-danger small mt-1">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="col-12 mt-2">
+                                <div class="alert alert-info d-none" id="totalDisplay">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Matricula:</span>
+                                        <span id="enrollmentFeeDisplay">$0.00</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Mensualidades:</span>
+                                        <span id="monthlyFeesDisplay">$0.00</span>
+                                    </div>
+                                    <hr class="my-1">
+                                    <div class="d-flex justify-content-between fw-bold">
+                                        <span>Total:</span>
+                                        <span id="totalAmountDisplay">$0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mt-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="is_free_trial" value="1" id="isFreeTrial">
+                                    <label class="form-check-label" for="isFreeTrial">
+                                        Clase de prueba gratuita
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mt-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="image_consent_accepted" value="1" id="imageConsentAccepted">
+                                    <label class="form-check-label" for="imageConsentAccepted">
+                                        Consentimiento de uso de imagen
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mt-3">
+                                <label class="form-label">Comprobante de pago</label>
+                                <input id="paymentReceiptInput" type="file" name="payment_receipt" class="form-control" accept=".jpg,.jpeg,.png,.pdf">
+                                @error('payment_receipt')
+                                    <div class="text-danger small mt-1">{{ $message }}</div>
+                                @enderror
+                                <small id="paymentReceiptHelp" class="text-muted d-block">Formatos: JPG, PNG, PDF. Max 6 MB.</small>
+                                <div class="payment-proof-hint mt-2 small text-muted">
+                                    Si marcas pago como <strong>Pagado</strong> y no es clase gratuita, se recomienda adjuntar comprobante para que quede reflejado en finanzas.
+                                </div>
+                            </div>
+                            <div class="col-md-6"></div>
+
                         </div>
                     </div>
 
                     <div class="modal-footer">
-                        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button class="btn btn-primary">Guardar</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="enrollmentSubmitBtn">
+                            <span class="spinner-border spinner-border-sm d-none me-1" id="enrollmentSubmitSpinner" role="status"></span>
+                            Guardar
+                        </button>
                     </div>
 
                 </form>
@@ -307,11 +504,11 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <div>
                     <h5>Inscripciones</h5>
-                    <span class="text-muted">Gestión y seguimiento de inscripciones activas en el sistema</span>
+                    <span class="text-muted">Gestion y seguimiento de Inscripciones activas en el sistema</span>
                 </div>
                 <div>
                     <a href="javascript:void(0);" class="btn btn-inverse btn-sm" data-bs-toggle="modal"
-                        data-bs-target="#inscripcionesModal"><i class="far fa-address-book text-light"></i> Registrar
+                        data-bs-target="#InscripcionesModal"><i class="far fa-address-book text-light"></i> Registrar
                         Inscripción</a>
                 </div>
             </div>
@@ -319,15 +516,15 @@
                 <div class="wizard-share-box">
                     <div class="wizard-share-title">
                         <i class="fas fa-wand-magic-sparkles me-1"></i>
-                        Enlace de inscripción para compartir
+                        Enlace de Inscripción para compartir
                     </div>
                     <div class="wizard-share-subtitle">
-                        Copia y envía este enlace por WhatsApp o correo para que los usuarios se inscriban directamente.
+                        Copia y envia este enlace por WhatsApp o correo para que los usuarios se inscriban directamente.
                     </div>
 
                     <div class="row g-2 align-items-end">
                         <div class="col-md-9">
-                            <label for="wizardEnrollmentLink" class="form-label mb-1">Wizard de inscripción</label>
+                            <label for="wizardEnrollmentLink" class="form-label mb-1">Wizard de Inscripción</label>
                             <input id="wizardEnrollmentLink" type="text" class="form-control"
                                 value="{{ route('enrollment.wizard') }}" readonly>
                         </div>
@@ -370,7 +567,8 @@
                                 <th>Nombre</th>
                                 <th>Edad</th>
                                 <th>Representante</th>
-                                <th>Curso</th>
+                                <th>Programa</th>
+                                <th>Clases</th>
                                 <th>Pago</th>
                                 <th class="text-end">Acciones</th>
                             </tr>
@@ -383,11 +581,18 @@
                                     </td>
                                     <td>{{ $enrollment->id }}</td>
                                     <td class="enrollment-student">{{ $enrollment->student->name }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($enrollment->student->birthdate)->age }} años</td>
+                                    <td>{{ \Carbon\Carbon::parse($enrollment->student->birthdate)->age }} anos</td>
                                     <td class="enrollment-parent">{{ $enrollment->student->user->name }}</td>
-                                    <td class="enrollment-course">{{ $enrollment->course->title }}</td>
+                                    <td class="enrollment-program">{{ $enrollment->program->name ?? 'N/A' }}</td>
+                                    <td class="enrollment-courses">
+                                        <span class="badge bg-info" title="{{ $enrollment->courses->pluck('title')->join(', ') }}">
+                                            {{ $enrollment->courses->count() }} Clases
+                                        </span>
+                                    </td>
                                     <td class="enrollment-payment" data-payment-status="{{ $enrollment->payment_status }}">
-                                        @if ($enrollment->payment_status === 'paid')
+                                        @if ($enrollment->is_free_trial)
+                                            <span class="badge bg-warning text-dark">Clase de prueba</span>
+                                        @elseif ($enrollment->payment_status === 'paid')
                                             <span class="badge bg-success">Pagado</span>
                                         @else
                                             <span class="badge bg-secondary">Pendiente</span>
@@ -435,13 +640,20 @@
                         <div class="detail-quick-card mb-3">
                             <div class="row g-2">
                                 <div class="col-md-6">
-                                    <label class="form-label text-muted">Curso inscrito</label>
-                                    <input type="text" class="form-control" id="detailCourseTitle" readonly>
+                                    <label class="form-label text-muted">Programa</label>
+                                    <input type="text" class="form-control" id="detailProgramName" readonly>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label text-muted">Sede</label>
-                                    <input type="text" class="form-control" id="detailCourseBranch" readonly>
+                                    <label class="form-label text-muted">Clases</label>
+                                    <input type="text" class="form-control" id="detailCoursesList" readonly>
                                 </div>
+                            </div>
+                            <div class="row g-2 mt-2">
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted">Sede</label>
+                                    <input type="text" class="form-control" id="detailBranchName" readonly>
+                                </div>
+                                <div class="col-md-6"></div>
                             </div>
                         </div>
 
@@ -455,7 +667,7 @@
                             </div>
                             <div class="col-md-6">
                                 <div class="small text-muted">
-                                    Para ver horarios, clases y datos completos, abre el detalle completo.
+                                    Para ver horarios, sesiones de clase y datos completos, abre el detalle completo.
                                 </div>
                             </div>
                         </div>
@@ -480,6 +692,7 @@
     <script>
         const bulkUpdateUrl = '{{ route('enrollment.bulk-update') }}';
         const updateUrlTemplate = '{{ route('enrollment.update', ['enrollment' => '__ID__']) }}';
+        const storeUrl = '{{ route('enrollment.store') }}';
         const csrfToken = '{{ csrf_token() }}';
 
         function filterStudentsByParent() {
@@ -514,6 +727,14 @@
             return '<span class="badge bg-secondary">Pendiente</span>';
         }
 
+        function coursesBadgeHtml(courses) {
+            if (!courses || !courses.length) {
+                return '<span class="badge bg-info">0 Clases</span>';
+            }
+            const titles = courses.map(function(c) { return c.title; }).join(', ');
+            return '<span class="badge bg-info" title="' + titles + '">' + courses.length + ' Clases</span>';
+        }
+
         function flashUpdatedRow(row) {
             row.addClass('row-updated');
             setTimeout(function() {
@@ -527,7 +748,8 @@
                 return;
             }
 
-            row.find('.enrollment-course').text(enrollment.course_title || '');
+            row.find('.enrollment-program').text(enrollment.program_name || '');
+            row.find('.enrollment-courses').html(coursesBadgeHtml(enrollment.courses));
             row.find('.enrollment-payment')
                 .attr('data-payment-status', enrollment.payment_status)
                 .html(paymentBadgeHtml(enrollment.payment_status));
@@ -570,7 +792,7 @@
             });
 
             if (!response.ok) {
-                throw new Error('No se pudo cargar el detalle de la inscripcion.');
+                throw new Error('No se pudo cargar el detalle de la Inscripción.');
             }
 
             return response.json();
@@ -583,30 +805,308 @@
             $('#detailStudentName').val(enrollment.student_name || '');
             $('#detailParentName').val(enrollment.parent_name || '');
             $('#detailPaymentStatus').val(enrollment.payment_status);
-            $('#detailCourseTitle').val(enrollment.course_title || '');
-            $('#detailCourseBranch').val(enrollment.course_branch_name || '');
+            $('#detailProgramName').val(enrollment.program_name || '');
+
+            if (enrollment.courses && enrollment.courses.length) {
+                $('#detailCoursesList').val(enrollment.courses.map(function(c) { return c.title; }).join(', '));
+                $('#detailBranchName').val(enrollment.courses[0].branch_name || '');
+            } else {
+                $('#detailCoursesList').val('');
+                $('#detailBranchName').val('');
+            }
 
             const formAction = updateUrlTemplate.replace('__ID__', enrollment.id);
             $('#enrollmentDetailForm').attr('action', formAction);
             $('#openFullDetail').attr('href', url);
-            $('#openFullDetailHeader').attr('href', url);
             $('#detailFormError').addClass('d-none').text('');
         }
 
         function exportColumnsIndexes() {
-            return [1, 2, 3, 4, 5, 6];
+            return [1, 2, 3, 4, 5, 6, 7];
+        }
+
+        function filterCoursesByProgram() {
+            const programId = $('#programSelect').val();
+            const selectedCourseIds = ($('#courseSelect').val() || []).map(function(v) {
+                return String(v);
+            });
+
+            $('#courseSelect option').each(function() {
+                const optionProgramId = String($(this).data('program-id'));
+                const keepVisible = !!programId && optionProgramId === String(programId);
+                $(this).prop('disabled', !keepVisible);
+
+                if (!keepVisible && selectedCourseIds.includes(String($(this).val()))) {
+                    $(this).prop('selected', false);
+                }
+            });
+
+            $('#courseSelect').trigger('change.select2');
+            $('#courseSelectHelp').text(programId ? 'Selecciona una o varias clases del programa.' : 'Selecciona un programa para habilitar sus clases.');
+
+            recalculateTotal();
+        }
+
+        function recalculateTotal() {
+            const programSelect = $('#programSelect');
+            const selectedOption = programSelect.find('option:selected');
+            const enrollmentFee = selectedOption.data('enrollment-fee') ? parseFloat(selectedOption.data('enrollment-fee')) : 0;
+
+            let monthlyFeesTotal = 0;
+            $('#courseSelect option:selected').each(function() {
+                const fee = $(this).data('monthly-fee') ? parseFloat($(this).data('monthly-fee')) : 0;
+                monthlyFeesTotal += fee;
+            });
+
+            const total = enrollmentFee + monthlyFeesTotal;
+
+            if (programSelect.val() || monthlyFeesTotal > 0) {
+                $('#totalDisplay').removeClass('d-none');
+            }
+
+            $('#enrollmentFeeDisplay').text('$' + enrollmentFee.toFixed(2));
+            $('#monthlyFeesDisplay').text('$' + monthlyFeesTotal.toFixed(2));
+            $('#totalAmountDisplay').text('$' + total.toFixed(2));
+        }
+
+        function updatePaymentReceiptState() {
+            const isFreeTrial = $('#isFreeTrial').is(':checked');
+            const paymentStatus = $('#paymentStatusSelect').val();
+            const receiptInput = $('#paymentReceiptInput');
+            const helpEl = $('#paymentReceiptHelp');
+
+            if (isFreeTrial) {
+                receiptInput.prop('required', false).prop('disabled', true).val('');
+                $('#paymentStatusSelect').val('paid');
+                helpEl.text('No se requiere comprobante para clase de prueba gratuita.');
+                return;
+            }
+
+            const mustAttach = paymentStatus === 'paid';
+            receiptInput.prop('required', mustAttach).prop('disabled', false);
+            helpEl.text(mustAttach ?
+                'Pago marcado como pagado: adjunta el comprobante (obligatorio).' :
+                'Formatos: JPG, PNG, PDF. Max 6 MB.');
         }
 
         const selectedIds = new Set();
         let detailModal;
         let table;
 
+        function formatCourseOption(state) {
+            if (!state.id) {
+                return state.text;
+            }
+
+            const option = $(state.element);
+            const title = option.data('title') || state.text || 'Clase';
+            const branch = option.data('branch') || 'N/A';
+            const monthlyFee = option.data('monthly-fee-text') || '0.00';
+            const spotsLeft = option.data('spots-left') ?? '0';
+            const schedule = option.data('schedule') || '';
+
+            const meta = schedule
+                ? `${branch} | Mens: $${monthlyFee} | Cupos: ${spotsLeft} | ${schedule}`
+                : `${branch} | Mens: $${monthlyFee} | Cupos: ${spotsLeft}`;
+
+            return $(
+                `<div class="course-select2-option">
+                    <span class="course-select2-title"></span>
+                    <span class="course-select2-meta"></span>
+                </div>`
+            )
+            .find('.course-select2-title').text(title).end()
+            .find('.course-select2-meta').text(meta).end();
+        }
+
+        function formatCourseSelection(state) {
+            if (!state.id) {
+                return state.text;
+            }
+
+            const option = $(state.element);
+            const title = option.data('title') || state.text || 'Clase';
+            const branch = option.data('branch') || 'N/A';
+            return `${title} · ${branch}`;
+        }
+
+        function clearValidationErrors() {
+            $('#enrollmentForm .field-error').remove();
+            $('#enrollmentForm .is-invalid').removeClass('is-invalid');
+            $('#enrollmentGlobalError').addClass('d-none').html('');
+        }
+
+        function showValidationErrors(errors) {
+            clearValidationErrors();
+
+            const fieldMap = {
+                'user_id': '#userSelect',
+                'student_id': '#studentSelect',
+                'program_id': '#programSelect',
+                'course_ids': '#courseSelect',
+                'course_ids.*': '#courseSelect',
+                'payment_status': '#paymentStatusSelect',
+                'payment_receipt': '#paymentReceiptInput',
+                'is_free_trial': '#isFreeTrial',
+                'image_consent_accepted': '#imageConsentAccepted',
+                'user.name': 'input[name="user[name]"]',
+                'user.email': 'input[name="user[email]"]',
+                'user.password': 'input[name="user[password]"]',
+                'user.dial_code': 'select[name="user[dial_code]"]',
+                'user.whatsapp': 'input[name="user[whatsapp]"]',
+                'student.name': 'input[name="student[name]"]',
+                'student.birthdate': 'input[name="student[birthdate]"]',
+                'student.medical_notes': 'input[name="student[medical_notes]"]',
+            };
+
+            let unmappedErrors = [];
+
+            Object.keys(errors).forEach(function(field) {
+                const messages = errors[field];
+                const selector = fieldMap[field];
+
+                if (selector) {
+                    const $el = $(selector);
+                    if ($el.length) {
+                        $el.addClass('is-invalid');
+
+                        // For select2 elements, highlight the select2 container
+                        if ($el.hasClass('select2-hidden-accessible')) {
+                            $el.next('.select2').find('.select2-selection').addClass('is-invalid');
+                        }
+
+                        const errorHtml = messages.map(function(msg) {
+                            return '<span class="field-error">' + $('<span>').text(msg).html() + '</span>';
+                        }).join('');
+
+                        // Insert after the element's parent (for input-groups) or after element
+                        const $parent = $el.closest('.input-group');
+                        if ($parent.length) {
+                            $parent.after(errorHtml);
+                        } else if ($el.hasClass('select2-hidden-accessible')) {
+                            $el.next('.select2').after(errorHtml);
+                        } else {
+                            $el.after(errorHtml);
+                        }
+                    } else {
+                        unmappedErrors = unmappedErrors.concat(messages);
+                    }
+                } else {
+                    unmappedErrors = unmappedErrors.concat(messages);
+                }
+            });
+
+            if (unmappedErrors.length) {
+                const globalHtml = unmappedErrors.map(function(msg) {
+                    return '<div>' + $('<span>').text(msg).html() + '</div>';
+                }).join('');
+                $('#enrollmentGlobalError').removeClass('d-none').html(globalHtml);
+            }
+
+            // Scroll to the first error within the modal body
+            const $firstError = $('#enrollmentForm .is-invalid, #enrollmentForm .field-error').first();
+            if ($firstError.length) {
+                const $modalBody = $('#InscripcionesModal .modal-body');
+                const scrollTo = $firstError.offset().top - $modalBody.offset().top + $modalBody.scrollTop() - 20;
+                $modalBody.animate({ scrollTop: Math.max(0, scrollTo) }, 300);
+            }
+        }
+
         $(document).ready(function() {
-            $('#inscripcionesModal').on('shown.bs.modal', function() {
+            $('#InscripcionesModal').on('shown.bs.modal', function() {
                 $('.select2').select2({
-                    dropdownParent: $('#inscripcionesModal'),
+                    dropdownParent: $('#InscripcionesModal'),
                     allowClear: true
                 });
+
+                if (!$('#courseSelect').hasClass('select2-hidden-accessible')) {
+                    $('#courseSelect').select2({
+                        dropdownParent: $('#InscripcionesModal'),
+                        placeholder: 'Selecciona una o varias clases',
+                        closeOnSelect: false,
+                        width: '100%',
+                        templateResult: formatCourseOption,
+                        templateSelection: formatCourseSelection,
+                        escapeMarkup: function(markup) {
+                            return markup;
+                        }
+                    });
+                }
+
+                filterCoursesByProgram();
+                updatePaymentReceiptState();
+            });
+
+            $('#InscripcionesModal').on('hidden.bs.modal', function() {
+                $('#enrollmentForm')[0].reset();
+                $('#userForm').addClass('d-none');
+                $('#studentForm').addClass('d-none');
+                $('#totalDisplay').addClass('d-none');
+                $('#courseSelect option').prop('disabled', true).prop('selected', false);
+                $('#courseSelect').val(null).trigger('change');
+                $('#programSelect').val(null).trigger('change');
+                $('#studentSelect').val(null).trigger('change');
+                $('#userSelect').val(null).trigger('change');
+                clearValidationErrors();
+                updatePaymentReceiptState();
+            });
+
+            // AJAX form submission with inline validation
+            $('#enrollmentForm').on('submit', async function(event) {
+                event.preventDefault();
+
+                clearValidationErrors();
+
+                const $btn = $('#enrollmentSubmitBtn');
+                const $spinner = $('#enrollmentSubmitSpinner');
+                $btn.prop('disabled', true);
+                $spinner.removeClass('d-none');
+
+                try {
+                    const formData = new FormData(this);
+
+                    const response = await fetch(storeUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        if (response.status === 422 && data.errors) {
+                            showValidationErrors(data.errors);
+                        } else {
+                            const msg = data.message || 'Ocurrio un error al registrar la Inscripción.';
+                            $('#enrollmentGlobalError').removeClass('d-none').text(msg);
+                        }
+                        return;
+                    }
+
+                    // Success
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('InscripcionesModal'));
+                    if (modal) modal.hide();
+
+                    await Swal.fire({
+                        icon: 'success',
+                        text: data.message || 'Inscripción registrada correctamente.',
+                        confirmButtonText: 'Continuar',
+                        confirmButtonColor: '#28a745'
+                    });
+
+                    window.location.href = data.redirect || '{{ url('enrollment') }}';
+
+                } catch (error) {
+                    $('#enrollmentGlobalError').removeClass('d-none').text(
+                        'Error de conexion. Verifica tu red e intenta de nuevo.'
+                    );
+                } finally {
+                    $btn.prop('disabled', false);
+                    $spinner.addClass('d-none');
+                }
             });
 
             $('#copyEnrollmentWizardLink').on('click', function() {
@@ -621,13 +1121,25 @@
                 }).catch(function() {
                     Swal.fire({
                         icon: 'error',
-                        text: 'No fue posible copiar el enlace automáticamente.'
+                        text: 'No fue posible copiar el enlace automaticamente.'
                     });
                 });
             });
 
             $('#userSelect').on('change', function() {
                 filterStudentsByParent();
+            });
+
+            $('#programSelect').on('change', function() {
+                filterCoursesByProgram();
+            });
+
+            $('#courseSelect').on('change', function() {
+                recalculateTotal();
+            });
+
+            $('#isFreeTrial, #paymentStatusSelect').on('change', function() {
+                updatePaymentReceiptState();
             });
 
             table = $('#enrollmentsTable').DataTable({
@@ -710,7 +1222,7 @@
                     }
                 ],
                 columnDefs: [{
-                    targets: [0, 7],
+                    targets: [0, 8],
                     orderable: false,
                     searchable: false
                 }],
@@ -788,14 +1300,14 @@
                     const result = await Swal.fire({
                         icon: 'question',
                         title: 'Aplicar cambios masivos',
-                        text: 'Se actualizara el estado de pago de ' + selectedIds.size + ' inscripciones.',
+                        text: 'Se actualizara el estado de pago de ' + selectedIds.size + ' Inscripciones.',
                         showCancelButton: true,
                         confirmButtonText: 'Si, aplicar',
                         cancelButtonText: 'Cancelar'
                     });
                     confirmed = result.isConfirmed;
                 } else {
-                    confirmed = confirm('Se actualizara el estado de pago de ' + selectedIds.size + ' inscripciones.');
+                    confirmed = confirm('Se actualizara el estado de pago de ' + selectedIds.size + ' Inscripciones.');
                 }
 
                 if (!confirmed) {
@@ -890,14 +1402,14 @@
                     const data = await response.json();
 
                     if (!response.ok) {
-                        throw new Error(data.message || 'No se pudo actualizar la inscripcion.');
+                        throw new Error(data.message || 'No se pudo actualizar la Inscripción.');
                     }
 
                     updateRowVisual(data.enrollment);
                     detailModal.hide();
                 } catch (error) {
                     $('#detailFormError').removeClass('d-none').text(error.message ||
-                        'No se pudo actualizar la inscripcion.');
+                        'No se pudo actualizar la Inscripción.');
                 } finally {
                     submitButton.prop('disabled', false).text('Guardar cambios');
                 }

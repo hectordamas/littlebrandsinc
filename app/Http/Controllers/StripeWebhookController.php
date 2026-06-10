@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Account;
 use App\Models\EnrollmentBillingProfile;
 use App\Models\EnrollmentInstallment;
+use App\Models\Program;
 use App\Models\Transaction;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -16,6 +17,10 @@ class StripeWebhookController extends Controller
 {
     public function __invoke(Request $request)
     {
+        if (! config('services.stripe.enabled')) {
+            return response()->json(['message' => 'Stripe is disabled.'], 403);
+        }
+
         $payload = (string) $request->getContent();
         $sigHeader = (string) $request->header('Stripe-Signature');
         $webhookSecret = (string) config('services.stripe.webhook_secret');
@@ -94,8 +99,8 @@ class StripeWebhookController extends Controller
                 'paid_at' => now(),
             ]);
 
-            $enrollment = $profile->enrollment()->with(['student', 'course'])->first();
-            if (! $enrollment || ! $enrollment->course) {
+            $enrollment = $profile->enrollment()->with(['student', 'program', 'courses'])->first();
+            if (! $enrollment || ! $enrollment->program) {
                 return;
             }
 
@@ -113,8 +118,8 @@ class StripeWebhookController extends Controller
             Transaction::create([
                 'enrollment_id' => $enrollment->id,
                 'student_id' => $enrollment->student_id,
-                'course_id' => $enrollment->course_id,
-                'branch_id' => $enrollment->course->branch_id,
+                'course_id' => $enrollment->courses->first()?->id,
+                'branch_id' => $enrollment->courses->first()?->branch_id,
                 'account_id' => $stripeAccount->id,
                 'account_receivable_id' => $installment->account_receivable_id,
                 'amount' => ((float) ($invoice->amount_paid ?? 0)) / 100,
@@ -189,7 +194,7 @@ class StripeWebhookController extends Controller
 
     protected function refreshReceivableBalance($receivable): void
     {
-        $paidAmount = (float) $receivable->transactions()->sum('amount');
+        $paidAmount = (float) $receivable->transactions()->where('status', 'completed')->sum('amount');
         $balance = max(0, (float) $receivable->amount_total - $paidAmount);
 
         $status = 'pending';
@@ -203,5 +208,49 @@ class StripeWebhookController extends Controller
             'balance_due' => $balance,
             'status' => $status,
         ]);
+
+        $this->syncInstallmentsPaymentStatus($receivable);
+    }
+
+    protected function syncInstallmentsPaymentStatus($receivable): void
+    {
+        if (!$receivable->enrollment_id) {
+            return;
+        }
+
+        $enrollment = $receivable->enrollment;
+        if (!$enrollment) {
+            return;
+        }
+
+        $totalPaid = (float) $receivable->transactions()->where('status', 'completed')->sum('amount');
+        $program = $enrollment->program;
+        $enrollmentFee = $program ? (float) ($program->enrollment_fee ?? 50.00) : 0.0;
+        
+        $remainingPaid = max(0.0, $totalPaid - $enrollmentFee);
+        $installments = $enrollment->installments()->orderBy('due_date')->get();
+
+        foreach ($installments as $installment) {
+            $installmentAmount = (float) $installment->amount;
+            if ($remainingPaid >= $installmentAmount) {
+                $installment->update([
+                    'status' => 'paid',
+                    'paid_at' => $installment->paid_at ?? now(),
+                ]);
+                $remainingPaid -= $installmentAmount;
+            } elseif ($remainingPaid > 0) {
+                $installment->update([
+                    'status' => 'pending',
+                ]);
+                $remainingPaid = 0.0;
+            } else {
+                if ($installment->status === 'paid') {
+                    $installment->update([
+                        'status' => 'pending',
+                        'paid_at' => null,
+                    ]);
+                }
+            }
+        }
     }
 }

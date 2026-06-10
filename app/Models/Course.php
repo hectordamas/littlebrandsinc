@@ -31,7 +31,13 @@ class Course extends Model
 
     public function enrollments()
     {
-        return $this->hasMany(Enrollment::class);
+        return $this->belongsToMany(Enrollment::class, 'enrollment_course', 'course_id', 'enrollment_id')
+            ->withTimestamps();
+    }
+
+    public function waitlistEntries()
+    {
+        return $this->hasMany(Waitlist::class);
     }
 
     public function coaches()

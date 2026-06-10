@@ -217,8 +217,8 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <div>
-                        <h5 class="mb-1">Mi Programación de Clases</h5>
-                        <span class="text-muted">Cada clase muestra inscritos, nombres de estudiantes y estado de check in.</span>
+                        <h5 class="mb-1">Mi Programación de Sesiones de Clase</h5>
+                        <span class="text-muted">Cada sesión de clase muestra inscritos, nombres de estudiantes y estado de check in.</span>
                     </div>
                     <span class="badge bg-primary" id="calendarStatus">Cargando...</span>
                 </div>
@@ -422,13 +422,13 @@
                     })
                     .then(function(response) {
                         if (!response.ok) {
-                            throw new Error('No fue posible cargar tus clases.');
+                             throw new Error('No fue posible cargar tus sesiones de clase.');
                         }
 
                         return response.json();
                     })
                     .then(function(events) {
-                        statusEl.textContent = `${events.length} clase(s)`;
+                        statusEl.textContent = `${events.length} sesión(es) de clase`;
                         successCallback(events);
                     })
                     .catch(function(error) {
@@ -437,7 +437,7 @@
                         Swal.fire({
                             icon: 'error',
                             title: 'Calendario no disponible',
-                            text: 'No fue posible cargar tu programación de clases.'
+                            text: 'No fue posible cargar tu programación de sesiones de clase.'
                         });
                     });
                 },
@@ -455,7 +455,7 @@
                     setSaveStatus('Guardado automático activo', null);
 
                     if (!students.length) {
-                        attendanceRowsEl.innerHTML = '<div class="attendance-empty">No hay estudiantes inscritos en esta clase.</div>';
+                        attendanceRowsEl.innerHTML = '<div class="attendance-empty">No hay estudiantes inscritos en esta sesión de clase.</div>';
                         attendanceToolsEl.classList.add('d-none');
                     } else {
                         attendanceToolsEl.classList.remove('d-none');
@@ -468,6 +468,14 @@
                         const name = document.createElement('div');
                         name.className = 'attendance-student';
                         name.textContent = student.student_name;
+
+                        if (student.is_free_trial) {
+                            const trialBadge = document.createElement('span');
+                            trialBadge.className = 'badge bg-info ms-2';
+                            trialBadge.style.fontSize = '0.7rem';
+                            trialBadge.textContent = 'Clase de prueba';
+                            name.appendChild(trialBadge);
+                        }
 
                         const checkLabel = document.createElement('label');
                         checkLabel.className = 'attendance-check';

@@ -101,7 +101,7 @@
                             <i class="feather icon-menu"></i>
                         </a>
 
-                        <a href="{{ url('/') }}">
+                        <a href="{{ url('/home') }}">
                             <img src="{{ asset('assets/img/lbinc-admin.png') }}" alt="Little Brands Inc Logo"
                                 style="max-height: 50px;" />
                         </a>
@@ -134,7 +134,7 @@
                             </li>
                         </ul>
                         <ul class="nav-right">
-                            {{--<li class="header-notification">
+                            {{-- <li class="header-notification">
                                 <div class="dropdown-primary dropdown">
                                     <div class="dropdown-toggle" data-bs-toggle="dropdown">
                                         <i class="feather icon-bell"></i>
@@ -196,7 +196,7 @@
                                         </li>
                                     </ul>
                                 </div>
-                            </li>--}}
+                            </li> --}}
                             <li class="user-profile header-notification">
                                 <div class="dropdown-primary dropdown">
                                     <div class="dropdown-toggle" data-bs-toggle="dropdown">
@@ -238,18 +238,19 @@
                             <div class="pcoded-navigatio-lavel">Menú</div>
                             <ul class="pcoded-item pcoded-left-item">
 
-                                <li>
-                                    <a href="{{ route('home') }}">
-                                        <span class="pcoded-micon"><i class="feather icon-home"></i></span>
-                                        <span class="pcoded-mtext">Inicio</span>
-                                    </a>
-                                </li>
+
 
                                 @php
                                     $currentRole = mb_strtolower(trim((string) Auth::user()->role));
                                 @endphp
 
                                 @if ($currentRole === 'administrador')
+                                    <li>
+                                        <a href="{{ route('home') }}">
+                                            <span class="pcoded-micon"><i class="feather icon-home"></i></span>
+                                            <span class="pcoded-mtext">Inicio</span>
+                                        </a>
+                                    </li>
                                     <li class="pcoded-hasmenu">
                                         <a href="javascript:void(0)">
                                             <span class="pcoded-micon">
@@ -274,6 +275,11 @@
                                                 </a>
                                             </li>
                                             <li class="">
+                                                <a href="{{ route('waitlists.index') }}">
+                                                    <span class="pcoded-mtext">Lista de Espera</span>
+                                                </a>
+                                            </li>
+                                            <li class="">
                                                 <a href="{{ route('messages.index') }}">
                                                     <span class="pcoded-mtext">Mensajes</span>
                                                 </a>
@@ -283,25 +289,29 @@
 
                                     <li class="pcoded-hasmenu">
                                         <a href="javascript:void(0)">
-                                            <span class="pcoded-micon"><i class="fas fa-file-invoice-dollar"></i></span>
+                                            <span class="pcoded-micon"><i
+                                                    class="fas fa-file-invoice-dollar"></i></span>
                                             <span class="pcoded-mtext">Finanzas y Facturación</span>
                                         </a>
                                         <ul class="pcoded-submenu">
                                             <li class=" ">
                                                 <a href="{{ route('finance.index') }}">
-                                                    <span class="pcoded-micon"><i class="fas fa-money-bill-transfer"></i></span>
+                                                    <span class="pcoded-micon"><i
+                                                            class="fas fa-money-bill-transfer"></i></span>
                                                     <span class="pcoded-mtext">Movimientos</span>
                                                 </a>
                                             </li>
                                             <li class=" ">
                                                 <a href="{{ route('finance.collections') }}">
-                                                    <span class="pcoded-micon"><i class="fas fa-money-check-dollar"></i></span>
+                                                    <span class="pcoded-micon"><i
+                                                            class="fas fa-money-check-dollar"></i></span>
                                                     <span class="pcoded-mtext">Cuentas por Cobrar</span>
                                                 </a>
                                             </li>
                                             <li class=" ">
                                                 <a href="{{ route('finance.payables') }}">
-                                                    <span class="pcoded-micon"><i class="fas fa-file-invoice"></i></span>
+                                                    <span class="pcoded-micon"><i
+                                                            class="fas fa-file-invoice"></i></span>
                                                     <span class="pcoded-mtext">Cuentas por Pagar</span>
                                                 </a>
                                             </li>
@@ -309,6 +319,13 @@
                                                 <a href="{{ route('accounts.index') }}">
                                                     <span class="pcoded-micon"><i class="fas fa-wallet"></i></span>
                                                     <span class="pcoded-mtext">Cuentas</span>
+                                                </a>
+                                            </li>
+                                            <li class="">
+                                                <a href="{{ route('finance.parent-payments') }}">
+                                                    <span class="pcoded-micon"><i
+                                                            class="fas fa-credit-card"></i></span>
+                                                    <span class="pcoded-mtext">Pagos de Padres</span>
                                                 </a>
                                             </li>
                                         </ul>
@@ -322,7 +339,7 @@
                                         <ul class="pcoded-submenu">
                                             <li class=" ">
                                                 <a href="{{ url('courses') }}">
-                                                    <span class="pcoded-mtext">Cursos</span>
+                                                    <span class="pcoded-mtext">Clases</span>
                                                 </a>
                                             </li>
                                             <li class=" ">
@@ -335,6 +352,7 @@
                                                     <span class="pcoded-mtext">Entrenadores</span>
                                                 </a>
                                             </li>
+
                                         </ul>
                                     </li>
 
@@ -352,17 +370,35 @@
                                         </a>
                                     </li>
                                 @elseif ($currentRole === 'padre')
-                                    <li>
+                                    <li class="{{ request()->routeIs('parent.portal') ? 'active' : '' }}">
                                         <a href="{{ route('parent.portal') }}">
-                                            <span class="pcoded-micon"><i class="fas fa-user-friends"></i></span>
-                                            <span class="pcoded-mtext">Portal de Familia</span>
+                                            <span class="pcoded-micon"><i class="fas fa-th-large"></i></span>
+                                            <span class="pcoded-mtext">Mi Panel</span>
+                                        </a>
+                                    </li>
+                                    <li class="{{ request()->routeIs('parent.calendar') ? 'active' : '' }}">
+                                        <a href="{{ route('parent.calendar') }}">
+                                            <span class="pcoded-micon"><i class="fas fa-calendar-alt"></i></span>
+                                            <span class="pcoded-mtext">Clases y Asistencias</span>
+                                        </a>
+                                    </li>
+                                    <li class="{{ request()->routeIs('parent.payments') ? 'active' : '' }}">
+                                        <a href="{{ route('parent.payments') }}">
+                                            <span class="pcoded-micon"><i class="fas fa-credit-card"></i></span>
+                                            <span class="pcoded-mtext">Mis Pagos</span>
                                         </a>
                                     </li>
                                 @elseif ($currentRole === 'coach')
                                     <li>
+                                        <a href="{{ route('home') }}">
+                                            <span class="pcoded-micon"><i class="feather icon-home"></i></span>
+                                            <span class="pcoded-mtext">Inicio</span>
+                                        </a>
+                                    </li>
+                                    <li>
                                         <a href="{{ route('coach.calendar') }}">
                                             <span class="pcoded-micon"><i class="fas fa-calendar-days"></i></span>
-                                            <span class="pcoded-mtext">Mis Clases</span>
+                                            <span class="pcoded-mtext">Mis Sesiones de Clase</span>
                                         </a>
                                     </li>
                                 @endif
@@ -419,12 +455,10 @@
     <script src="{{ asset('assets/files/assets/pages/data-table/js/vfs_fonts.js') }}"></script>
     <script src="{{ asset('assets/files/assets/pages/data-table/extensions/buttons/js/dataTables.buttons.min.js') }}">
     </script>
-    <script src="{{ asset('assets/files/assets/pages/data-table/extensions/buttons/js/buttons.flash.min.js') }}">
-    </script>
+    <script src="{{ asset('assets/files/assets/pages/data-table/extensions/buttons/js/buttons.flash.min.js') }}"></script>
     <script src="{{ asset('assets/files/assets/pages/data-table/extensions/buttons/js/jszip.min.js') }}"></script>
     <script src="{{ asset('assets/files/assets/pages/data-table/extensions/buttons/js/vfs_fonts.js') }}"></script>
-    <script src="{{ asset('assets/files/assets/pages/data-table/extensions/buttons/js/buttons.colVis.min.js') }}">
-    </script>
+    <script src="{{ asset('assets/files/assets/pages/data-table/extensions/buttons/js/buttons.colVis.min.js') }}"></script>
     <script src="{{ asset('assets/files/bower_components/datatables.net-buttons/js/buttons.print.min.js') }}"></script>
     <script src="{{ asset('assets/files/bower_components/datatables.net-buttons/js/buttons.html5.min.js') }}"></script>
 
@@ -443,7 +477,7 @@
     <!-- Custom Scripts -->
     <script src="{{ asset('assets/files/assets/js/script.js') }}"></script>
 
-    <!-- Custom Alert Scripts -->   
+    <!-- Custom Alert Scripts -->
     @if (session()->has('success'))
         <script>
             Swal.fire({

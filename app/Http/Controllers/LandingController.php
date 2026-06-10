@@ -50,6 +50,9 @@ class LandingController extends Controller
 
     public function classes(): View
     {
+        $strikersProgram = Program::query()->where('slug', 'little-strikers')->first();
+        $paddlersProgram = Program::query()->where('slug', 'little-paddlers')->first();
+
         $courses = Course::query()
             ->with(['program', 'branch', 'classes'])
             ->where('active', true)
@@ -80,9 +83,22 @@ class LandingController extends Controller
         $strikersSchedules = $this->normalizeProgramSchedules($groupedPrograms['little-strikers'] ?? []);
         $paddlersSchedules = $this->normalizeProgramSchedules($groupedPrograms['little-paddlers'] ?? []);
         $freeTrialUrl = route('enrollment.wizard', ['is_free_trial' => 1]);
+        $strikersFreeTrialParams = ['is_free_trial' => 1];
+        if ($strikersProgram?->id) {
+            $strikersFreeTrialParams['program_id'] = $strikersProgram->id;
+        }
+        $strikersFreeTrialUrl = route('enrollment.wizard', $strikersFreeTrialParams);
+
+        $paddlersFreeTrialParams = ['is_free_trial' => 1];
+        if ($paddlersProgram?->id) {
+            $paddlersFreeTrialParams['program_id'] = $paddlersProgram->id;
+        }
+        $paddlersFreeTrialUrl = route('enrollment.wizard', $paddlersFreeTrialParams);
 
         return view('classes.index', [
             'freeTrialUrl' => $freeTrialUrl,
+            'strikersFreeTrialUrl' => $strikersFreeTrialUrl,
+            'paddlersFreeTrialUrl' => $paddlersFreeTrialUrl,
             'strikersSchedules' => $strikersSchedules,
             'paddlersSchedules' => $paddlersSchedules,
         ]);
@@ -185,6 +201,7 @@ class LandingController extends Controller
 
     public function contact(LandingContactRequest $request): RedirectResponse
     {
+        $contactRedirectUrl = route('landing.index') . '#contacto';
         $payload = $request->validated();
         $program = Program::query()->find($payload['program_id']);
         $branch = Branch::query()->find($payload['branch_id']);
@@ -194,7 +211,7 @@ class LandingController extends Controller
         $recipientName = (string) config('mail.to.name', 'Little Brands Inc');
 
         if ($recipientAddress === '') {
-            return back()
+            return redirect()->to($contactRedirectUrl)
                 ->withInput()
                 ->withErrors([
                     'contact' => 'No se ha configurado MAIL_TO_ADDRESS en el archivo .env.',
@@ -219,13 +236,14 @@ class LandingController extends Controller
                 'error' => $exception->getMessage(),
             ]);
 
-            return back()
+            return redirect()->to($contactRedirectUrl)
                 ->withInput()
                 ->withErrors([
                     'contact' => 'No se pudo enviar tu mensaje en este momento. Intenta nuevamente en unos minutos.',
                 ]);
         }
 
-        return back()->with('success', 'Gracias por escribirnos. Te responderemos muy pronto.');
+        return redirect()->to($contactRedirectUrl)
+            ->with('success', 'Gracias por escribirnos. Te responderemos muy pronto.');
     }
 }

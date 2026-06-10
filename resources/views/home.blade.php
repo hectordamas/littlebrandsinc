@@ -183,7 +183,7 @@
         </a>
         <a href="{{ route('courses.index') }}" class="quick-link">
             <span class="icon"><i class="fas fa-diagram-project"></i></span>
-            <h6>Cursos</h6>
+            <h6>Clases</h6>
             <small>Oferta y configuración</small>
         </a>
         <a href="{{ route('students.index') }}" class="quick-link">
@@ -230,12 +230,12 @@
             <div class="kpi-hint">Volumen comercial y base activa</div>
         </div>
         <div class="kpi-card">
-            <div class="kpi-label">Cursos activos / Coaches</div>
+            <div class="kpi-label">Clases activas / Coaches</div>
             <div class="kpi-value">{{ $activeCoursesCount }} / {{ $coachesCount }}</div>
             <div class="kpi-hint">Capacidad operativa actual</div>
         </div>
         <div class="kpi-card">
-            <div class="kpi-label">Clases hoy / próximos 7 días</div>
+            <div class="kpi-label">Sesiones de clase hoy / próximos 7 días</div>
             <div class="kpi-value">{{ $todayClasses }} / {{ $next7DaysClasses }}</div>
             <div class="kpi-hint">Agenda inmediata en {{ $branchesCount }} sede(s)</div>
         </div>
@@ -271,7 +271,7 @@
         <div class="col-12">
             <div class="card dashboard-card">
                 <div class="card-header">
-                    <h5 class="mb-1">Carga de Clases por Sede</h5>
+                    <h5 class="mb-1">Clases por Sede</h5>
                     <span class="text-muted">Top de sedes con mayor número de clases registradas</span>
                 </div>
                 <div class="card-body">
@@ -368,7 +368,7 @@
                 data: {
                     labels: classesByBranchLabels,
                     datasets: [{
-                        label: 'Clases registradas',
+                        label: 'Clases',
                         data: classesByBranchValues,
                         backgroundColor: 'rgba(59, 130, 246, 0.78)',
                         borderColor: '#2563eb',

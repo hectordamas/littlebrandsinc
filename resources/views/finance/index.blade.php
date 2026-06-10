@@ -240,7 +240,7 @@
                 <div class="finance-card shadow-sm">
                     <div class="finance-card-label">Balance neto</div>
                     <div class="finance-card-value" data-summary-field="netBalance">${{ number_format($netBalance, 2) }}</div>
-                    <div class="small text-muted mt-2" data-summary-field="pendingCollectionsCount">{{ $pendingCollectionsCount }} inscripciones pendientes de cobro</div>
+                    <div class="small text-muted mt-2" data-summary-field="pendingCollectionsCount">{{ $pendingCollectionsCount }} Inscripciones pendientes de cobro</div>
                 </div>
             </div>
         </div>
@@ -391,7 +391,7 @@
             $('[data-summary-field="completedExpenses"]').text(formatCurrency(summary.completedExpenses));
             $('[data-summary-field="pendingCollectionAmount"]').text(formatCurrency(summary.pendingCollectionAmount));
             $('[data-summary-field="netBalance"]').text(formatCurrency(summary.netBalance));
-            $('[data-summary-field="pendingCollectionsCount"]').text(`${summary.pendingCollectionsCount} inscripciones pendientes de cobro`);
+            $('[data-summary-field="pendingCollectionsCount"]').text(`${summary.pendingCollectionsCount} Inscripciones pendientes de cobro`);
         }
 
         function escapeHtml(value) {

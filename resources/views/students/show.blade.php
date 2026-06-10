@@ -38,7 +38,7 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <div>
                     <h5 class="mb-1">Detalle del Estudiante #{{ $student->id }}</h5>
-                    <span class="text-muted">Resumen de cursos inscritos y próximas clases</span>
+                    <span class="text-muted">Resumen de Clases inscritas y próximas Clases</span>
                 </div>
                 <a href="{{ route('students.index') }}" class="btn btn-sm btn-secondary">
                     <i class="fas fa-arrow-left"></i> Volver al listado
@@ -91,16 +91,16 @@
                 </div>
 
                 <div class="detail-section">
-                    <span class="detail-chip">Cursos</span>
-                    <div class="detail-section-title">Cursos a los que ha sido inscrito</div>
+                    <span class="detail-chip">Clases</span>
+                    <div class="detail-section-title">Clases a las que ha sido inscrito</div>
                     <div class="table-responsive">
                         <table class="table table-sm table-striped align-middle mb-0">
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Curso</th>
+                                    <th>Programa</th>
+                                    <th>Clases</th>
                                     <th>Sede</th>
-                                    <th>Periodo</th>
                                     <th>Pago</th>
                                 </tr>
                             </thead>
@@ -108,13 +108,15 @@
                                 @forelse ($student->enrollments as $enrollment)
                                     <tr>
                                         <td>{{ $enrollment->id }}</td>
-                                        <td>{{ optional($enrollment->course)->title ?? 'N/A' }}</td>
-                                        <td>{{ optional(optional($enrollment->course)->branch)->name ?? 'N/A' }}</td>
+                                        <td>{{ optional($enrollment->program)->name ?? 'N/A' }}</td>
                                         <td>
-                                            {{ optional($enrollment->course)->start_date ? \Carbon\Carbon::parse($enrollment->course->start_date)->format('d/m/Y') : 'N/A' }}
-                                            -
-                                            {{ optional($enrollment->course)->end_date ? \Carbon\Carbon::parse($enrollment->course->end_date)->format('d/m/Y') : 'N/A' }}
+                                            @php $firstCourse = $enrollment->courses->first(); @endphp
+                                            {{ optional($firstCourse)->title ?? 'N/A' }}
+                                            @if($enrollment->courses->count() > 1)
+                                                <span class="badge bg-info">+{{ $enrollment->courses->count() - 1 }}</span>
+                                            @endif
                                         </td>
+                                        <td>{{ optional(optional($firstCourse)->branch)->name ?? 'N/A' }}</td>
                                         <td>
                                             @if ($enrollment->payment_status === 'paid')
                                                 <span class="badge bg-success">Pagado</span>
@@ -125,7 +127,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="text-muted">Este estudiante no tiene cursos inscritos.</td>
+                                        <td colspan="5" class="text-muted">Este estudiante no tiene Clases inscritas.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -134,15 +136,15 @@
                 </div>
 
                 <div class="detail-section">
-                    <span class="detail-chip">Próximas clases</span>
-                    <div class="detail-section-title">Clases pendientes por asistir</div>
+                    <span class="detail-chip">Próximas Clases</span>
+                    <div class="detail-section-title">Sesiones de Clase pendientes por asistir</div>
                     <div class="table-responsive">
                         <table class="table table-sm table-striped align-middle mb-0">
                             <thead>
                                 <tr>
                                     <th>Fecha</th>
                                     <th>Horario</th>
-                                    <th>Curso</th>
+                                    <th>Clase</th>
                                     <th>Sede</th>
                                     <th>Coach</th>
                                 </tr>

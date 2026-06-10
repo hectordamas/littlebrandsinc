@@ -2,6 +2,16 @@
 
 @section('title')
     <title>Little Brands Inc | Formación deportiva infantil</title>
+    <meta name="description" content="En Little Brands Inc creamos experiencias deportivas diseñadas especialmente para la primera infancia.">
+    <meta name="keywords" content="Little Brands Inc, programas deportivos para niños, fútbol infantil, pádel infantil, desarrollo infantil a través del deporte, clases deportivas para niños pequeños, actividades deportivas para bebés, programas de deporte para niños en Caracas">
+    <meta property="og:title" content="Little Brands Inc | Formación deportiva infantil">
+    <meta property="og:description" content="En Little Brands Inc creamos experiencias deportivas diseñadas especialmente para la primera infancia.">
+    <meta property="og:image" content="{{ asset('landing_page/assets/images/img6.jpeg') }}">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta name="twitter:title" content="Little Brands Inc | Formación deportiva infantil">
+    <meta name="twitter:description" content="En Little Brands Inc creamos experiencias deportivas diseñadas especialmente para la primera infancia.">
+    <meta name="twitter:image" content="{{ asset('landing_page/assets/images/img6.jpeg') }}">
+    <meta name="twitter:card" content="summary_large_image">
 @endsection
 
 @section('content')

@@ -17,5 +17,9 @@ class DatabaseSeeder extends Seeder
         $this->call(UsersSeeder::class);
         $this->call(BranchesSeeder::class);
         $this->call(ProgramsCoursesSeeder::class);
+        $this->call(FinancialAccountsSeeder::class);
+        // Deshabilitado para producción
+        // $this->call(FinancialMovementsSeeder::class);
+        $this->call(ExcelImportSeeder::class);
     }
 }

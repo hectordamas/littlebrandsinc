@@ -38,4 +38,9 @@ class AccountReceivable extends Model
     {
         return $this->hasMany(Transaction::class, 'account_receivable_id')->orderByDesc('created_at');
     }
+
+    public function parentPayments()
+    {
+        return $this->hasMany(ParentPayment::class, 'account_receivable_id');
+    }
 }

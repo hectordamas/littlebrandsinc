@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Comprobante de Inscripcion #{{ $enrollment->id }}</title>
+    <title>Comprobante de Inscripción #{{ $enrollment->id }}</title>
     <style>
         body {
             font-family: DejaVu Sans, sans-serif;
@@ -88,7 +88,8 @@
 
 <body>
     @php
-        $branch = optional($enrollment->course)->branch;
+        $firstCourse = $enrollment->courses->first();
+        $branch = optional($firstCourse)->branch;
         $branchLogo = null;
 
         if ($branch && !empty($branch->logo) && !str_starts_with($branch->logo, 'http://') && !str_starts_with($branch->logo, 'https://')) {
@@ -136,20 +137,51 @@
     </div>
 
     <div class="section">
-        <h3>Curso</h3>
-        <div class="row"><span class="label">Nombre:</span> {{ optional($enrollment->course)->title ?? 'N/A' }}</div>
-        <div class="row"><span class="label">Sede:</span> {{ optional(optional($enrollment->course)->branch)->name ?? 'N/A' }}</div>
-        <div class="row"><span class="label">Dirección sede:</span> {{ optional(optional($enrollment->course)->branch)->address ?? 'N/A' }}</div>
-        <div class="row"><span class="label">Período:</span>
-            {{ optional($enrollment->course)->start_date ? \Carbon\Carbon::parse($enrollment->course->start_date)->format('d/m/Y') : 'N/A' }} -
-            {{ optional($enrollment->course)->end_date ? \Carbon\Carbon::parse($enrollment->course->end_date)->format('d/m/Y') : 'N/A' }}
+        <h3>Programa</h3>
+        <div class="row"><span class="label">Nombre:</span> {{ optional($enrollment->program)->name ?? 'N/A' }}</div>
+        <div class="row"><span class="label">Cuota de inscripción:</span>
+            {{ optional($enrollment->program)->enrollment_fee !== null ? '$' . number_format((float) $enrollment->program->enrollment_fee, 2) : 'N/A' }}
         </div>
-        <div class="row"><span class="label">Precio de inscripción:</span>
-            {{ optional($enrollment->course)->price !== null ? '$' . number_format((float) $enrollment->course->price, 2) : 'N/A' }}
-        </div>
-        <div class="row"><span class="label">Mensualidad:</span>
-            {{ optional($enrollment->course)->monthly_fee !== null ? '$' . number_format((float) $enrollment->course->monthly_fee, 2) : 'N/A' }}
-        </div>
+        <div class="row"><span class="label">Sede:</span> {{ optional($branch)->name ?? 'N/A' }}</div>
+        <div class="row"><span class="label">Dirección sede:</span> {{ optional($branch)->address ?? 'N/A' }}</div>
+    </div>
+
+    <div class="section">
+        <h3>Clases</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Clase</th>
+                    <th>Sede</th>
+                    <th>Día</th>
+                    <th>Horario</th>
+                    <th>Mensualidad</th>
+                    <th>Período</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($enrollment->courses ?? [] as $course)
+                    @php
+                        $firstClass = $course->classes->first();
+                    @endphp
+                    <tr>
+                        <td>{{ $course->title }}</td>
+                        <td>{{ optional($course->branch)->name ?? 'N/A' }}</td>
+                        <td>{{ $firstClass ? \Carbon\Carbon::parse($firstClass->date)->locale('es')->dayName : 'N/A' }}</td>
+                        <td>{{ $firstClass ? \Carbon\Carbon::parse($firstClass->start_time)->format('H:i') . ' - ' . \Carbon\Carbon::parse($firstClass->end_time)->format('H:i') : 'N/A' }}</td>
+                        <td>${{ number_format((float) $course->monthly_fee, 2) }}</td>
+                        <td>
+                            {{ $course->start_date ? \Carbon\Carbon::parse($course->start_date)->format('d/m/Y') : 'N/A' }} -
+                            {{ $course->end_date ? \Carbon\Carbon::parse($course->end_date)->format('d/m/Y') : 'N/A' }}
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="6">No hay Clases asignadas.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
 
     <div class="section">
@@ -166,25 +198,30 @@
     </div>
 
     <div class="section">
-        <h3>Clases y Horarios</h3>
+        <h3>Sesiones de Clase y Horarios</h3>
         <table>
             <thead>
                 <tr>
+                    <th>Clase</th>
                     <th>Fecha</th>
                     <th>Horario</th>
                     <th>Coach</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse (optional($enrollment->course)->classes ?? [] as $class)
-                    <tr>
-                        <td>{{ $class->date ? \Carbon\Carbon::parse($class->date)->format('d/m/Y') : 'N/A' }}</td>
-                        <td>{{ $class->start_time ? \Carbon\Carbon::parse($class->start_time)->format('H:i') : 'N/A' }} - {{ $class->end_time ? \Carbon\Carbon::parse($class->end_time)->format('H:i') : 'N/A' }}</td>
-                        <td>{{ optional($class->coach)->name ?? 'Sin asignar' }}</td>
-                    </tr>
+                @forelse ($enrollment->courses ?? [] as $course)
+                    @forelse ($course->classes as $class)
+                        <tr>
+                            <td>{{ $course->title }}</td>
+                            <td>{{ $class->date ? \Carbon\Carbon::parse($class->date)->format('d/m/Y') : 'N/A' }}</td>
+                            <td>{{ $class->start_time ? \Carbon\Carbon::parse($class->start_time)->format('H:i') : 'N/A' }} - {{ $class->end_time ? \Carbon\Carbon::parse($class->end_time)->format('H:i') : 'N/A' }}</td>
+                            <td>{{ optional($class->coach)->name ?? 'Sin asignar' }}</td>
+                        </tr>
+                    @empty
+                    @endforelse
                 @empty
                     <tr>
-                        <td colspan="3">No hay clases registradas para este curso.</td>
+                        <td colspan="4">No hay sesiones de clase registradas.</td>
                     </tr>
                 @endforelse
             </tbody>

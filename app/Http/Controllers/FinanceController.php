@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use Barryvdh\DomPDF\Facade\Pdf;
-use App\Models\{Account, AccountPayable, AccountReceivable, Branch, Enrollment, Transaction};
+use App\Models\{Account, AccountPayable, AccountReceivable, Branch, Enrollment, ParentPayment, Program, Transaction};
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -61,7 +62,7 @@ class FinanceController extends Controller
         $this->syncEnrollmentReceivables();
 
         $receivables = AccountReceivable::query()
-            ->with(['branch', 'enrollment.course', 'enrollment.student'])
+            ->with(['branch', 'enrollment.courses', 'enrollment.student', 'enrollment.program'])
             ->whereIn('status', ['pending', 'partial'])
             ->orderByDesc('id')
             ->get();
@@ -110,8 +111,9 @@ class FinanceController extends Controller
     {
         $receivable->load([
             'branch',
-            'enrollment.course',
+            'enrollment.courses',
             'enrollment.student',
+            'enrollment.program',
             'transactions.account',
         ]);
 
@@ -420,10 +422,7 @@ class FinanceController extends Controller
     {
         return $transactions->map(function (Transaction $transaction) {
             $receiptPath = $transaction->payment_receipt_path
-                ? 'uploads/comprobantes/' . basename($transaction->payment_receipt_path)
-                : (optional($transaction->enrollment)->payment_receipt_path
-                    ? 'uploads/comprobantes/' . basename(optional($transaction->enrollment)->payment_receipt_path)
-                    : null);
+                ?: optional($transaction->enrollment)->payment_receipt_path;
 
             $receiptName = $transaction->payment_receipt_original_name
                 ?: optional($transaction->enrollment)->payment_receipt_original_name;
@@ -438,15 +437,39 @@ class FinanceController extends Controller
                 'branch' => optional($transaction->branch)->name ?? 'N/A',
                 'reference' => $transaction->reference ?? 'N/A',
                 'receipt_url' => route('finance.transactions.receipt', $transaction),
-                'payment_receipt_url' => $receiptPath ? asset('storage/'.$receiptPath) : null,
+                'payment_receipt_url' => $this->resolvePaymentReceiptUrl($receiptPath),
                 'payment_receipt_name' => $receiptName,
             ];
         })->all();
     }
 
+    protected function resolvePaymentReceiptUrl(?string $path): ?string
+    {
+        if (! $path) {
+            return null;
+        }
+
+        $normalizedPath = ltrim(str_replace('\\', '/', $path), '/');
+
+        if (preg_match('/^https?:\/\//i', $normalizedPath) === 1) {
+            return $normalizedPath;
+        }
+
+        if (is_file(public_path($normalizedPath))) {
+            return asset($normalizedPath);
+        }
+
+        $storagePath = 'storage/'.$normalizedPath;
+        if (is_file(public_path($storagePath))) {
+            return asset($storagePath);
+        }
+
+        return asset($normalizedPath);
+    }
+
     protected function refreshReceivableBalance(AccountReceivable $receivable): void
     {
-        $paidAmount = (float) $receivable->transactions()->sum('amount');
+        $paidAmount = (float) $receivable->transactions()->where('status', 'completed')->sum('amount');
         $balance = max(0, (float) $receivable->amount_total - $paidAmount);
 
         $status = 'pending';
@@ -460,6 +483,50 @@ class FinanceController extends Controller
             'balance_due' => $balance,
             'status' => $status,
         ]);
+
+        $this->syncInstallmentsPaymentStatus($receivable);
+    }
+
+    protected function syncInstallmentsPaymentStatus(AccountReceivable $receivable): void
+    {
+        if (!$receivable->enrollment_id) {
+            return;
+        }
+
+        $enrollment = $receivable->enrollment;
+        if (!$enrollment) {
+            return;
+        }
+
+        $totalPaid = (float) $receivable->transactions()->where('status', 'completed')->sum('amount');
+        $program = $enrollment->program;
+        $enrollmentFee = $program ? (float) ($program->enrollment_fee ?? 50.00) : 0.0;
+        
+        $remainingPaid = max(0.0, $totalPaid - $enrollmentFee);
+        $installments = $enrollment->installments()->orderBy('due_date')->get();
+
+        foreach ($installments as $installment) {
+            $installmentAmount = (float) $installment->amount;
+            if ($remainingPaid >= $installmentAmount) {
+                $installment->update([
+                    'status' => 'paid',
+                    'paid_at' => $installment->paid_at ?? now(),
+                ]);
+                $remainingPaid -= $installmentAmount;
+            } elseif ($remainingPaid > 0) {
+                $installment->update([
+                    'status' => 'pending',
+                ]);
+                $remainingPaid = 0.0;
+            } else {
+                if ($installment->status === 'paid') {
+                    $installment->update([
+                        'status' => 'pending',
+                        'paid_at' => null,
+                    ]);
+                }
+            }
+        }
     }
 
     protected function refreshPayableBalance(AccountPayable $payable): void
@@ -482,8 +549,8 @@ class FinanceController extends Controller
 
     protected function syncEnrollmentReceivables(): void
     {
-        $enrollments = Enrollment::with(['course', 'student'])
-            ->whereNotNull('course_id')
+        $enrollments = Enrollment::with(['program', 'courses', 'student'])
+            ->whereNotNull('program_id')
             ->get();
 
         foreach ($enrollments as $enrollment) {
@@ -494,23 +561,30 @@ class FinanceController extends Controller
                 continue;
             }
 
-            $course = $enrollment->course;
-            if (!$course || $course->price === null || $course->branch_id === null) {
+            $program = $enrollment->program;
+            $courses = $enrollment->courses;
+
+            if (!$program || $courses->isEmpty()) {
                 continue;
             }
 
-            $amountTotal = $this->calculateEnrollmentReceivableTotal($course);
+            $firstCourse = $courses->first();
+            $amountTotal = $this->calculateEnrollmentReceivableTotal($program, $courses);
+            $courseTitles = $courses->pluck('title')->join(', ');
 
             $receivable = AccountReceivable::query()
                 ->where('enrollment_id', $enrollment->id)
                 ->first();
 
             if ($enrollment->payment_status === 'pending') {
+                $studentName = optional($enrollment->student)->name ?? 'Estudiante';
+                $cleanTitle = 'Inscripción #' . $enrollment->id . ' - ' . $studentName . ' (' . ($program->name ?? 'Programa') . ')';
+
                 if (! $receivable) {
                     $receivable = AccountReceivable::create([
-                        'branch_id' => $course->branch_id,
+                        'branch_id' => $firstCourse->branch_id,
                         'enrollment_id' => $enrollment->id,
-                        'title' => 'Inscripcion + mensualidades #'.$enrollment->id.' - '.($course->title ?? 'Curso'),
+                        'title' => $cleanTitle,
                         'amount_total' => $amountTotal,
                         'balance_due' => $amountTotal,
                         'currency' => 'USD',
@@ -518,8 +592,8 @@ class FinanceController extends Controller
                     ]);
                 } else {
                     $receivable->update([
-                        'branch_id' => $course->branch_id,
-                        'title' => 'Inscripcion + mensualidades #'.$enrollment->id.' - '.($course->title ?? 'Curso'),
+                        'branch_id' => $firstCourse->branch_id,
+                        'title' => $cleanTitle,
                         'amount_total' => $amountTotal,
                         'currency' => 'USD',
                         'status' => in_array($receivable->status, ['partial', 'paid'], true)
@@ -557,15 +631,104 @@ class FinanceController extends Controller
         }
     }
 
-    protected function calculateEnrollmentReceivableTotal($course): float
+    protected function calculateEnrollmentReceivableTotal(Program $program, $courses): float
     {
-        $months = 1;
-        if ($course->start_date && $course->end_date) {
-            $start = \Carbon\Carbon::parse($course->start_date)->startOfMonth();
-            $end = \Carbon\Carbon::parse($course->end_date)->startOfMonth();
-            $months = max(1, $start->diffInMonths($end) + 1);
+        $total = (float) ($program->enrollment_fee ?? 50.00);
+
+        foreach ($courses as $course) {
+            $months = 1;
+            if ($course->start_date && $course->end_date) {
+                $start = \Carbon\Carbon::parse($course->start_date)->startOfMonth();
+                $end = \Carbon\Carbon::parse($course->end_date)->startOfMonth();
+                $months = max(1, $start->diffInMonths($end) + 1);
+            }
+            $total += (float) ($course->monthly_fee ?? 0) * $months;
         }
 
-        return (float) ($course->price ?? 0) + ((float) ($course->monthly_fee ?? 0) * $months);
+        return $total;
+    }
+
+    public function parentPayments()
+    {
+        $payments = ParentPayment::with(['user', 'receivable.enrollment.student'])
+            ->orderByDesc('id')
+            ->get();
+
+        return view('finance.parent-payments', [
+            'payments' => $payments,
+        ]);
+    }
+
+    public function approveParentPayment(ParentPayment $payment): RedirectResponse
+    {
+        abort_if($payment->status !== 'pending', 400, 'Este pago ya fue procesado.');
+
+        DB::transaction(function () use ($payment) {
+            $payment->update([
+                'status' => 'approved',
+                'approved_by' => Auth::id(),
+                'approved_at' => now(),
+            ]);
+
+            // Find or create a default account for parent payments
+            $defaultAccount = Account::firstOrCreate(
+                ['slug' => 'parent-payments'],
+                [
+                    'name' => 'Pagos de Padres',
+                    'type' => 'transfer',
+                    'active' => true,
+                ]
+            );
+
+            Transaction::create([
+                'account_receivable_id' => $payment->account_receivable_id,
+                'enrollment_id' => $payment->receivable?->enrollment_id,
+                'account_id' => $defaultAccount->id,
+                'branch_id' => $payment->receivable?->branch_id,
+                'amount' => $payment->amount,
+                'type' => 'income',
+                'status' => 'completed',
+                'payment_method' => 'transfer',
+                'reference' => $payment->reference,
+                'description' => 'Pago de padre aprobado #' . $payment->id,
+            ]);
+
+            $receivable = $payment->receivable;
+            if ($receivable) {
+                $this->refreshReceivableBalance($receivable->fresh());
+            }
+        });
+
+        try {
+            \Mail::to($payment->user->email)->send(new \App\Mail\PaymentApproved($payment));
+        } catch (\Exception $e) {
+            \Log::warning('No se pudo enviar correo de aprobacion: ' . $e->getMessage());
+        }
+
+        return redirect()->back()->with('success', 'Pago aprobado correctamente.');
+    }
+
+    public function rejectParentPayment(Request $request, ParentPayment $payment): RedirectResponse
+    {
+        abort_if($payment->status !== 'pending', 400, 'Este pago ya fue procesado.');
+
+        $validated = $request->validate([
+            'rejected_reason' => 'required|string|max:500',
+        ]);
+
+        $payment->update([
+            'status' => 'rejected',
+            'rejected_reason' => $validated['rejected_reason'],
+            'approved_by' => Auth::id(),
+            'approved_at' => now(),
+        ]);
+
+        try {
+            \Mail::to($payment->user->email)->send(new \App\Mail\PaymentRejected($payment));
+        } catch (\Exception $e) {
+            \Log::warning('No se pudo enviar correo de rechazo: ' . $e->getMessage());
+        }
+
+        return redirect()->back()->with('success', 'Pago rechazado.');
     }
 }

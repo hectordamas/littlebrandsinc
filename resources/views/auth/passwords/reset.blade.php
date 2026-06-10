@@ -19,7 +19,7 @@
                         <!-- TITLE -->
                         <div class="row m-b-20">
                             <div class="col-md-12">
-                                <h4 class="text-center">Reset Password</h4>
+                                <h4 class="text-center">Restablecer Contraseña</h4>
                             </div>
                         </div>
 
@@ -48,7 +48,7 @@
                                 name="email"
                                 class="form-control @error('email') is-invalid @enderror"
                                 value="{{ old('email') }}"
-                                placeholder="Email Address"
+                                placeholder="Correo Electrónico"
                                 required
                                 autofocus
                             >
@@ -65,7 +65,7 @@
                                 <div class="d-grid">
                                     <button type="submit"
                                         class="btn btn-grd-inverse btn-md waves-effect waves-light text-center m-b-20">
-                                        Send Reset Link
+                                        Enviar Enlace de Restablecimiento
                                     </button>
                                 </div>
                             </div>
@@ -74,8 +74,8 @@
                         <!-- LINK A LOGIN -->
                         <div class="text-center">
                             <p class="mb-0">
-                                Back to 
-                                <a href="{{ route('login') }}"><b>Login</b></a>
+                                Volver a 
+                                <a href="{{ route('login') }}"><b>Iniciar Sesión</b></a>
                             </p>
                         </div>
 

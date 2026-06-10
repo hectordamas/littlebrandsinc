@@ -8,7 +8,7 @@ class Enrollment extends Model
 {
     protected $fillable = [
         'student_id',
-        'course_id',
+        'program_id',
         'parent_id',
         'status',
         'payment_method',
@@ -31,9 +31,15 @@ class Enrollment extends Model
         return $this->belongsTo(Student::class);
     }
 
-    public function course()
+    public function program()
     {
-        return $this->belongsTo(Course::class);
+        return $this->belongsTo(Program::class);
+    }
+
+    public function courses()
+    {
+        return $this->belongsToMany(Course::class, 'enrollment_course')
+            ->withTimestamps();
     }
 
     public function parent()

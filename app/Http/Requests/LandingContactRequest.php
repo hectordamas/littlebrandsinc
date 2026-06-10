@@ -6,6 +6,11 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class LandingContactRequest extends FormRequest
 {
+    protected function getRedirectUrl(): string
+    {
+        return route('landing.index') . '#contacto';
+    }
+
     public function authorize(): bool
     {
         return true;

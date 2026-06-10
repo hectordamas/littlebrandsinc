@@ -12,7 +12,7 @@ class UsersSeeder extends Seeder
      */
     public function run(): void
     {
-        for ($i = 0; $i < 10; $i++) {
+        for ($i = 0; $i < 1; $i++) {
             $user = new \App\Models\User();
             $user->name = 'Coach ' . ($i + 1);
             $user->email = 'coach' . ($i + 1) . '@example.com';
@@ -23,7 +23,7 @@ class UsersSeeder extends Seeder
             $user->save();
         }
 
-        for ($i = 0; $i < 10; $i++) {
+        for ($i = 0; $i < 1; $i++) {
             $user = new \App\Models\User();
             $user->name = 'Administrador ' . ($i + 1);
             $user->email = 'admin' . ($i + 1) . '@example.com';
@@ -34,7 +34,7 @@ class UsersSeeder extends Seeder
             $user->save();
         }
 
-        for ($i = 0; $i < 10; $i++) {
+        for ($i = 0; $i < 1; $i++) {
             $user = new \App\Models\User();
             $user->name = 'Padre ' . ($i + 1);
             $user->email = 'padre' . ($i + 1) . '@example.com';

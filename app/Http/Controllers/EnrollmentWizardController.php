@@ -4,13 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Account;
 use App\Models\AccountReceivable;
+use App\Models\Branch;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\EnrollmentBillingProfile;
 use App\Models\EnrollmentInstallment;
+use App\Models\Program;
 use App\Models\Student;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Models\Waitlist;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -22,20 +25,43 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Stripe\Exception\ApiErrorException;
 use Stripe\StripeClient;
+
 class EnrollmentWizardController extends Controller
 {
     public function show(Request $request)
     {
-        $forcedCourseId = $request->query('course_id') ?? $request->query('program_id');
+        $forcedCourseId = $request->query('course_id');
+        $forcedProgramId = $request->query('program_id');
 
         if ($forcedCourseId) {
-            $exists = Course::where('active', true)->whereKey($forcedCourseId)->exists();
-            if ($exists) {
-                $request->session()->put('wizard_locked_course_id', (int) $forcedCourseId);
+            $forcedCourse = Course::query()
+                ->where('active', true)
+                ->whereDate('end_date', '>=', now()->toDateString())
+                ->whereKey($forcedCourseId)
+                ->first();
+
+            if ($forcedCourse) {
+                $request->session()->put('wizard_locked_course_id', (int) $forcedCourse->id);
+                $request->session()->put('program_id', (int) $forcedCourse->program_id);
+                $request->session()->forget('selected_course_ids');
+            }
+        }
+
+        if ($forcedProgramId) {
+            $programExists = Program::query()
+                ->where('active', true)
+                ->whereKey($forcedProgramId)
+                ->exists();
+
+            if ($programExists) {
+                $request->session()->put('program_id', (int) $forcedProgramId);
+                $request->session()->forget('wizard_locked_course_id');
+                $request->session()->forget('selected_course_ids');
             }
         }
 
         $lockedCourseId = $request->session()->get('wizard_locked_course_id');
+        $programId = $request->session()->get('program_id');
 
         if (Auth::check()) {
             $step = (int) $request->session()->get('enrollment_step', 2);
@@ -59,16 +85,21 @@ class EnrollmentWizardController extends Controller
             $studentBirthdate = $student?->birthdate;
         }
 
-        $studentAge = $studentBirthdate ? Carbon::parse($studentBirthdate)->age : null;
+        $studentAge = $studentBirthdate ? round(Carbon::parse($studentBirthdate)->floatDiffInYears(), 1) : null;
 
-        $courses = $this->loadCoursesForWizard($lockedCourseId, $studentAge);
+        $programs = Program::where('active', true)->orderBy('name')->get();
+        $branches = Branch::orderBy('name')->get();
+        $courses = $this->loadCoursesForWizard($lockedCourseId, $studentAge, $programId ? (int) $programId : null);
 
         return view('enrollment.wizard', [
             'initialStep' => $step,
+            'programs' => $programs,
+            'branches' => $branches,
             'courses' => $courses,
             'studentBirthdate' => $studentBirthdate,
             'lockedCourseId' => $lockedCourseId,
             'stripeKey' => config('services.stripe.key'),
+            'stripeEnabled' => config('services.stripe.enabled'),
             'wizardPayload' => $this->wizardPayload($request),
         ]);
     }
@@ -90,7 +121,8 @@ class EnrollmentWizardController extends Controller
     public function createPaymentIntent(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'course_id' => 'required|integer|exists:courses,id',
+            'course_ids' => 'required|array|min:1',
+            'course_ids.*' => 'integer|exists:courses,id',
         ]);
 
         if ($validator->fails()) {
@@ -101,18 +133,50 @@ class EnrollmentWizardController extends Controller
             ], 422);
         }
 
-        $course = Course::query()
+        $courseIds = array_map('intval', $request->input('course_ids', []));
+        $courses = Course::query()
             ->where('active', true)
             ->whereDate('end_date', '>=', now()->toDateString())
-            ->findOrFail((int) $request->input('course_id'));
+            ->whereIn('id', $courseIds)
+            ->get();
 
-        $initialAmount = $this->calculateInitialChargeAmount($course);
+        if ($courses->count() !== count($courseIds)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Uno o más cursos no están disponibles.',
+            ], 422);
+        }
+
+        $programIds = $courses->pluck('program_id')->unique();
+        if ($programIds->count() !== 1) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Todos los cursos deben pertenecer al mismo programa.',
+            ], 422);
+        }
+
+        $program = Program::find($programIds->first());
+        if (! $program) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Programa no encontrado.',
+            ], 422);
+        }
+
+        $initialAmount = $this->calculateInitialChargeAmount($program, $courses->all());
         $amount = (int) round($initialAmount * 100);
         if ($amount <= 0) {
             return response()->json([
                 'success' => false,
-                'message' => 'Este curso no tiene un monto válido para cobrar.',
+                'message' => 'Estos cursos no tienen un monto válido para cobrar.',
             ], 422);
+        }
+
+        if (! config('services.stripe.enabled')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Stripe está deshabilitado en la configuración.',
+            ], 503);
         }
 
         $stripeSecret = config('services.stripe.secret');
@@ -125,13 +189,15 @@ class EnrollmentWizardController extends Controller
 
         try {
             $stripe = new StripeClient($stripeSecret);
+            $courseTitles = $courses->pluck('title')->implode(', ');
             $intent = $stripe->paymentIntents->create([
                 'amount' => $amount,
                 'currency' => 'usd',
                 'automatic_payment_methods' => ['enabled' => true],
                 'metadata' => [
-                    'course_id' => (string) $course->id,
-                    'course_title' => $course->title,
+                    'course_ids' => implode(',', $courseIds),
+                    'course_title' => $courseTitles,
+                    'program_id' => (string) $program->id,
                     'student_id' => (string) ($request->session()->get('selected_student_id') ?? ''),
                     'concept' => 'enrollment_plus_first_month',
                 ],
@@ -308,53 +374,62 @@ class EnrollmentWizardController extends Controller
     protected function handleStep3(Request $request): RedirectResponse|JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'selected_course' => 'required|exists:courses,id',
+            'program_id' => 'required|integer|exists:programs,id',
+            'selected_courses' => 'required|array|min:1',
+            'selected_courses.*' => 'integer|exists:courses,id',
         ]);
 
         if ($validator->fails()) {
             return $this->wizardValidationError($request, $validator);
         }
 
-        $courseId = (int) $request->input('selected_course');
-        $locked = $request->session()->get('wizard_locked_course_id');
-        if ($locked && (int) $courseId !== (int) $locked) {
-            $msg = 'Este curso no está permitido para esta inscripción';
+        $programId = (int) $request->input('program_id');
+        $courseIds = array_map('intval', $request->input('selected_courses', []));
 
-            return $this->wizardJsonOrRedirect($request, [
-                'success' => false,
-                'message' => $msg,
-                'errors' => ['selected_course' => [$msg]],
-            ], back()->withErrors(['selected_course' => $msg]));
+        $locked = $request->session()->get('wizard_locked_course_id');
+        if ($locked) {
+            $allMatchLocked = count($courseIds) === 1 && (int) $courseIds[0] === (int) $locked;
+            if (! $allMatchLocked) {
+                $msg = 'El curso seleccionado no está permitido para esta inscripción';
+
+                return $this->wizardJsonOrRedirect($request, [
+                    'success' => false,
+                    'message' => $msg,
+                    'errors' => ['selected_courses' => [$msg]],
+                ], back()->withErrors(['selected_courses' => $msg]));
+            }
         }
 
-        $course = Course::withCount('enrollments')->findOrFail($courseId);
+        $program = Program::findOrFail($programId);
 
-        if (! $course->active || Carbon::parse($course->end_date)->lt(Carbon::today())) {
-            $msg = 'Este programa no está disponible o ya finalizó';
+        $courses = Course::withCount('enrollments')
+            ->whereIn('id', $courseIds)
+            ->get();
+
+        if ($courses->count() !== count($courseIds)) {
+            $msg = 'Uno o más cursos no fueron encontrados';
 
             return $this->wizardJsonOrRedirect($request, [
                 'success' => false,
                 'message' => $msg,
-                'errors' => ['selected_course' => [$msg]],
-            ], back()->withErrors(['selected_course' => $msg]));
+                'errors' => ['selected_courses' => [$msg]],
+            ], back()->withErrors(['selected_courses' => $msg]));
+        }
+
+        foreach ($courses as $course) {
+            if ((int) $course->program_id !== $programId) {
+                $msg = "El curso \"{$course->title}\" no pertenece al programa seleccionado";
+
+                return $this->wizardJsonOrRedirect($request, [
+                    'success' => false,
+                    'message' => $msg,
+                    'errors' => ['selected_courses' => [$msg]],
+                ], back()->withErrors(['selected_courses' => $msg]));
+            }
         }
 
         $studentId = $request->session()->get('selected_student_id');
         $student = Student::find($studentId);
-        $alreadyEnrolled = Enrollment::query()
-            ->where('student_id', $student->id)
-            ->where('course_id', $course->id)
-            ->exists();
-        if ($alreadyEnrolled) {
-            $msg = 'Este estudiante ya está inscrito en este programa';
-
-            return $this->wizardJsonOrRedirect($request, [
-                'success' => false,
-                'message' => $msg,
-                'errors' => ['selected_course' => [$msg]],
-            ], back()->withErrors(['selected_course' => $msg]));
-        }
-
         if (! $student) {
             return $this->wizardJsonOrRedirect($request, [
                 'success' => false,
@@ -364,56 +439,103 @@ class EnrollmentWizardController extends Controller
         }
 
         $studentAge = $student->birthdate ? Carbon::parse($student->birthdate)->age : null;
+        $validCourseIds = [];
+        $waitlistedCourses = [];
+        $errorMessages = [];
 
-        $spotsLeft = $course->capacity - $course->enrollments_count;
-        if ($spotsLeft <= 0) {
-            $msg = 'Lo sentimos, este programa ya no tiene cupos disponibles';
+        foreach ($courses as $course) {
+            if (! $course->active || Carbon::parse($course->end_date)->lt(Carbon::today())) {
+                $errorMessages[] = "El curso \"{$course->title}\" no está disponible o ya finalizó";
+                continue;
+            }
+
+            if ($studentAge !== null) {
+                if ($course->min_age !== null && (float) $studentAge < (float) $course->min_age) {
+                    $errorMessages[] = "El estudiante no cumple con la edad mínima ({$course->min_age} años) para \"{$course->title}\"";
+                    continue;
+                }
+                if ($course->max_age !== null && (float) $studentAge > (float) $course->max_age) {
+                    $errorMessages[] = "El estudiante excede la edad máxima ({$course->max_age} años) para \"{$course->title}\"";
+                    continue;
+                }
+            }
+
+            $existingEnrollment = Enrollment::query()
+                ->where('student_id', $student->id)
+                ->whereHas('courses', fn($q) => $q->where('course_id', $course->id))
+                ->first();
+
+            if ($existingEnrollment) {
+                if ($existingEnrollment->is_free_trial) {
+                    // Allow re-enrollment — the old trial will be cancelled on confirmation
+                } else {
+                    $errorMessages[] = "El estudiante ya está inscrito en \"{$course->title}\"";
+                    continue;
+                }
+            }
+
+            $spotsLeft = $course->capacity - $course->enrollments_count;
+            if ($spotsLeft <= 0) {
+                Waitlist::create([
+                    'student_id' => $student->id,
+                    'course_id' => $course->id,
+                    'parent_id' => Auth::id(),
+                    'status' => 'pending',
+                ]);
+                $waitlistedCourses[] = $course->title;
+                continue;
+            }
+
+            $validCourseIds[] = $course->id;
+        }
+
+        if (! empty($errorMessages)) {
+            $msg = implode('. ', $errorMessages);
 
             return $this->wizardJsonOrRedirect($request, [
                 'success' => false,
                 'message' => $msg,
-                'errors' => ['selected_course' => [$msg]],
-            ], back()->withErrors(['selected_course' => $msg]));
+                'errors' => ['selected_courses' => $errorMessages],
+            ], back()->withErrors(['selected_courses' => $errorMessages]));
         }
 
-        if ($studentAge !== null) {
-            if ($course->min_age && $studentAge < $course->min_age) {
-                $msg = 'El estudiante no cumple con la edad mínima requerida';
+        if (empty($validCourseIds)) {
+            $msg = 'Ninguno de los cursos seleccionados tiene cupos disponibles.';
 
-                return $this->wizardJsonOrRedirect($request, [
-                    'success' => false,
-                    'message' => $msg,
-                    'errors' => ['selected_course' => [$msg]],
-                ], back()->withErrors(['selected_course' => $msg]));
+            if (! empty($waitlistedCourses)) {
+                $msg .= ' Se te ha agregado a la lista de espera para: ' . implode(', ', $waitlistedCourses) . '.';
             }
-            if ($course->max_age && $studentAge > $course->max_age) {
-                $msg = 'El estudiante excede la edad máxima permitida';
 
-                return $this->wizardJsonOrRedirect($request, [
-                    'success' => false,
-                    'message' => $msg,
-                    'errors' => ['selected_course' => [$msg]],
-                ], back()->withErrors(['selected_course' => $msg]));
-            }
+            return $this->wizardJsonOrRedirect($request, [
+                'success' => false,
+                'message' => $msg,
+                'errors' => ['selected_courses' => [$msg]],
+            ], back()->withErrors(['selected_courses' => $msg]));
         }
 
-        $request->session()->put('selected_course_id', $courseId);
-        $request->session()->put('course_enrollment_fee', $course->price);
-        $request->session()->put('course_monthly_fee', $course->monthly_fee);
+        $request->session()->put('program_id', $programId);
+        $request->session()->put('selected_course_ids', $validCourseIds);
         $request->session()->put('enrollment_step', 4);
 
-        return $this->wizardJsonOrRedirect($request, [
+        $responseData = [
             'success' => true,
             'next_step' => 4,
             'data' => $this->wizardPayload($request),
-        ], redirect()->route('enrollment.wizard'));
+        ];
+
+        if (! empty($waitlistedCourses)) {
+            $responseData['message'] = 'Algunos cursos no tienen cupo. Se te ha agregado a la lista de espera para: ' . implode(', ', $waitlistedCourses) . '.';
+            $responseData['waitlisted'] = $waitlistedCourses;
+        }
+
+        return $this->wizardJsonOrRedirect($request, $responseData, redirect()->route('enrollment.wizard'));
     }
 
     protected function handleStep4(Request $request): RedirectResponse|JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'payment_method' => 'required|in:card,pending',
-            'is_free_trial' => 'nullable|boolean',
+            'is_clase_prueba' => 'nullable|boolean',
             'stripe_payment_intent_id' => 'nullable|string|max:255',
             'payment_receipt' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:6144',
         ]);
@@ -423,7 +545,7 @@ class EnrollmentWizardController extends Controller
         }
 
         $paymentMethod = $request->input('payment_method');
-        $isFreeTrial = (bool) $request->boolean('is_free_trial');
+        $isFreeTrial = (bool) ($request->boolean('is_clase_prueba') || $request->boolean('is_free_trial'));
         if ($paymentMethod === 'card') {
             $isFreeTrial = false;
         }
@@ -442,8 +564,23 @@ class EnrollmentWizardController extends Controller
             return $this->wizardValidationError($request, $validator);
         }
 
+        $programId = $request->session()->get('program_id');
+        $courseIds = $request->session()->get('selected_course_ids', []);
+
+        $program = $programId ? Program::find($programId) : null;
+        $selectedCourses = Course::whereIn('id', $courseIds)->get();
+
+        $total = 0;
+        if ($program) {
+            $total += (float) ($program->enrollment_fee ?? 50.00);
+        }
+        foreach ($selectedCourses as $course) {
+            $total += (float) ($course->monthly_fee ?? 0);
+        }
+
         $request->session()->put('payment_method', $paymentMethod);
         $request->session()->put('is_free_trial', $isFreeTrial);
+        $request->session()->put('wizard_total', $total);
 
         if ($request->hasFile('payment_receipt')) {
             $previousPath = $request->session()->get('payment_receipt_path');
@@ -486,7 +623,8 @@ class EnrollmentWizardController extends Controller
         }
 
         $studentId = $request->session()->get('selected_student_id');
-        $courseId = $request->session()->get('selected_course_id');
+        $programId = $request->session()->get('program_id');
+        $courseIds = $request->session()->get('selected_course_ids', []);
         $paymentMethod = $request->session()->get('payment_method');
         $isFreeTrial = (bool) $request->session()->get('is_free_trial', false);
         $paymentReceiptPath = $request->session()->get('payment_receipt_path');
@@ -503,7 +641,7 @@ class EnrollmentWizardController extends Controller
             ]));
         }
 
-        if (! $studentId || ! $courseId || ! $paymentMethod) {
+        if (! $studentId || ! $programId || empty($courseIds) || ! $paymentMethod) {
             return $this->wizardJsonOrRedirect($request, [
                 'success' => false,
                 'message' => 'Sesión incompleta. Reinicia el proceso.',
@@ -512,8 +650,10 @@ class EnrollmentWizardController extends Controller
         }
 
         $student = Student::find($studentId);
-        $course = Course::withCount('enrollments')->find($courseId);
-        if (! $student || ! $course) {
+        $program = Program::find($programId);
+        $courses = Course::withCount('enrollments')->whereIn('id', $courseIds)->get();
+
+        if (! $student || ! $program || $courses->isEmpty()) {
             return $this->wizardJsonOrRedirect($request, [
                 'success' => false,
                 'message' => 'Sesión inválida. Reinicia el proceso.',
@@ -521,39 +661,43 @@ class EnrollmentWizardController extends Controller
             ], redirect()->route('enrollment.wizard')->withErrors(['session' => 'Sesión inválida.']));
         }
 
-        if (! $course->active || Carbon::parse($course->end_date)->lt(Carbon::today())) {
-            $msg = 'Este programa ya no está vigente.';
+        foreach ($courses as $course) {
+            if (! $course->active || Carbon::parse($course->end_date)->lt(Carbon::today())) {
+                $msg = "El curso \"{$course->title}\" ya no está vigente.";
 
-            return $this->wizardJsonOrRedirect($request, [
-                'success' => false,
-                'message' => $msg,
-                'errors' => ['selected_course' => [$msg]],
-            ], redirect()->route('enrollment.wizard')->withErrors(['selected_course' => $msg]));
-        }
+                return $this->wizardJsonOrRedirect($request, [
+                    'success' => false,
+                    'message' => $msg,
+                    'errors' => ['selected_courses' => [$msg]],
+                ], redirect()->route('enrollment.wizard')->withErrors(['selected_courses' => $msg]));
+            }
 
-        $alreadyEnrolled = Enrollment::query()
-            ->where('student_id', $student->id)
-            ->where('course_id', $course->id)
-            ->exists();
-        if ($alreadyEnrolled) {
-            $msg = 'Este estudiante ya está inscrito en este programa';
+            $existingEnrollment = Enrollment::query()
+                ->where('student_id', $student->id)
+                ->whereHas('courses', fn($q) => $q->where('course_id', $course->id))
+                ->where('is_free_trial', false)
+                ->exists();
 
-            return $this->wizardJsonOrRedirect($request, [
-                'success' => false,
-                'message' => $msg,
-                'errors' => ['selected_course' => [$msg]],
-            ], redirect()->route('enrollment.wizard')->withErrors(['selected_course' => $msg]));
-        }
+            if ($existingEnrollment) {
+                $msg = "El estudiante ya está inscrito en \"{$course->title}\"";
 
-        $spotsLeft = $course->capacity - $course->enrollments_count;
-        if ($spotsLeft <= 0) {
-            $msg = 'Lo sentimos, este programa ya no tiene cupos disponibles';
+                return $this->wizardJsonOrRedirect($request, [
+                    'success' => false,
+                    'message' => $msg,
+                    'errors' => ['selected_courses' => [$msg]],
+                ], redirect()->route('enrollment.wizard')->withErrors(['selected_courses' => $msg]));
+            }
 
-            return $this->wizardJsonOrRedirect($request, [
-                'success' => false,
-                'message' => $msg,
-                'errors' => ['selected_course' => [$msg]],
-            ], redirect()->route('enrollment.wizard')->withErrors(['selected_course' => $msg]));
+            $spotsLeft = $course->capacity - $course->enrollments_count;
+            if ($spotsLeft <= 0) {
+                $msg = "Lo sentimos, \"{$course->title}\" ya no tiene cupos disponibles";
+
+                return $this->wizardJsonOrRedirect($request, [
+                    'success' => false,
+                    'message' => $msg,
+                    'errors' => ['selected_courses' => [$msg]],
+                ], redirect()->route('enrollment.wizard')->withErrors(['selected_courses' => $msg]));
+            }
         }
 
         if ($paymentMethod === 'card' && $stripePaymentIntentId && str_starts_with($stripePaymentIntentId, 'pi_')) {
@@ -586,104 +730,211 @@ class EnrollmentWizardController extends Controller
         }
 
         try {
-            $enrollment = DB::transaction(function () use ($studentId, $courseId, $paymentMethod, $student, $course, $stripePaymentIntentId, $isFreeTrial, $paymentReceiptPath, $paymentReceiptOriginalName) {
-            $isCardPayment = $paymentMethod === 'card';
-            $effectivePaymentMethod = $isFreeTrial ? 'free_trial' : $paymentMethod;
-            $paymentStatus = ($isCardPayment || $isFreeTrial) ? 'paid' : 'pending';
+            $enrollment = DB::transaction(function () use (
+                $studentId, $programId, $courseIds, $paymentMethod,
+                $student, $program, $courses, $stripePaymentIntentId,
+                $isFreeTrial, $paymentReceiptPath, $paymentReceiptOriginalName
+            ) {
+                $isCardPayment = $paymentMethod === 'card';
+                $effectivePaymentMethod = $isFreeTrial ? 'clase_prueba' : $paymentMethod;
+                $paymentStatus = ($isCardPayment || $isFreeTrial) ? 'paid' : 'pending';
 
-            $enrollment = new Enrollment;
-            $enrollment->student_id = $studentId;
-            $enrollment->course_id = $courseId;
-            $enrollment->parent_id = Auth::id();
-            $enrollment->status = $paymentStatus === 'paid' ? 'completed' : 'pending';
-            $enrollment->payment_method = $effectivePaymentMethod;
-            $enrollment->payment_status = $paymentStatus;
-            $enrollment->is_free_trial = $isFreeTrial;
-            $enrollment->terms_accepted = true;
-            $enrollment->image_consent_accepted = true;
-            $enrollment->payment_receipt_path = $paymentReceiptPath;
-            $enrollment->payment_receipt_original_name = $paymentReceiptOriginalName;
-            $enrollment->save();
-
-            if ($isFreeTrial) {
-                EnrollmentBillingProfile::updateOrCreate(
-                    ['enrollment_id' => $enrollment->id],
-                    [
-                        'billing_mode' => 'manual',
-                        'auto_pay_enabled' => false,
-                        'status' => 'active',
-                    ]
-                );
-
-                return $enrollment;
-            }
-
-            $installmentMonths = $this->calculateInstallmentMonths($course);
-            $enrollmentFee = (float) ($course->price ?? 0);
-            $monthlyFee = (float) ($course->monthly_fee ?? 0);
-            $totalReceivable = $enrollmentFee + ($monthlyFee * $installmentMonths);
-
-            $receivable = AccountReceivable::create([
-                'branch_id' => $course->branch_id,
-                'enrollment_id' => $enrollment->id,
-                'title' => 'Inscripcion + mensualidades #'.$enrollment->id.' - '.($course->title ?? 'Curso'),
-                'amount_total' => $totalReceivable,
-                'balance_due' => $totalReceivable,
-                'currency' => 'USD',
-                'status' => $paymentMethod === 'pending' ? 'pending' : 'partial',
-                'due_date' => $course->start_date ? Carbon::parse($course->start_date)->toDateString() : now()->toDateString(),
-                'notes' => 'Incluye inscripción y plan de mensualidades.',
-            ]);
-
-            $this->createInstallmentsForEnrollment($enrollment, $course, $receivable, $installmentMonths, $paymentMethod === 'card');
-
-            if ($enrollment->payment_status === 'paid') {
-                Transaction::create([
-                    'enrollment_id' => $enrollment->id,
-                    'student_id' => $student->id,
-                    'course_id' => $course->id,
-                    'branch_id' => $course->branch_id,
-                    'account_id' => $this->resolveIncomeAccountId($paymentMethod),
-                    'account_receivable_id' => $receivable->id,
-                    'amount' => $this->calculateInitialChargeAmount($course),
-                    'currency' => 'USD',
-                    'type' => 'income',
-                    'status' => 'completed',
-                    'payment_method' => $paymentMethod === 'card' ? 'stripe' : $paymentMethod,
-                    'reference' => $stripePaymentIntentId,
-                    'description' => 'Pago de inscripción + 1er mes: '.$course->title,
-                    'payment_receipt_path' => $paymentReceiptPath,
-                    'payment_receipt_original_name' => $paymentReceiptOriginalName,
-                ]);
-
-                $firstInstallment = EnrollmentInstallment::query()
-                    ->where('enrollment_id', $enrollment->id)
-                    ->where('is_first_month', true)
+                $existingEnrollment = Enrollment::query()
+                    ->where('student_id', $studentId)
+                    ->where('program_id', $programId)
+                    ->where('status', '!=', 'cancelled')
+                    ->where('is_free_trial', false)
                     ->first();
 
-                if ($firstInstallment) {
-                    $firstInstallment->update([
-                        'status' => 'paid',
-                        'stripe_payment_intent_id' => $stripePaymentIntentId,
-                        'paid_at' => now(),
+                if ($existingEnrollment) {
+                    $existingCourseIds = $existingEnrollment->courses()->pluck('course_id')->toArray();
+                    $newCourseIds = array_diff($courseIds, $existingCourseIds);
+
+                    if (empty($newCourseIds)) {
+                        $existingEnrollment->courses()->sync(array_unique(array_merge($existingCourseIds, $courseIds)));
+
+                        return $existingEnrollment;
+                    }
+
+                    $existingEnrollment->courses()->sync(array_unique(array_merge($existingCourseIds, $courseIds)));
+
+                    $newCourses = Course::whereIn('id', $newCourseIds)->get();
+                    $totalMonthlyFee = $newCourses->sum(fn($c) => (float) ($c->monthly_fee ?? 0));
+                    $installmentMonths = $this->calculateCombinedInstallmentMonths($newCourses);
+                    $totalAdditional = $totalMonthlyFee * $installmentMonths;
+
+                    if ($totalAdditional <= 0) {
+                        if ($paymentStatus === 'paid' && $existingEnrollment->payment_status !== 'paid') {
+                            $existingEnrollment->payment_status = 'paid';
+                            $existingEnrollment->status = 'completed';
+                        }
+                        $existingEnrollment->save();
+
+                        return $existingEnrollment;
+                    }
+
+                    $existingEnrollment->payment_status = $existingEnrollment->payment_status === 'paid' ? 'paid' : $paymentStatus;
+                    $existingEnrollment->status = $existingEnrollment->payment_status === 'paid' ? 'completed' : $existingEnrollment->status;
+                    $existingEnrollment->save();
+
+                    $branchId = $newCourses->first()->branch_id;
+                    $studentName = optional($student)->name ?? 'Estudiante';
+
+                    $receivable = AccountReceivable::create([
+                        'branch_id' => $branchId,
+                        'enrollment_id' => $existingEnrollment->id,
+                        'title' => 'Mensualidades adicionales #' . $existingEnrollment->id . ' - ' . $studentName,
+                        'amount_total' => $totalAdditional,
+                        'balance_due' => $totalAdditional,
+                        'currency' => 'USD',
+                        'status' => $paymentMethod === 'pending' ? 'pending' : 'partial',
+                        'due_date' => $newCourses->min('start_date')
+                            ? Carbon::parse($newCourses->min('start_date'))->toDateString()
+                            : now()->toDateString(),
+                        'notes' => 'Clases adicionales agregadas a la inscripción existente.',
                     ]);
+
+                    $this->createInstallmentsForEnrollment($existingEnrollment, $newCourses, $receivable, $installmentMonths, $totalMonthlyFee, $paymentMethod === 'card');
+
+                    if ($paymentMethod === 'card' && $stripePaymentIntentId && str_starts_with($stripePaymentIntentId, 'pi_')) {
+                        Transaction::create([
+                            'enrollment_id' => $existingEnrollment->id,
+                            'student_id' => $student->id,
+                            'course_id' => $newCourses->first()->id,
+                            'branch_id' => $branchId,
+                            'account_id' => $this->resolveIncomeAccountId($paymentMethod),
+                            'account_receivable_id' => $receivable->id,
+                            'amount' => $totalMonthlyFee,
+                            'currency' => 'USD',
+                            'type' => 'income',
+                            'status' => 'completed',
+                            'payment_method' => 'stripe',
+                            'reference' => $stripePaymentIntentId,
+                            'description' => 'Pago de mensualidades adicionales: ' . $courseTitles,
+                        ]);
+
+                        $this->refreshReceivableBalance($receivable->fresh());
+                    }
+
+                    return $existingEnrollment;
                 }
 
-                $this->refreshReceivableBalance($receivable->fresh());
-            }
+                $enrollment = new Enrollment;
+                $enrollment->student_id = $studentId;
+                $enrollment->program_id = $programId;
+                $enrollment->parent_id = Auth::id();
+                $enrollment->status = $paymentStatus === 'paid' ? 'completed' : 'pending';
+                $enrollment->payment_method = $effectivePaymentMethod;
+                $enrollment->payment_status = $paymentStatus;
+                $enrollment->is_free_trial = $isFreeTrial;
+                $enrollment->terms_accepted = true;
+                $enrollment->image_consent_accepted = true;
+                $enrollment->payment_receipt_path = $paymentReceiptPath;
+                $enrollment->payment_receipt_original_name = $paymentReceiptOriginalName;
+                $enrollment->save();
 
-            if ($paymentMethod === 'card' && $stripePaymentIntentId && str_starts_with($stripePaymentIntentId, 'pi_')) {
-                $this->setupRecurringSubscription($enrollment, $course, $stripePaymentIntentId);
-            } else {
-                EnrollmentBillingProfile::updateOrCreate(
-                    ['enrollment_id' => $enrollment->id],
-                    [
-                        'billing_mode' => 'manual',
-                        'auto_pay_enabled' => false,
-                        'status' => 'active',
-                    ]
-                );
-            }
+                $enrollment->courses()->sync($courseIds);
+
+                // Cancel any previous free trial enrollment for the same program
+                if (! $isFreeTrial) {
+                    $previousTrial = Enrollment::query()
+                        ->where('student_id', $studentId)
+                        ->where('program_id', $programId)
+                        ->where('is_free_trial', true)
+                        ->where('id', '!=', $enrollment->id)
+                        ->first();
+
+                    if ($previousTrial) {
+                        $previousTrial->update(['status' => 'cancelled']);
+                    }
+                }
+
+                if ($isFreeTrial) {
+                    EnrollmentBillingProfile::updateOrCreate(
+                        ['enrollment_id' => $enrollment->id],
+                        [
+                            'billing_mode' => 'manual',
+                            'auto_pay_enabled' => false,
+                            'status' => 'active',
+                        ]
+                    );
+
+                    return $enrollment;
+                }
+
+                $installmentMonths = $this->calculateCombinedInstallmentMonths($courses);
+                $enrollmentFee = (float) ($program->enrollment_fee ?? 50.00);
+                $totalMonthlyFee = $courses->sum(fn($c) => (float) ($c->monthly_fee ?? 0));
+                $totalReceivable = $enrollmentFee + ($totalMonthlyFee * $installmentMonths);
+
+                $branchId = $courses->first()->branch_id;
+                $studentName = optional($student)->name ?? 'Estudiante';
+
+                $receivable = AccountReceivable::create([
+                    'branch_id' => $branchId,
+                    'enrollment_id' => $enrollment->id,
+                    'title' => 'Inscripción #' . $enrollment->id . ' - ' . $studentName . ' (' . ($program->name ?? 'Programa') . ')',
+                    'amount_total' => $totalReceivable,
+                    'balance_due' => $totalReceivable,
+                    'currency' => 'USD',
+                    'status' => $paymentMethod === 'pending' ? 'pending' : 'partial',
+                    'due_date' => $courses->min('start_date')
+                        ? Carbon::parse($courses->min('start_date'))->toDateString()
+                        : now()->toDateString(),
+                    'notes' => 'Incluye inscripción y plan de mensualidades.',
+                ]);
+
+                $this->createInstallmentsForEnrollment($enrollment, $courses, $receivable, $installmentMonths, $totalMonthlyFee, $paymentMethod === 'card');
+
+                if ($enrollment->payment_status === 'paid') {
+                    $initialAmount = $this->calculateInitialChargeAmount($program, $courses->all());
+
+                    Transaction::create([
+                        'enrollment_id' => $enrollment->id,
+                        'student_id' => $student->id,
+                        'course_id' => $courses->first()->id,
+                        'branch_id' => $branchId,
+                        'account_id' => $this->resolveIncomeAccountId($paymentMethod),
+                        'account_receivable_id' => $receivable->id,
+                        'amount' => $initialAmount,
+                        'currency' => 'USD',
+                        'type' => 'income',
+                        'status' => 'completed',
+                        'payment_method' => $paymentMethod === 'card' ? 'stripe' : $paymentMethod,
+                        'reference' => $stripePaymentIntentId,
+                        'description' => 'Pago de inscripción + 1er mes: ' . $courseTitles,
+                        'payment_receipt_path' => $paymentReceiptPath,
+                        'payment_receipt_original_name' => $paymentReceiptOriginalName,
+                    ]);
+
+                    $firstInstallment = EnrollmentInstallment::query()
+                        ->where('enrollment_id', $enrollment->id)
+                        ->where('is_first_month', true)
+                        ->first();
+
+                    if ($firstInstallment) {
+                        $firstInstallment->update([
+                            'status' => 'paid',
+                            'stripe_payment_intent_id' => $stripePaymentIntentId,
+                            'paid_at' => now(),
+                        ]);
+                    }
+
+                    $this->refreshReceivableBalance($receivable->fresh());
+                }
+
+                if ($paymentMethod === 'card' && $stripePaymentIntentId && str_starts_with($stripePaymentIntentId, 'pi_')) {
+                    $this->setupRecurringSubscription($enrollment, $courses, $stripePaymentIntentId);
+                } else {
+                    EnrollmentBillingProfile::updateOrCreate(
+                        ['enrollment_id' => $enrollment->id],
+                        [
+                            'billing_mode' => 'manual',
+                            'auto_pay_enabled' => false,
+                            'status' => 'active',
+                        ]
+                    );
+                }
 
                 return $enrollment;
             });
@@ -707,15 +958,15 @@ class EnrollmentWizardController extends Controller
             'student_name',
             'student_birthdate',
             'student_medical_notes',
-            'selected_course_id',
-            'course_enrollment_fee',
-            'course_monthly_fee',
+            'program_id',
+            'selected_course_ids',
             'payment_method',
             'is_free_trial',
             'stripe_payment_intent_id',
             'payment_receipt_path',
             'payment_receipt_original_name',
             'wizard_locked_course_id',
+            'wizard_total',
         ]);
 
         $home = redirect()->route('home')->with('success', '¡Inscripción completada exitosamente!');
@@ -739,15 +990,15 @@ class EnrollmentWizardController extends Controller
             'student_name',
             'student_birthdate',
             'student_medical_notes',
-            'selected_course_id',
-            'course_enrollment_fee',
-            'course_monthly_fee',
+            'program_id',
+            'selected_course_ids',
             'payment_method',
             'is_free_trial',
             'stripe_payment_intent_id',
             'payment_receipt_path',
             'payment_receipt_original_name',
             'wizard_locked_course_id',
+            'wizard_total',
         ];
         foreach ($keys as $key) {
             $request->session()->forget($key);
@@ -756,15 +1007,20 @@ class EnrollmentWizardController extends Controller
         return redirect()->route('enrollment.wizard');
     }
 
-    protected function loadCoursesForWizard(?int $lockedCourseId, ?int $studentAge)
+    protected function loadCoursesForWizard(?int $lockedCourseId, ?int $studentAge, ?int $programId = null)
     {
         $q = Course::query()
             ->where('active', true)
             ->whereDate('end_date', '>=', now()->toDateString())
-            ->withCount('enrollments');
+            ->withCount('enrollments')
+            ->with(['program', 'branch']);
 
         if ($lockedCourseId) {
             $q->whereKey($lockedCourseId);
+        }
+
+        if ($programId) {
+            $q->where('program_id', $programId);
         }
 
         return $q->orderBy('title')->get()->map(function ($course) use ($studentAge) {
@@ -780,11 +1036,11 @@ class EnrollmentWizardController extends Controller
             }
 
             if ($studentAge !== null) {
-                if ($course->min_age && $studentAge < $course->min_age) {
+                if ($course->min_age !== null && (float) $studentAge < (float) $course->min_age) {
                     $course->can_enroll = false;
                     $course->enroll_error = "Edad mínima requerida: {$course->min_age} años";
                 }
-                if ($course->max_age && $studentAge > $course->max_age) {
+                if ($course->max_age !== null && (float) $studentAge > (float) $course->max_age) {
                     $course->can_enroll = false;
                     $course->enroll_error = "Edad máxima permitida: {$course->max_age} años";
                 }
@@ -808,14 +1064,15 @@ class EnrollmentWizardController extends Controller
             }
         }
 
-        $studentAge = $studentBirthdate ? Carbon::parse($studentBirthdate)->age : null;
-        $courses = $this->loadCoursesForWizard($lockedCourseId, $studentAge);
+        $studentAge = $studentBirthdate ? round(Carbon::parse($studentBirthdate)->floatDiffInYears(), 1) : null;
+        $programId = $request->session()->get('program_id');
+        $courses = $this->loadCoursesForWizard($lockedCourseId, $studentAge, $programId ? (int) $programId : null);
 
         $students = [];
         if (Auth::check()) {
             $authUser = Auth::user();
             if ($authUser instanceof User) {
-                $students = $authUser->students()->orderBy('name')->get()->map(fn ($st) => [
+                $students = $authUser->students()->orderBy('name')->get()->map(fn($st) => [
                     'id' => $st->id,
                     'name' => $st->name,
                     'birthdate' => $st->birthdate ? Carbon::parse($st->birthdate)->format('Y-m-d') : null,
@@ -823,8 +1080,29 @@ class EnrollmentWizardController extends Controller
             }
         }
 
-        $courseId = $request->session()->get('selected_course_id');
-        $courseModel = $courseId ? Course::withCount('enrollments')->find($courseId) : null;
+        $programs = Program::where('active', true)->orderBy('name')->get()->map(fn($p) => [
+            'id' => $p->id,
+            'name' => $p->name,
+            'enrollment_fee' => (float) ($p->enrollment_fee ?? 50.00),
+        ])->values()->all();
+
+        $branches = Branch::orderBy('name')->get()->map(fn($b) => [
+            'id' => $b->id,
+            'name' => $b->name,
+        ])->values()->all();
+
+        $courseIds = $request->session()->get('selected_course_ids', []);
+        $selectedCourseModels = ! empty($courseIds)
+            ? Course::withCount('enrollments')->whereIn('id', $courseIds)->get()
+            : collect();
+
+        $courseSchedules = [];
+        foreach ($selectedCourseModels as $c) {
+            $courseSchedules[$c->id] = $this->formatCourseSchedule($c);
+        }
+
+        $programModel = $programId ? Program::find($programId) : null;
+        $total = $request->session()->get('wizard_total');
 
         return [
             'authenticated' => Auth::check(),
@@ -832,11 +1110,16 @@ class EnrollmentWizardController extends Controller
             'students' => $students,
             'selected_student_id' => $studentId ? (int) $studentId : null,
             'selected_student_name' => $studentName,
-            'courses' => $courses->map(fn ($c) => $this->serializeCourse($c))->values()->all(),
-            'selected_course_id' => $courseId ? (int) $courseId : null,
-            'selected_course' => $courseModel ? $this->serializeCourse($courseModel) : null,
-            'course_enrollment_fee' => $request->session()->get('course_enrollment_fee'),
-            'course_monthly_fee' => $request->session()->get('course_monthly_fee'),
+            'courses' => $courses->map(fn($c) => $this->serializeCourse($c))->values()->all(),
+            'programs' => $programs,
+            'branches' => $branches,
+            'program_id' => $programId ? (int) $programId : null,
+            'selected_course_ids' => array_map('intval', $courseIds),
+            'selected_courses' => $selectedCourseModels->map(fn($c) => $this->serializeCourse($c))->values()->all(),
+            'course_schedules' => $courseSchedules,
+            'enrollment_fee' => $programModel ? (float) ($programModel->enrollment_fee ?? 50.00) : null,
+            'program_enrollment_fee' => $programModel ? (float) ($programModel->enrollment_fee ?? 50.00) : null,
+            'total' => $total !== null ? (float) $total : null,
             'locked_course_id' => $lockedCourseId ? (int) $lockedCourseId : null,
             'payment_method' => $request->session()->get('payment_method'),
             'is_free_trial' => (bool) $request->session()->get('is_free_trial', false),
@@ -854,8 +1137,10 @@ class EnrollmentWizardController extends Controller
             'id' => $course->id,
             'title' => $course->title,
             'description' => $course->description,
-            'min_age' => $course->min_age,
-            'max_age' => $course->max_age,
+            'program_id' => $course->program_id,
+            'branch_id' => $course->branch_id,
+            'min_age' => $course->min_age !== null ? (float) $course->min_age : null,
+            'max_age' => $course->max_age !== null ? (float) $course->max_age : null,
             'capacity' => $course->capacity,
             'enrollments_count' => $course->enrollments_count ?? 0,
             'spots_left' => $spotsLeft,
@@ -863,40 +1148,93 @@ class EnrollmentWizardController extends Controller
             'monthly_fee' => $course->monthly_fee !== null ? (float) $course->monthly_fee : null,
             'can_enroll' => (bool) ($course->can_enroll ?? true),
             'enroll_error' => $course->enroll_error,
+            'schedule' => $this->formatCourseSchedule($course),
+            'branch_name' => optional($course->branch)->name,
         ];
     }
 
-    protected function calculateInitialChargeAmount(Course $course): float
+    protected function formatCourseSchedule(Course $course): string
     {
-        return (float) ($course->price ?? 0) + (float) ($course->monthly_fee ?? 0);
+        $weekDays = [
+            1 => 'Lunes',
+            2 => 'Martes',
+            3 => 'Miércoles',
+            4 => 'Jueves',
+            5 => 'Viernes',
+            6 => 'Sábados',
+            7 => 'Domingos',
+        ];
+
+        $slots = $course->classes
+            ->map(function ($class) {
+                $date = $class->date instanceof Carbon
+                    ? $class->date
+                    : Carbon::parse($class->date);
+
+                return [
+                    'day' => (int) $date->dayOfWeekIso,
+                    'time' => substr((string) $class->start_time, 0, 5),
+                ];
+            })
+            ->unique(fn($slot) => $slot['day'] . '|' . $slot['time'])
+            ->sortBy([
+                ['day', 'asc'],
+                ['time', 'asc'],
+            ])
+            ->values();
+
+        if ($slots->isEmpty()) {
+            return 'Horario por confirmar';
+        }
+
+        return $slots
+            ->map(function ($slot) use ($weekDays) {
+                $carbonTime = Carbon::createFromFormat('H:i', $slot['time']);
+
+                return ($weekDays[$slot['day']] ?? 'Dia') . ' ' . mb_strtolower($carbonTime->format('g:i A'));
+            })
+            ->map(fn($value) => str_replace(['am', 'pm'], ['a.m.', 'p.m.'], $value))
+            ->implode(' • ');
     }
 
-    protected function calculateInstallmentMonths(Course $course): int
+    protected function calculateInitialChargeAmount(Program $program, array $courses): float
     {
-        if (! $course->start_date || ! $course->end_date) {
+        $enrollmentFee = (float) ($program->enrollment_fee ?? 50.00);
+        $monthlySum = array_sum(array_map(fn($c) => (float) ($c->monthly_fee ?? 0), $courses));
+
+        return $enrollmentFee + $monthlySum;
+    }
+
+    protected function calculateCombinedInstallmentMonths($courses): int
+    {
+        $startDates = $courses->map(fn($c) => $c->start_date ? Carbon::parse($c->start_date) : null)->filter();
+        $endDates = $courses->map(fn($c) => $c->end_date ? Carbon::parse($c->end_date) : null)->filter();
+
+        if ($startDates->isEmpty() || $endDates->isEmpty()) {
             return 1;
         }
 
-        $start = Carbon::parse($course->start_date)->startOfMonth();
-        $end = Carbon::parse($course->end_date)->startOfMonth();
+        $start = $startDates->min()->startOfMonth();
+        $end = $endDates->max()->startOfMonth();
 
         return max(1, $start->diffInMonths($end) + 1);
     }
 
     protected function createInstallmentsForEnrollment(
         Enrollment $enrollment,
-        Course $course,
+        $courses,
         AccountReceivable $receivable,
         int $installmentMonths,
+        float $totalMonthlyFee,
         bool $firstMonthPaid
     ): void {
-        $monthlyFee = (float) ($course->monthly_fee ?? 0);
-        if ($monthlyFee <= 0) {
+        if ($totalMonthlyFee <= 0) {
             return;
         }
 
-        $baseDate = $course->start_date
-            ? Carbon::parse($course->start_date)->startOfDay()
+        $startDates = $courses->map(fn($c) => $c->start_date ? Carbon::parse($c->start_date) : null)->filter();
+        $baseDate = $startDates->isNotEmpty()
+            ? $startDates->min()->startOfDay()
             : now()->startOfDay();
 
         for ($offset = 0; $offset < $installmentMonths; $offset++) {
@@ -908,7 +1246,7 @@ class EnrollmentWizardController extends Controller
                 'period_year' => (int) $dueDate->year,
                 'period_month' => (int) $dueDate->month,
                 'due_date' => $dueDate->toDateString(),
-                'amount' => $monthlyFee,
+                'amount' => $totalMonthlyFee,
                 'currency' => 'USD',
                 'status' => ($offset === 0 && $firstMonthPaid) ? 'paid' : 'pending',
                 'is_first_month' => $offset === 0,
@@ -917,10 +1255,10 @@ class EnrollmentWizardController extends Controller
         }
     }
 
-    protected function setupRecurringSubscription(Enrollment $enrollment, Course $course, string $stripePaymentIntentId): void
+    protected function setupRecurringSubscription(Enrollment $enrollment, $courses, string $stripePaymentIntentId): void
     {
-        $monthlyFee = (float) ($course->monthly_fee ?? 0);
-        if ($monthlyFee <= 0) {
+        $totalMonthlyFee = $courses->sum(fn($c) => (float) ($c->monthly_fee ?? 0));
+        if ($totalMonthlyFee <= 0) {
             EnrollmentBillingProfile::updateOrCreate(
                 ['enrollment_id' => $enrollment->id],
                 [
@@ -974,6 +1312,7 @@ class EnrollmentWizardController extends Controller
             ],
         ]);
 
+        $courseTitles = $courses->pluck('title')->implode(', ');
         $billingAnchor = now()->addMonth()->startOfDay();
         $subscription = $stripe->subscriptions->create([
             'customer' => $customerId,
@@ -982,9 +1321,9 @@ class EnrollmentWizardController extends Controller
                 'price_data' => [
                     'currency' => 'usd',
                     'recurring' => ['interval' => 'month'],
-                    'unit_amount' => (int) round($monthlyFee * 100),
+                    'unit_amount' => (int) round($totalMonthlyFee * 100),
                     'product_data' => [
-                        'name' => 'Mensualidad - '.($course->title ?? 'Programa'),
+                        'name' => 'Mensualidad - ' . $courseTitles,
                     ],
                 ],
             ]],
@@ -992,7 +1331,7 @@ class EnrollmentWizardController extends Controller
             'proration_behavior' => 'none',
             'metadata' => [
                 'enrollment_id' => (string) $enrollment->id,
-                'course_id' => (string) $course->id,
+                'program_id' => (string) ($enrollment->program_id ?? ''),
             ],
         ]);
 
@@ -1013,7 +1352,7 @@ class EnrollmentWizardController extends Controller
 
     protected function refreshReceivableBalance(AccountReceivable $receivable): void
     {
-        $paidAmount = (float) $receivable->transactions()->sum('amount');
+        $paidAmount = (float) $receivable->transactions()->where('status', 'completed')->sum('amount');
         $balance = max(0, (float) $receivable->amount_total - $paidAmount);
 
         $status = 'pending';
@@ -1027,6 +1366,50 @@ class EnrollmentWizardController extends Controller
             'balance_due' => $balance,
             'status' => $status,
         ]);
+
+        $this->syncInstallmentsPaymentStatus($receivable);
+    }
+
+    protected function syncInstallmentsPaymentStatus(AccountReceivable $receivable): void
+    {
+        if (!$receivable->enrollment_id) {
+            return;
+        }
+
+        $enrollment = $receivable->enrollment;
+        if (!$enrollment) {
+            return;
+        }
+
+        $totalPaid = (float) $receivable->transactions()->where('status', 'completed')->sum('amount');
+        $program = $enrollment->program;
+        $enrollmentFee = $program ? (float) ($program->enrollment_fee ?? 50.00) : 0.0;
+        
+        $remainingPaid = max(0.0, $totalPaid - $enrollmentFee);
+        $installments = $enrollment->installments()->orderBy('due_date')->get();
+
+        foreach ($installments as $installment) {
+            $installmentAmount = (float) $installment->amount;
+            if ($remainingPaid >= $installmentAmount) {
+                $installment->update([
+                    'status' => 'paid',
+                    'paid_at' => $installment->paid_at ?? now(),
+                ]);
+                $remainingPaid -= $installmentAmount;
+            } elseif ($remainingPaid > 0) {
+                $installment->update([
+                    'status' => 'pending',
+                ]);
+                $remainingPaid = 0.0;
+            } else {
+                if ($installment->status === 'paid') {
+                    $installment->update([
+                        'status' => 'pending',
+                        'paid_at' => null,
+                    ]);
+                }
+            }
+        }
     }
 
     protected function wantsWizardJson(Request $request): bool

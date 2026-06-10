@@ -25,8 +25,11 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <div>
                     <h5>Estudiantes Inscritos</h5>
-                    <span class="text-muted">Consulta y seguimiento de alumnos creados a traves de inscripciones</span>
+                    <span class="text-muted">Consulta y seguimiento de alumnos creados a traves de Inscripciones</span>
                 </div>
+                <a href="{{ route('students.import.form') }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-file-import"></i> Importar Excel/CSV
+                </a>
             </div>
             <div class="card-block">
                 <div class="table-responsive">
@@ -37,7 +40,7 @@
                                 <th>Nombre</th>
                                 <th>Edad</th>
                                 <th>Representante</th>
-                                <th>Cursos inscritos</th>
+                                <th>Programas</th>
                                 <th>Estado</th>
                                 <th class="text-end">Acciones</th>
                             </tr>
@@ -60,7 +63,7 @@
                                     </td>
 
                                     <td>
-                                        {{ $student->enrollments->pluck('course.title')->filter()->join(', ') ?: '-' }}
+                                        {{ $student->enrollments->pluck('program.name')->filter()->join(', ') ?: '-' }}
                                     </td>
 
                                     <td>

@@ -16,15 +16,15 @@
 @endsection
 
 @section('title')
-    <title>{{ config('app.name') }} - Editar Curso</title>
+    <title>{{ config('app.name') }} - Editar Clase</title>
 @endsection
 
 @section('content')
     <div class="container">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Editar curso</h5>
-                <span class="text-muted">Actualiza los siguientes campos para modificar el curso</span>
+                <h5 class="mb-0">Editar Clase</h5>
+                <span class="text-muted">Actualiza los siguientes campos para modificar la Clase</span>
             </div>
             <div class="card-block">
                 <form action="{{ route('courses.update', $course) }}" method="POST" class="row">
@@ -43,7 +43,7 @@
                     </div>
 
                     <div class="mb-3 col-md-6">
-                        <label for="title" class="form-label">Título del curso</label>
+                        <label for="title" class="form-label">Título de la Clase</label>
                         <input type="text" name="title" id="title" class="form-control"
                             value="{{ old('title', $course->title) }}" required>
                     </div>
@@ -142,7 +142,7 @@
                         </select>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label for="coach_ids" class="form-label">Entrenadores del curso</label>
+                        <label for="coach_ids" class="form-label">Entrenadores de la Clase</label>
                         <select name="coach_ids[]" id="coach_ids" class="form-control select2" multiple required>
                             @foreach ($coaches as $coach)
                                 @php
@@ -163,13 +163,13 @@
                 <div class="row">
                     <hr class="my-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5>Clases</h5>
+                        <h5>Sesiones de Clase</h5>
                         <button class="btn btn-inverse" data-bs-toggle="modal" data-bs-target="#createClassModal">
-                            <i class="fas fa-plus"></i> Agregar clase
+                            <i class="fas fa-plus"></i> Agregar sesión de clase
                         </button>
                     </div>
                     @if ($course->classes->isEmpty())
-                        <p class="text-muted">Este curso no tiene clases todavía.</p>
+                        <p class="text-muted">Esta Clase no tiene sesiones de clase todavía.</p>
                     @endif
                     <div class="row">
                         @foreach ($course->classes as $class)
@@ -194,7 +194,7 @@
                                                 @method('DELETE')
 
                                                 <button class="btn btn-sm btn-danger"
-                                                    onclick="return confirm('¿Seguro que deseas eliminar esta clase?')">
+                                                    onclick="return confirm('¿Seguro que deseas eliminar esta sesión de clase?')">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </form>
@@ -210,7 +210,7 @@
                                             @csrf
                                             @method('PUT')
                                             <div class="modal-header">
-                                                <h5 class="modal-title">Editar clase</h5>
+                                                <h5 class="modal-title">Editar sesión de clase</h5>
                                                 <button type="button" class="btn-close"
                                                     data-bs-dismiss="modal"></button>
                                             </div>
@@ -268,7 +268,7 @@
                                     <input type="hidden" name="course_id" value="{{ $course->id }}">
                                     <!-- HEADER -->
                                     <div class="modal-header">
-                                        <h5 class="modal-title">Agregar nueva clase</h5>
+                                        <h5 class="modal-title">Agregar nueva sesión de clase</h5>
                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                     </div>
 
@@ -313,7 +313,7 @@
                                             Cancelar
                                         </button>
                                         <button type="submit" class="btn btn-success">
-                                            Crear clase
+                                            Crear sesión de clase
                                         </button>
                                     </div>
 

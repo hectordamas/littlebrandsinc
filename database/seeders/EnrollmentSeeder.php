@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Branch;
 use App\Models\Course;
 use App\Models\Enrollment;
+use App\Models\Program;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -15,7 +16,7 @@ class EnrollmentSeeder extends Seeder
     {
         $parents = User::where('role', 'Padre')->get();
         if ($parents->isEmpty()) {
-            $this->command->warn('No hay usuarios con rol Padré. Creando padres...');
+            $this->command->warn('No hay usuarios con rol Padre. Creando padres...');
             for ($i = 0; $i < 5; $i++) {
                 $parent = new User;
                 $parent->name = 'Padre '.($i + 1);
@@ -39,6 +40,16 @@ class EnrollmentSeeder extends Seeder
             $branches->push($branch);
         }
 
+        $program = Program::first();
+        if (! $program) {
+            $program = Program::create([
+                'name' => 'Programa General',
+                'slug' => 'programa-general',
+                'description' => 'Programa generado por seeder.',
+                'enrollment_fee' => 50.00,
+            ]);
+        }
+
         $courses = Course::all();
         if ($courses->isEmpty()) {
             $this->command->warn('No hay courses. Creando courses...');
@@ -47,7 +58,8 @@ class EnrollmentSeeder extends Seeder
                 $course = new Course;
                 $course->title = $courseNames[$i];
                 $course->description = 'Curso de '.$courseNames[$i];
-                $course->price = 50 + ($i * 10);
+                $course->program_id = $program->id;
+                $course->monthly_fee = 95.00;
                 $course->start_date = now();
                 $course->end_date = now()->addMonths(3);
                 $course->branch_id = $branches->first()->id;
@@ -57,8 +69,8 @@ class EnrollmentSeeder extends Seeder
         }
 
         $statuses = ['active', 'completed', 'cancelled', 'pending'];
-        $paymentMethods = ['cash', 'transfer', 'zelle', 'pago_movil'];
-        $paymentStatuses = ['paid', 'pending', 'failed'];
+        $paymentMethods = ['manual', 'card', 'pending'];
+        $paymentStatuses = ['paid', 'pending'];
 
         $usedPairs = [];
 
@@ -71,7 +83,6 @@ class EnrollmentSeeder extends Seeder
                 $student->user_id = $parent->id;
                 $student->name = 'Estudiante '.($i + 1);
                 $student->birthdate = now()->subYears(rand(5, 15));
-                $student->level = ['principiante', 'intermedio', 'avanzado'][rand(0, 2)];
                 $student->save();
             }
 
@@ -82,16 +93,23 @@ class EnrollmentSeeder extends Seeder
             }
             $usedPairs[] = $pairKey;
 
+            $courseModel = Course::find($courseId);
+
             $enrollment = new Enrollment;
             $enrollment->student_id = $student->id;
-            $enrollment->course_id = $courseId;
+            $enrollment->program_id = $courseModel->program_id ?? $program->id;
             $enrollment->parent_id = $parent->id;
             $enrollment->status = $statuses[rand(0, count($statuses) - 1)];
             $enrollment->payment_method = $paymentMethods[rand(0, count($paymentMethods) - 1)];
             $enrollment->payment_status = $paymentStatuses[rand(0, count($paymentStatuses) - 1)];
+            $enrollment->is_free_trial = false;
+            $enrollment->terms_accepted = true;
+            $enrollment->image_consent_accepted = true;
             $enrollment->save();
+
+            $enrollment->courses()->syncWithoutDetaching([$courseId]);
         }
 
-        $this->command->info('EnrollmentSeeder completado: 20 enrollments creados');
+        $this->command->info('EnrollmentSeeder completado: enrollments creados');
     }
 }

@@ -24,7 +24,7 @@
                         <!-- TITLE -->
                         <div class="row m-b-20">
                             <div class="col-md-12">
-                                <h4 class="text-center">Register</h4>
+                                <h4 class="text-center">Registrarse</h4>
                             </div>
                         </div>
 
@@ -36,7 +36,7 @@
                                 name="name"
                                 class="form-control @error('name') is-invalid @enderror"
                                 value="{{ old('name') }}"
-                                placeholder="Full Name"
+                                placeholder="Nombre"
                                 required
                                 autofocus
                             >
@@ -54,7 +54,7 @@
                                 name="email"
                                 class="form-control @error('email') is-invalid @enderror"
                                 value="{{ old('email') }}"
-                                placeholder="Email Address"
+                                placeholder="Correo Electrónico"
                                 required
                             >
                             <span class="form-bar"></span>
@@ -70,7 +70,7 @@
                                 type="password" 
                                 name="password"
                                 class="form-control @error('password') is-invalid @enderror"
-                                placeholder="Password"
+                                placeholder="Contraseña"
                                 required
                             >
                             <span class="form-bar"></span>
@@ -86,7 +86,7 @@
                                 type="password" 
                                 name="password_confirmation"
                                 class="form-control"
-                                placeholder="Confirm Password"
+                                placeholder="Confirmar Contraseña"
                                 required
                             >
                             <span class="form-bar"></span>
@@ -98,7 +98,7 @@
                                 <div class="d-grid">
                                     <button type="submit"
                                         class="btn btn-grd-inverse btn-md waves-effect waves-light text-center m-b-20">
-                                        Register
+                                        Crear Cuenta
                                     </button>
                                 </div>
                             </div>
@@ -107,8 +107,8 @@
                         <!-- LINK A LOGIN -->
                         <div class="text-center">
                             <p class="mb-0">
-                                Already have an account? 
-                                <a href="{{ route('login') }}"><b>Login</b></a>
+                                ¿Ya tienes una cuenta? 
+                                <a href="{{ route('login') }}"><b>Iniciar Sesión</b></a>
                             </p>
                         </div>
 

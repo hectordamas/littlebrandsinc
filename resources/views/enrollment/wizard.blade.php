@@ -2,8 +2,9 @@
   Wizard de inscripción (5 pasos). Estado: sesión Laravel + Alpine en cliente.
   Estructura esperada (wizardPayload / API):
   - student: { id, name, birthdate }
-    - course: { id, title, price, monthly_fee, min_age, max_age, spots_left, can_enroll, enroll_error }
-  - enrollment final: student_id, course_id, payment_method (card|pending), terms
+  - programs: [{ id, name, enrollment_fee }]
+  - courses: [{ id, title, schedule, branch_name, program_id, monthly_fee, spots_left, capacity, can_enroll, enroll_error }]
+  - enrollment final: student_id, selected_courses[], program_id, payment_method (card|pending), terms
 --}}
 @extends('layouts.app')
 
@@ -14,6 +15,7 @@
         'submitUrl' => route('enrollment.wizard.submit'),
         'paymentIntentUrl' => route('enrollment.wizard.payment-intent'),
         'stripeKey' => $stripeKey,
+        'stripeEnabled' => $stripeEnabled,
         'wizardPayload' => $wizardPayload,
     ];
 @endphp
@@ -227,44 +229,83 @@
                             <div class="invalid-feedback d-block mb-2" x-show="formErrors.selected_student" x-text="formErrors.selected_student?.[0]"></div>
                         </div>
 
-                        {{-- STEP 3: Curso --}}
+                        {{-- STEP 3: Programa / Cursos --}}
                         <div x-show="step === 3">
-                            <h5 class="mb-3 text-center">3. Programa</h5>
+                            <h5 class="mb-3 text-center">3. Programa / Clases</h5>
                             <p class="text-muted small text-center" x-show="lockedCourseId">
                                 La inscripción está limitada al curso indicado en el enlace.
                             </p>
 
-                            <template x-if="!courses.length">
+                            <template x-if="!programs.length">
                                 <div class="alert alert-warning">No hay programas disponibles.</div>
                             </template>
 
-                            <template x-for="c in courses" :key="c.id">
-                                <div class="course-card mb-3"
-                                     :class="{ 'selected': selectedCourseId === c.id, 'disabled': !c.can_enroll }"
-                                     @click="c.can_enroll && selectCourse(c.id)">
-                                    <div class="d-flex justify-content-between align-items-start gap-2">
-                                        <div>
-                                            <h6 class="mb-1" x-text="c.title"></h6>
-                                            <p class="mb-1 small text-muted" x-text="c.description"></p>
-                                            <div class="small">
-                                                <span class="text-dark">Inscripción:</span>
-                                                <strong x-text="formatMoney(c.price)"></strong>
+                            <div class="mb-3" x-show="programs.length">
+                                <label class="form-label">Programa</label>
+                                <select class="form-select"
+                                        x-model="selectedProgramId" @change="onProgramChange()">
+                                    <option value="">Selecciona un programa...</option>
+                                    <template x-for="prog in programs" :key="prog.id">
+                                        <option :value="prog.id" x-text="prog.name"></option>
+                                    </template>
+                                </select>
+                            </div>
+
+                            <div class="mb-3" x-show="branches.length && selectedProgramId">
+                                <label class="form-label">Sede</label>
+                                <select class="form-select"
+                                        x-model="selectedBranchId" @change="onBranchChange()">
+                                    <option value="">Todas las sedes</option>
+                                    <template x-for="branch in branches" :key="branch.id">
+                                        <option :value="branch.id" x-text="branch.name"></option>
+                                    </template>
+                                </select>
+                            </div>
+
+                            <template x-if="selectedProgramId && !programFilteredCourses.length">
+                                <div class="alert alert-warning">No hay Clases disponibles para este programa.</div>
+                            </template>
+
+                            <template x-if="!selectedProgramId && programs.length">
+                                <div class="alert alert-info">Selecciona un programa para ver las Clases disponibles.</div>
+                            </template>
+
+                            <template x-if="selectedProgramId && programFilteredCourses.length">
+                                <div>
+                                    <p class="small text-muted mb-2">
+                                        Selecciona una o más Clases. Puedes elegir varias Clases del mismo programa.
+                                    </p>
+                                    <template x-for="c in programFilteredCourses" :key="c.id">
+                                        <div class="course-card mb-3"
+                                             :class="{
+                                                 'selected': selectedCourseIds.includes(c.id),
+                                                 'disabled': !c.can_enroll
+                                             }"
+                                             @click="c.can_enroll && toggleCourse(c.id)">
+                                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                                <div>
+                                                    <h6 class="mb-1" x-text="c.title"></h6>
+                                                    <p class="mb-1 small text-muted" x-show="c.schedule" x-text="c.schedule"></p>
+                                                    <p class="mb-1 small text-muted" x-show="c.branch_name" x-text="'Sede: ' + c.branch_name"></p>
+                                                    <div class="small">
+                                                        <span class="text-dark">Mensualidad:</span>
+                                                        <strong x-text="formatMoney(c.monthly_fee)"></strong>
+                                                    </div>
+                                                    <div class="small" :class="c.spots_left > 0 ? 'text-success' : 'text-danger'">
+                                                        <span x-text="c.spots_left + ' cupos disponibles'"></span>
+                                                    </div>
+                                                    <div class="small text-danger" x-show="!c.can_enroll && c.enroll_error" x-text="c.enroll_error"></div>
+                                                </div>
+                                                <input type="checkbox" class="form-check-input mt-1"
+                                                       :disabled="!c.can_enroll"
+                                                       :checked="selectedCourseIds.includes(c.id)"
+                                                       @click.prevent.stop="toggleCourse(c.id)">
                                             </div>
-                                            <div class="small">
-                                                <span class="text-dark">Mensualidad:</span>
-                                                <strong x-text="formatMoney(c.monthly_fee)"></strong>
-                                            </div>
-                                            <div class="small" :class="c.spots_left > 0 ? 'text-success' : 'text-danger'">
-                                                Cupos: <span x-text="c.spots_left"></span>
-                                            </div>
-                                            <div class="small text-danger" x-show="!c.can_enroll && c.enroll_error" x-text="c.enroll_error"></div>
                                         </div>
-                                        <input type="radio" class="form-check-input mt-1" :disabled="!c.can_enroll"
-                                               :value="c.id" x-model.number="selectedCourseId" @click.stop>
-                                    </div>
+                                    </template>
                                 </div>
                             </template>
-                            <div class="invalid-feedback d-block" x-show="formErrors.selected_course" x-text="formErrors.selected_course?.[0]"></div>
+                            <div class="invalid-feedback d-block" x-show="formErrors.selected_courses" x-text="formErrors.selected_courses?.[0]"></div>
                         </div>
 
                         {{-- STEP 4: Pago --}}
@@ -273,17 +314,27 @@
 
                             <div class="card mb-3 bg-light">
                                 <div class="card-body small">
-                                    <div class="d-flex justify-content-between"><span>Estudiante</span><span x-text="summaryStudent"></span></div>
-                                    <div class="d-flex justify-content-between"><span>Programa</span><span x-text="summaryCourseTitle"></span></div>
+                                    <div class="d-flex justify-content-between mb-1"><span>Estudiante</span><span x-text="summaryStudent"></span></div>
+                                    <div class="d-flex justify-content-between mb-1"><span>Programa</span><span x-text="summaryProgramName"></span></div>
                                     <hr class="my-2">
-                                    <div class="d-flex justify-content-between"><strong>Total inicial (inscripción + 1er mes)</strong><strong x-text="summaryInitialTotal"></strong></div>
-                                    <div class="d-flex justify-content-between"><span>Mensualidad</span><span x-text="summaryMonthlyFee"></span></div>
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Cuota de inscripción</span>
+                                        <span x-text="formatMoney(selectedProgram?.enrollment_fee || 0)"></span>
+                                    </div>
+                                    <template x-for="c in selectedCourses" :key="c.id">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span x-text="c.title"></span>
+                                            <span x-text="formatMoney(c.monthly_fee)"></span>
+                                        </div>
+                                    </template>
+                                    <hr class="my-2">
+                                    <div class="d-flex justify-content-between"><strong>Total</strong><strong x-text="totalAmount"></strong></div>
                                 </div>
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">Método de pago</label>
-                                <div class="form-check mb-2">
+                                <div class="form-check mb-2" x-show="stripeEnabled">
                                     <input class="form-check-input" type="radio" id="pay_card" value="card" x-model="paymentMethod" @change="onPaymentMethodChange()">
                                     <label class="form-check-label" for="pay_card">Tarjeta (Stripe)</label>
                                 </div>
@@ -296,7 +347,7 @@
                             <div class="form-check mb-3">
                                 <input class="form-check-input" type="checkbox" id="is_free_trial" x-model="isFreeTrial" :disabled="paymentMethod === 'card'">
                                 <label class="form-check-label" for="is_free_trial">
-                                    Free trial / clase gratuita (omite comprobante)
+                                    Clase de prueba gratuita (omite comprobante)
                                 </label>
                             </div>
 
@@ -337,7 +388,7 @@
                             </div>
 
                             <div x-show="isFreeTrial" class="alert alert-success small">
-                                La inscripción se guardará como free trial/clase gratuita.
+                                La inscripción se guardará como clase de prueba gratuita.
                             </div>
                         </div>
 
@@ -351,17 +402,27 @@
                                     <span>Estudiante</span><span x-text="summaryStudent"></span>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between">
-                                    <span>Programa</span><span x-text="summaryCourseTitle"></span>
+                                    <span>Programa</span><span x-text="summaryProgramName"></span>
+                                </li>
+                                <li class="list-group-item">
+                                    <span class="d-block mb-1 fw-semibold">Clases seleccionadas</span>
+                                    <template x-for="c in selectedCourses" :key="c.id">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span>
+                                                <span x-text="c.title"></span>
+                                                <span class="text-muted" x-show="c.schedule" x-text="' — ' + c.schedule"></span>
+                                                <span class="text-muted" x-show="c.branch_name" x-text="' (' + c.branch_name + ')'"></span>
+                                            </span>
+                                            <span x-text="formatMoney(c.monthly_fee)"></span>
+                                        </div>
+                                    </template>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between">
                                     <span>Pago</span>
-                                    <span x-text="isFreeTrial ? 'Free trial' : (paymentMethod === 'card' ? 'Tarjeta (Stripe)' : 'Manual / pendiente de validación')"></span>
+                                    <span x-text="isFreeTrial ? 'Clase de prueba gratuita' : (paymentMethod === 'card' ? 'Tarjeta (Stripe)' : 'Manual / pendiente de validación')"></span>
                                 </li>
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <strong>Total inicial (inscripción + 1er mes)</strong><strong x-text="summaryInitialTotal"></strong>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>Mensualidad</span><span x-text="summaryMonthlyFee"></span>
+                                <li class="list-group-item d-flex justify-content-between fw-bold">
+                                    <span>Total</span><span x-text="totalAmount"></span>
                                 </li>
                             </ul>
 
@@ -369,9 +430,9 @@
                                 <input class="form-check-input" type="checkbox" id="terms_w" x-model="termsAccepted" :class="{ 'is-invalid': formErrors.terms }">
                                 <label class="form-check-label" for="terms_w">
                                     Acepto los
-                                    <a href="{{ url('terms') }}" target="_blank" rel="noopener">Términos</a>
-                                    y la
-                                    <a href="{{ url('privacy') }}" target="_blank" rel="noopener">Privacidad</a>
+                                    <a href="{{ url('terms') }}" target="_blank" rel="noopener">Términos y condiciones</a>
+                                    y el
+                                    <a href="{{ url('privacy') }}" target="_blank" rel="noopener">Aviso de privacidad</a>
                                 </label>
                                 <div class="invalid-feedback d-block" x-show="formErrors.terms" x-text="formErrors.terms?.[0]"></div>
                             </div>
@@ -379,7 +440,7 @@
                             <div class="form-check mb-3">
                                 <input class="form-check-input" type="checkbox" id="image_consent_w" x-model="imageConsentAccepted" :class="{ 'is-invalid': formErrors.image_consent }">
                                 <label class="form-check-label" for="image_consent_w">
-                                    Acepto el uso de imagen del menor representado
+                                    Consentimiento de uso de imagen del menor representado
                                 </label>
                                 <div class="invalid-feedback d-block" x-show="formErrors.image_consent" x-text="formErrors.image_consent?.[0]"></div>
                             </div>
@@ -409,19 +470,23 @@
 @section('scripts')
 <script>
 function enrollmentWizard(cfg) {
-    const p = cfg.wizardPayload;
+    const p = cfg.wizardPayload || {};
     return {
         step: cfg.initialStep,
         authenticated: cfg.authenticated,
         submitUrl: cfg.submitUrl,
         paymentIntentUrl: cfg.paymentIntentUrl,
         stripeKey: cfg.stripeKey || '',
+        stripeEnabled: cfg.stripeEnabled !== false,
+        programs: p.programs || [],
+        branches: p.branches || [],
+        selectedBranchId: null,
         courses: p.courses || [],
         students: p.students || [],
         lockedCourseId: p.locked_course_id,
         selectedStudentId: p.selected_student_id,
-        selectedCourseId: p.selected_course_id,
-        selectedCourse: p.selected_course,
+        selectedProgramId: p.program_id || null,
+        selectedCourseIds: (p.selected_course_ids || []).map(id => Number(id)),
         paymentMethod: p.payment_method || 'card',
         isFreeTrial: Boolean(p.is_free_trial),
         userType: 'new',
@@ -449,6 +514,35 @@ function enrollmentWizard(cfg) {
             if (this.authenticated) return this.step > 2;
             return this.step > 1;
         },
+        get programFilteredCourses() {
+            let filtered = this.courses;
+            if (this.selectedProgramId) {
+                filtered = filtered.filter(c => Number(c.program_id) === Number(this.selectedProgramId));
+            }
+            if (this.selectedBranchId) {
+                filtered = filtered.filter(c => Number(c.branch_id) === Number(this.selectedBranchId));
+            }
+            if (this.selectedStudentId) {
+                filtered = filtered.filter(c => {
+                    if (!c.can_enroll && c.enroll_error && c.enroll_error.toLowerCase().includes('edad')) {
+                        return false;
+                    }
+                    return true;
+                });
+            }
+            return filtered;
+        },
+        get selectedProgram() {
+            return this.programs.find(prog => Number(prog.id) === Number(this.selectedProgramId)) || null;
+        },
+        get selectedCourses() {
+            return this.courses.filter(c => this.selectedCourseIds.includes(Number(c.id)));
+        },
+        get totalAmount() {
+            const enrollmentFee = Number(this.selectedProgram?.enrollment_fee || 0);
+            const monthlySum = this.selectedCourses.reduce((sum, c) => sum + Number(c.monthly_fee || 0), 0);
+            return this.formatMoney(enrollmentFee + monthlySum);
+        },
 
         init() {
             if (this.authenticated && this.step < 2) this.step = 2;
@@ -460,15 +554,21 @@ function enrollmentWizard(cfg) {
 
         hydrateFromPayload(data) {
             if (!data) return;
+            if (data.programs) this.programs = data.programs;
+            if (data.branches) this.branches = data.branches;
             if (data.courses) this.courses = data.courses;
             if (data.students) this.students = data.students;
             if (data.selected_student_id !== undefined) {
                 this.selectedStudentId = data.selected_student_id ? Number(data.selected_student_id) : null;
             }
-            if (data.selected_course_id !== undefined) {
-                this.selectedCourseId = data.selected_course_id ? Number(data.selected_course_id) : null;
+            if (data.program_id !== undefined) {
+                this.selectedProgramId = data.program_id ? Number(data.program_id) : null;
             }
-            if (data.selected_course) this.selectedCourse = data.selected_course;
+            if (data.selected_course_ids !== undefined) {
+                this.selectedCourseIds = (data.selected_course_ids || []).map(id => Number(id));
+            } else if (data.selected_course_id !== undefined) {
+                this.selectedCourseIds = data.selected_course_id ? [Number(data.selected_course_id)] : [];
+            }
             if (data.locked_course_id !== undefined) this.lockedCourseId = data.locked_course_id;
             if (data.payment_method) this.paymentMethod = data.payment_method;
             if (data.is_free_trial !== undefined) this.isFreeTrial = Boolean(data.is_free_trial);
@@ -485,40 +585,41 @@ function enrollmentWizard(cfg) {
         },
 
         get summaryStudent() {
-            const s = this.students.find(st => st.id === this.selectedStudentId);
+            const s = this.students.find(st => Number(st.id) === Number(this.selectedStudentId));
             return s ? s.name : '—';
         },
-        get summaryCourseTitle() {
-            const c = this.courses.find(cc => cc.id === this.selectedCourseId);
-            return c ? c.title : (this.selectedCourse?.title || '—');
-        },
-        get summaryTotal() {
-            const c = this.courses.find(cc => cc.id === this.selectedCourseId);
-            const price = c ? c.price : this.selectedCourse?.price;
-            return this.formatMoney(price);
-        },
-        get summaryInitialTotal() {
-            const c = this.courses.find(cc => cc.id === this.selectedCourseId);
-            const enrollmentFee = Number(c ? c.price : this.selectedCourse?.price || 0);
-            const monthlyFee = Number(c ? c.monthly_fee : this.selectedCourse?.monthly_fee || 0);
-            return this.formatMoney(enrollmentFee + monthlyFee);
-        },
-        get summaryMonthlyFee() {
-            const c = this.courses.find(cc => cc.id === this.selectedCourseId);
-            const monthlyFee = c ? c.monthly_fee : this.selectedCourse?.monthly_fee;
-            return this.formatMoney(monthlyFee);
+        get summaryProgramName() {
+            return this.selectedProgram ? this.selectedProgram.name : '—';
         },
 
         selectExistingStudent(s) {
             this.newStudentMode = false;
-            this.selectedStudentId = s.id;
+            this.selectedStudentId = Number(s.id);
         },
         startNewStudent() {
             this.newStudentMode = true;
             this.selectedStudentId = null;
         },
-        selectCourse(id) {
-            this.selectedCourseId = id;
+
+        onProgramChange() {
+            this.selectedCourseIds = [];
+            this.selectedBranchId = null;
+            this.formErrors = { ...this.formErrors, selected_program: null, selected_courses: null };
+        },
+
+        onBranchChange() {
+            this.selectedCourseIds = [];
+            this.formErrors = { ...this.formErrors, selected_courses: null };
+        },
+
+        toggleCourse(id) {
+            const numId = Number(id);
+            const idx = this.selectedCourseIds.indexOf(numId);
+            if (idx >= 0) {
+                this.selectedCourseIds.splice(idx, 1);
+            } else {
+                this.selectedCourseIds.push(numId);
+            }
         },
 
         onPaymentMethodChange() {
@@ -602,10 +703,19 @@ function enrollmentWizard(cfg) {
                 }
             }
             if (this.step === 3) {
-                if (!this.selectedCourseId) this.formErrors.selected_course = ['Elige un programa'];
-                else {
-                    const c = this.courses.find(cc => cc.id === this.selectedCourseId);
-                    if (c && !c.can_enroll) this.formErrors.selected_course = [c.enroll_error || 'No disponible'];
+                if (!this.selectedProgramId) {
+                    this.formErrors.selected_program = ['Selecciona un programa'];
+                }
+                if (!this.selectedCourseIds.length) {
+                    this.formErrors.selected_courses = ['Selecciona al menos un curso'];
+                } else {
+                    for (const id of this.selectedCourseIds) {
+                        const c = this.courses.find(cc => Number(cc.id) === Number(id));
+                        if (c && !c.can_enroll) {
+                            this.formErrors.selected_courses = [c.enroll_error || 'Curso no disponible'];
+                            break;
+                        }
+                    }
                 }
             }
             if (this.step === 4) {
@@ -622,8 +732,8 @@ function enrollmentWizard(cfg) {
                 }
             }
             if (this.step === 5) {
-                if (!this.termsAccepted) this.formErrors.terms = ['Debes aceptar los términos'];
-                if (!this.imageConsentAccepted) this.formErrors.image_consent = ['Debes aceptar el uso de imagen'];
+                if (!this.termsAccepted) this.formErrors.terms = ['Debes aceptar los términos y condiciones'];
+                if (!this.imageConsentAccepted) this.formErrors.image_consent = ['Debes aceptar el consentimiento de uso de imagen'];
             }
             return Object.keys(this.formErrors).length === 0;
         },
@@ -659,7 +769,10 @@ function enrollmentWizard(cfg) {
                 }
             }
             if (this.step === 3) {
-                fd.append('selected_course', String(this.selectedCourseId));
+                fd.append('program_id', String(this.selectedProgramId));
+                this.selectedCourseIds.forEach(id => {
+                    fd.append('selected_courses[]', String(id));
+                });
             }
             if (this.step === 4) {
                 fd.append('payment_method', this.paymentMethod);
@@ -701,7 +814,10 @@ function enrollmentWizard(cfg) {
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                         },
                         credentials: 'same-origin',
-                        body: JSON.stringify({ course_id: this.selectedCourseId }),
+                        body: JSON.stringify({
+                            selected_courses: this.selectedCourseIds,
+                            program_id: this.selectedProgramId,
+                        }),
                     });
                     const intentJson = await intentRes.json().catch(() => ({}));
                     if (!intentRes.ok || !intentJson.success || !intentJson.client_secret) {

@@ -24,6 +24,8 @@
                     <div class="col-md-3"><strong>Total:</strong> ${{ number_format((float) $receivable->amount_total, 2) }}</div>
                     <div class="col-md-3"><strong>Saldo:</strong> ${{ number_format((float) $receivable->balance_due, 2) }}</div>
                     <div class="col-md-3"><strong>Estado:</strong> {{ ucfirst($receivable->status) }}</div>
+                    <div class="col-md-3"><strong>Programa:</strong> {{ optional(optional($receivable->enrollment)->program)->name ?? 'N/A' }}</div>
+                    <div class="col-md-12"><strong>Clases:</strong> {{ $receivable->enrollment ? $receivable->enrollment->courses->pluck('title')->join(', ') ?: 'Sin Clases' : 'N/A' }}</div>
                     <div class="col-md-12"><strong>Notas:</strong> {{ $receivable->notes ?: 'Sin notas' }}</div>
                 </div>
             </div>

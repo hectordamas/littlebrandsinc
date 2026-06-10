@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Barryvdh\DomPDF\Facade\Pdf;
-use App\Models\{Account, AccountReceivable, Course, Enrollment, EnrollmentBillingProfile, EnrollmentInstallment, Student, Transaction, User};
+use App\Models\{Account, AccountReceivable, Course, Enrollment, EnrollmentBillingProfile, EnrollmentInstallment, Program, Student, Transaction, User};
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -17,10 +17,17 @@ class EnrollmentController extends Controller
 {
     public function index()
     {
-        $enrollments = Enrollment::with(['student.user', 'course'])->orderBy('id', 'desc')->get();
+        $enrollments = Enrollment::with(['student.user', 'program', 'courses.branch'])->orderBy('id', 'desc')->get();
         $students = Student::with('user')->orderBy('name')->get();
+        $programs = Program::query()
+            ->where('active', true)
+            ->orderBy('name')
+            ->get();
         $courses = Course::query()
             ->withCount('enrollments')
+            ->with(['branch', 'classes' => function ($q) {
+                $q->orderBy('date')->orderBy('start_time');
+            }])
             ->where('active', true)
             ->whereDate('end_date', '>=', now()->toDateString())
             ->orderBy('title')
@@ -31,6 +38,7 @@ class EnrollmentController extends Controller
             'enrollments' => $enrollments,
             'students' => $students,
             'parents' => $parents,
+            'programs' => $programs,
             'courses' => $courses,
         ]);
     }
@@ -40,11 +48,18 @@ class EnrollmentController extends Controller
         $request->validate([
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
             'student_id' => ['nullable', 'integer', 'exists:students,id'],
-            'course_id' => ['required', 'integer', 'exists:courses,id'],
+            'program_id' => ['required', 'integer', 'exists:programs,id'],
+            'course_ids' => ['required', 'array', 'min:1'],
+            'course_ids.*' => ['integer', 'exists:courses,id'],
             'payment_status' => ['required', Rule::in(['pending', 'paid'])],
             'is_free_trial' => ['nullable', 'boolean'],
             'image_consent_accepted' => ['nullable', 'boolean'],
-            'payment_receipt' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:6144'],
+            'payment_receipt' => [
+                Rule::requiredIf(fn () => ! $request->boolean('is_free_trial') && $request->input('payment_status') === 'paid'),
+                'file',
+                'mimes:jpg,jpeg,png,pdf',
+                'max:6144',
+            ],
             'user.name' => ['nullable', 'string', 'max:255'],
             'user.email' => ['nullable', 'email', 'max:255'],
             'user.dial_code' => ['nullable', 'string', 'max:6'],
@@ -58,7 +73,28 @@ class EnrollmentController extends Controller
         DB::transaction(function () use ($request): void {
             $parent = $this->resolveParent($request);
             $student = $this->resolveStudent($request, $parent);
-            $course = $this->validateCourseForStudent($request, $student);
+            $program = Program::findOrFail((int) $request->input('program_id'));
+            $courseIds = collect($request->input('course_ids'))->map(fn ($id) => (int) $id)->unique()->values();
+            $courses = Course::query()
+                ->withCount('enrollments')
+                ->where('active', true)
+                ->whereDate('end_date', '>=', now()->toDateString())
+                ->whereIn('id', $courseIds)
+                ->get();
+
+            if ($courses->count() !== $courseIds->count()) {
+                throw ValidationException::withMessages([
+                    'course_ids' => 'Uno o mas cursos seleccionados no estan disponibles.',
+                ]);
+            }
+
+            if ($courses->pluck('program_id')->unique()->count() > 1 || $courses->first()->program_id !== $program->id) {
+                throw ValidationException::withMessages([
+                    'course_ids' => 'Todos los cursos seleccionados deben pertenecer al mismo programa.',
+                ]);
+            }
+
+            $this->validateCoursesForStudent($student, $courses);
 
             $paymentStatus = $request->string('payment_status')->toString();
             $isFreeTrial = (bool) $request->boolean('is_free_trial');
@@ -67,13 +103,32 @@ class EnrollmentController extends Controller
 
             if ($request->hasFile('payment_receipt')) {
                 $file = $request->file('payment_receipt');
-                $receiptPath = $file->store('payment-receipts', 'public');
+                $destinationPath = public_path('uploads/comprobantes');
+                if (! is_dir($destinationPath)) {
+                    mkdir($destinationPath, 0775, true);
+                }
+
+                $file->move($destinationPath, $file->hashName());
+                $receiptPath = 'uploads/comprobantes/'.$file->hashName();
                 $receiptOriginalName = $file->getClientOriginalName();
+            }
+
+            if ($isFreeTrial) {
+                $existingTrialEnrollments = Enrollment::where('student_id', $student->id)
+                    ->where('is_free_trial', true)
+                    ->whereHas('courses', function ($query) use ($courseIds) {
+                        $query->whereIn('courses.id', $courseIds);
+                    })
+                    ->get();
+
+                foreach ($existingTrialEnrollments as $trialEnrollment) {
+                    $trialEnrollment->update(['status' => 'cancelled']);
+                }
             }
 
             $enrollment = Enrollment::create([
                 'student_id' => $student->id,
-                'course_id' => $course->id,
+                'program_id' => $program->id,
                 'parent_id' => $parent->id,
                 'status' => ($paymentStatus === 'paid' || $isFreeTrial) ? 'completed' : 'pending',
                 'payment_method' => $isFreeTrial ? 'free_trial' : 'manual',
@@ -81,34 +136,45 @@ class EnrollmentController extends Controller
                 'is_free_trial' => $isFreeTrial,
                 'terms_accepted' => true,
                 'image_consent_accepted' => (bool) $request->boolean('image_consent_accepted'),
-                'payment_receipt_path' => $receiptPath ? 'uploads/comprobantes/' . basename($receiptPath) : null,
+                'payment_receipt_path' => $receiptPath,
                 'payment_receipt_original_name' => $receiptOriginalName,
             ]);
+
+            $enrollment->courses()->sync($courseIds);
 
             $this->syncEnrollmentReceivableState($enrollment);
             $this->ensureManualBillingArtifacts($enrollment, $paymentStatus === 'paid');
 
             if ($enrollment->payment_status === 'paid') {
-                $enrollment->load(['student.user', 'course']);
+                $enrollment->load(['student.user', 'program', 'courses']);
                 $this->syncEnrollmentIncomeTransaction($enrollment);
             }
         });
 
-        return redirect()->to('enrollment')->with('success', 'Inscripcion registrada correctamente.');
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Inscripción registrada correctamente.',
+                'redirect' => url('enrollment'),
+            ]);
+        }
+
+        return redirect()->to('enrollment')->with('success', 'Inscripción registrada correctamente.');
     }
 
     public function show(Request $request, Enrollment $enrollment)
     {
         $enrollment->loadMissing([
             'student.user',
-            'course.branch',
-            'course.classes' => function ($query) {
+            'program',
+            'courses.branch',
+            'courses.classes' => function ($query) {
                 $query->with('coach')->orderBy('date')->orderBy('start_time');
             },
         ]);
 
-        if ($enrollment->course) {
-            $enrollment->course->loadCount('enrollments');
+        foreach ($enrollment->courses as $course) {
+            $course->loadCount('enrollments');
         }
 
         if ($request->expectsJson()) {
@@ -126,14 +192,15 @@ class EnrollmentController extends Controller
     {
         $enrollment->loadMissing([
             'student.user',
-            'course.branch',
-            'course.classes' => function ($query) {
+            'program',
+            'courses.branch',
+            'courses.classes' => function ($query) {
                 $query->with('coach')->orderBy('date')->orderBy('start_time');
             },
         ]);
 
-        if ($enrollment->course) {
-            $enrollment->course->loadCount('enrollments');
+        foreach ($enrollment->courses as $course) {
+            $course->loadCount('enrollments');
         }
 
         $pdf = Pdf::loadView('enrollments.receipt-pdf', [
@@ -141,7 +208,7 @@ class EnrollmentController extends Controller
             'generatedAt' => now(),
         ])->setPaper('a4');
 
-        return $pdf->download('comprobante-inscripcion-'.$enrollment->id.'.pdf');
+        return $pdf->download('comprobante-Inscripción-'.$enrollment->id.'.pdf');
     }
 
     public function update(Request $request, Enrollment $enrollment)
@@ -159,16 +226,16 @@ class EnrollmentController extends Controller
             );
         });
 
-        $enrollment->refresh()->load(['student.user', 'course']);
+        $enrollment->refresh()->load(['student.user', 'program', 'courses']);
 
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => 'Inscripcion actualizada correctamente.',
+                'message' => 'Inscripción actualizada correctamente.',
                 'enrollment' => $this->enrollmentPayload($enrollment),
             ]);
         }
 
-        return redirect()->route('enrollment.show', $enrollment)->with('success', 'Inscripcion actualizada correctamente.');
+        return redirect()->route('enrollment.show', $enrollment)->with('success', 'Inscripción actualizada correctamente.');
     }
 
     public function bulkUpdate(Request $request)
@@ -192,7 +259,7 @@ class EnrollmentController extends Controller
             ->values();
 
         DB::transaction(function () use ($ids, $validated): void {
-            $enrollments = Enrollment::with(['student.user', 'course'])
+            $enrollments = Enrollment::with(['student.user', 'program', 'courses'])
                 ->whereIn('id', $ids)
                 ->get();
 
@@ -205,7 +272,7 @@ class EnrollmentController extends Controller
             }
         });
 
-        $updatedEnrollments = Enrollment::with(['student.user', 'course'])
+        $updatedEnrollments = Enrollment::with(['student.user', 'program', 'courses'])
             ->whereIn('id', $ids)
             ->get()
             ->map(fn (Enrollment $enrollment) => $this->enrollmentPayload($enrollment))
@@ -235,7 +302,7 @@ class EnrollmentController extends Controller
             $this->applyEnrollmentState($enrollment, $status, $paymentStatus);
         });
 
-        return redirect()->to('enrollment')->with('success', 'Estado de inscripcion actualizado.');
+        return redirect()->to('enrollment')->with('success', 'Estado de Inscripción actualizado.');
     }
 
     protected function applyEnrollmentState(
@@ -243,7 +310,7 @@ class EnrollmentController extends Controller
         ?string $status,
         ?string $paymentStatus
     ): void {
-        $enrollment->loadMissing('course');
+        $enrollment->loadMissing(['program', 'courses']);
         $previousPaymentStatus = (string) $enrollment->payment_status;
 
         $resolvedStatus = $status ?? $enrollment->status;
@@ -260,7 +327,7 @@ class EnrollmentController extends Controller
         $enrollment->payment_method = $enrollment->payment_method ?: 'manual';
         $enrollment->save();
 
-        $enrollment->load(['student.user', 'course']);
+        $enrollment->load(['student.user', 'program', 'courses']);
 
         if ($previousPaymentStatus === 'paid' && $enrollment->payment_status === 'pending') {
             Transaction::query()
@@ -279,6 +346,8 @@ class EnrollmentController extends Controller
 
     protected function syncEnrollmentIncomeTransaction(Enrollment $enrollment): void
     {
+        $enrollment->loadMissing(['program', 'courses']);
+
         if ($enrollment->is_free_trial) {
             Transaction::query()
                 ->where('enrollment_id', $enrollment->id)
@@ -288,7 +357,7 @@ class EnrollmentController extends Controller
             return;
         }
 
-        if (! $enrollment->student || ! $enrollment->course) {
+        if (! $enrollment->student || ! $enrollment->program || $enrollment->courses->isEmpty()) {
             return;
         }
 
@@ -300,20 +369,26 @@ class EnrollmentController extends Controller
             ->where('type', 'income')
             ->first();
 
+        $firstCourse = $enrollment->courses->first();
+        $courseId = $firstCourse ? $firstCourse->id : null;
+        $branchId = $firstCourse ? $firstCourse->branch_id : null;
+
+        $courseTitles = $enrollment->courses->pluck('title')->join(', ');
+
         $payload = [
             'enrollment_id' => $enrollment->id,
             'student_id' => $enrollment->student_id,
-            'course_id' => $enrollment->course_id,
-            'branch_id' => $enrollment->course->branch_id,
+            'course_id' => $courseId,
+            'branch_id' => $branchId,
             'account_id' => $this->resolveIncomeAccountId(),
             'account_receivable_id' => $receivable?->id,
-            'amount' => $this->calculateInitialChargeAmount($enrollment->course),
+            'amount' => $this->calculateInitialChargeAmount($enrollment->program, $enrollment->courses),
             'currency' => 'USD',
             'type' => 'income',
             'status' => 'completed',
             'payment_method' => $enrollment->payment_method ?: 'manual',
             'reference' => 'admin-enrollment-'.$enrollment->id,
-            'description' => 'Pago confirmado de inscripcion + 1er mes: '.$enrollment->course->title,
+            'description' => 'Pago confirmado de Inscripción + 1er mes: '.$courseTitles,
             'payment_receipt_path' => $enrollment->payment_receipt_path,
             'payment_receipt_original_name' => $enrollment->payment_receipt_original_name,
         ];
@@ -344,6 +419,8 @@ class EnrollmentController extends Controller
 
     protected function syncEnrollmentReceivableState(Enrollment $enrollment): void
     {
+        $enrollment->loadMissing(['program', 'courses']);
+
         if ($enrollment->is_free_trial) {
             AccountReceivable::query()
                 ->where('enrollment_id', $enrollment->id)
@@ -352,22 +429,31 @@ class EnrollmentController extends Controller
             return;
         }
 
-        if (! $enrollment->course || $enrollment->course->price === null || $enrollment->course->branch_id === null) {
+        if (! $enrollment->program || $enrollment->courses->isEmpty()) {
             return;
         }
 
-        $amountTotal = $this->calculateEnrollmentReceivableTotal($enrollment->course);
+        $firstCourse = $enrollment->courses->first();
+        if ($firstCourse->branch_id === null) {
+            return;
+        }
+
+        $amountTotal = $this->calculateEnrollmentReceivableTotal($enrollment->program, $enrollment->courses);
 
         $receivable = AccountReceivable::query()
             ->where('enrollment_id', $enrollment->id)
             ->first();
 
+        $courseTitles = $enrollment->courses->pluck('title')->join(', ');
+        $programName = $enrollment->program->name;
+        $title = 'Inscripción + mensualidades #'.$enrollment->id.' - '.$programName.' ('.$courseTitles.')';
+
         if ($enrollment->payment_status === 'pending') {
             if (! $receivable) {
                 AccountReceivable::create([
-                    'branch_id' => $enrollment->course->branch_id,
+                    'branch_id' => $firstCourse->branch_id,
                     'enrollment_id' => $enrollment->id,
-                    'title' => 'Inscripcion + mensualidades #'.$enrollment->id.' - '.($enrollment->course->title ?? 'Curso'),
+                    'title' => $title,
                     'amount_total' => $amountTotal,
                     'balance_due' => $amountTotal,
                     'currency' => 'USD',
@@ -378,8 +464,8 @@ class EnrollmentController extends Controller
             }
 
             $receivable->update([
-                'branch_id' => $enrollment->course->branch_id,
-                'title' => 'Inscripcion + mensualidades #'.$enrollment->id.' - '.($enrollment->course->title ?? 'Curso'),
+                'branch_id' => $firstCourse->branch_id,
+                'title' => $title,
                 'amount_total' => $amountTotal,
                 'balance_due' => $amountTotal,
                 'currency' => 'USD',
@@ -411,35 +497,43 @@ class EnrollmentController extends Controller
 
     protected function enrollmentPayload(Enrollment $enrollment): array
     {
-        $course = $enrollment->course;
+        $program = $enrollment->program;
         $student = $enrollment->student;
         $parent = optional($student)->user;
-        $classes = ($course && $course->relationLoaded('classes')) ? $course->classes : collect();
+
+        $courses = $enrollment->courses->map(function ($course) {
+            $classes = ($course->relationLoaded('classes')) ? $course->classes : collect();
+
+            return [
+                'id' => (int) $course->id,
+                'title' => $course->title,
+                'description' => $course->description,
+                'branch_name' => optional($course->branch)->name,
+                'start_date' => $course->start_date,
+                'end_date' => $course->end_date,
+                'monthly_fee' => $course->monthly_fee,
+                'capacity' => $course->capacity,
+                'enrollments_count' => $course->enrollments_count,
+                'classes' => $classes->map(function ($class) {
+                    return [
+                        'id' => (int) $class->id,
+                        'date' => $class->date,
+                        'start_time' => $class->start_time,
+                        'end_time' => $class->end_time,
+                        'coach_name' => optional($class->coach)->name,
+                    ];
+                })->values(),
+            ];
+        })->values();
 
         return [
             'id' => (int) $enrollment->id,
             'status' => (string) $enrollment->status,
             'payment_status' => (string) $enrollment->payment_status,
-            'course_id' => (int) $enrollment->course_id,
-            'course_title' => optional($course)->title,
-            'course_description' => optional($course)->description,
-            'course_branch_name' => optional(optional($course)->branch)->name,
-            'course_start_date' => optional($course)->start_date,
-            'course_end_date' => optional($course)->end_date,
-            'course_price' => optional($course)->price,
-            'course_enrollment_fee' => optional($course)->price,
-            'course_monthly_fee' => optional($course)->monthly_fee,
-            'course_capacity' => optional($course)->capacity,
-            'course_enrollments_count' => optional($course)->enrollments_count,
-            'classes' => $classes->map(function ($class) {
-                return [
-                    'id' => (int) $class->id,
-                    'date' => $class->date,
-                    'start_time' => $class->start_time,
-                    'end_time' => $class->end_time,
-                    'coach_name' => optional($class->coach)->name,
-                ];
-            })->values(),
+            'program_id' => (int) $enrollment->program_id,
+            'program_name' => optional($program)->name,
+            'program_enrollment_fee' => optional($program)->enrollment_fee,
+            'courses' => $courses,
             'student_name' => optional($student)->name,
             'student_birthdate' => optional($student)->birthdate,
             'student_medical_notes' => optional($student)->medical_notes,
@@ -506,41 +600,42 @@ class EnrollmentController extends Controller
         ]);
     }
 
-    protected function validateCourseForStudent(Request $request, Student $student): Course
+    protected function validateCoursesForStudent(Student $student, $courses): void
     {
-        $course = Course::query()
-            ->withCount('enrollments')
-            ->where('active', true)
-            ->whereDate('end_date', '>=', now()->toDateString())
-            ->findOrFail((int) $request->input('course_id'));
+        foreach ($courses as $course) {
+            $existingEnrollment = Enrollment::where('student_id', $student->id)
+                ->whereHas('courses', function ($query) use ($course) {
+                    $query->where('courses.id', $course->id);
+                })
+                ->first();
 
-        if (Enrollment::where('student_id', $student->id)->where('course_id', $course->id)->exists()) {
-            throw ValidationException::withMessages([
-                'student_id' => 'Este estudiante ya esta inscrito en este curso.',
-            ]);
-        }
-
-        if (((int) $course->capacity - (int) $course->enrollments_count) <= 0) {
-            throw ValidationException::withMessages([
-                'course_id' => 'El curso seleccionado no tiene cupos disponibles.',
-            ]);
-        }
-
-        if ($student->birthdate) {
-            $age = Carbon::parse($student->birthdate)->age;
-            if ($course->min_age && $age < (int) $course->min_age) {
+            if ($existingEnrollment && ! $existingEnrollment->is_free_trial) {
                 throw ValidationException::withMessages([
-                    'course_id' => 'El estudiante no cumple con la edad minima del curso.',
+                    'course_ids' => 'Este estudiante ya esta inscrito en este programa.',
                 ]);
             }
-            if ($course->max_age && $age > (int) $course->max_age) {
+
+            if (((int) $course->capacity - (int) $course->enrollments_count) <= 0) {
                 throw ValidationException::withMessages([
-                    'course_id' => 'El estudiante supera la edad maxima permitida para el curso.',
+                    'course_ids' => 'El curso "'.$course->title.'" no tiene cupos disponibles.',
                 ]);
             }
-        }
 
-        return $course;
+            if ($student->birthdate) {
+                $age = Carbon::parse($student->birthdate)->floatDiffInYears(Carbon::now());
+
+                if ($course->min_age && $age < (float) $course->min_age) {
+                    throw ValidationException::withMessages([
+                        'course_ids' => 'El estudiante no cumple con la edad minima del curso "'.$course->title.'".',
+                    ]);
+                }
+                if ($course->max_age && $age > (float) $course->max_age) {
+                    throw ValidationException::withMessages([
+                        'course_ids' => 'El estudiante supera la edad maxima permitida para el curso "'.$course->title.'".',
+                    ]);
+                }
+            }
+        }
     }
 
     protected function resolveIncomeAccountId(): int
@@ -558,21 +653,32 @@ class EnrollmentController extends Controller
         return (int) $account->id;
     }
 
-    protected function calculateInitialChargeAmount(Course $course): float
+    protected function calculateInitialChargeAmount(Program $program, $courses): float
     {
-        return (float) ($course->price ?? 0) + (float) ($course->monthly_fee ?? 0);
-    }
+        $total = (float) ($program->enrollment_fee ?? 50.00);
 
-    protected function calculateEnrollmentReceivableTotal(Course $course): float
-    {
-        $months = 1;
-        if ($course->start_date && $course->end_date) {
-            $start = Carbon::parse($course->start_date)->startOfMonth();
-            $end = Carbon::parse($course->end_date)->startOfMonth();
-            $months = max(1, $start->diffInMonths($end) + 1);
+        foreach ($courses as $course) {
+            $total += (float) ($course->monthly_fee ?? 0);
         }
 
-        return (float) ($course->price ?? 0) + ((float) ($course->monthly_fee ?? 0) * $months);
+        return $total;
+    }
+
+    protected function calculateEnrollmentReceivableTotal(Program $program, $courses): float
+    {
+        $total = (float) ($program->enrollment_fee ?? 50.00);
+
+        foreach ($courses as $course) {
+            $months = 1;
+            if ($course->start_date && $course->end_date) {
+                $start = Carbon::parse($course->start_date)->startOfMonth();
+                $end = Carbon::parse($course->end_date)->startOfMonth();
+                $months = max(1, $start->diffInMonths($end) + 1);
+            }
+            $total += (float) ($course->monthly_fee ?? 0) * $months;
+        }
+
+        return $total;
     }
 
     protected function ensureManualBillingArtifacts(Enrollment $enrollment, bool $firstMonthPaid): void
@@ -581,9 +687,10 @@ class EnrollmentController extends Controller
             return;
         }
 
-        $enrollment->loadMissing('course');
-        $course = $enrollment->course;
-        if (! $course) {
+        $enrollment->loadMissing(['program', 'courses']);
+        $courses = $enrollment->courses;
+
+        if ($courses->isEmpty()) {
             return;
         }
 
@@ -602,24 +709,64 @@ class EnrollmentController extends Controller
             ]
         );
 
-        $monthlyFee = (float) ($course->monthly_fee ?? 0);
-        if ($monthlyFee <= 0) {
+        $hasAnyMonthlyFee = $courses->contains(function ($course) {
+            return ((float) ($course->monthly_fee ?? 0)) > 0;
+        });
+
+        if (! $hasAnyMonthlyFee) {
             return;
         }
 
-        $months = 1;
-        if ($course->start_date && $course->end_date) {
-            $start = Carbon::parse($course->start_date)->startOfMonth();
-            $end = Carbon::parse($course->end_date)->startOfMonth();
-            $months = max(1, $start->diffInMonths($end) + 1);
+        $overallStartDate = null;
+        $overallEndDate = null;
+
+        foreach ($courses as $course) {
+            if ($course->start_date) {
+                $start = Carbon::parse($course->start_date);
+                if ($overallStartDate === null || $start->lt($overallStartDate)) {
+                    $overallStartDate = $start;
+                }
+            }
+            if ($course->end_date) {
+                $end = Carbon::parse($course->end_date);
+                if ($overallEndDate === null || $end->gt($overallEndDate)) {
+                    $overallEndDate = $end;
+                }
+            }
         }
 
-        $baseDate = $course->start_date
-            ? Carbon::parse($course->start_date)->startOfDay()
+        $baseDate = $overallStartDate
+            ? $overallStartDate->copy()->startOfDay()
             : now()->startOfDay();
+
+        $endDate = $overallEndDate
+            ? $overallEndDate->copy()->startOfDay()
+            : now()->addMonths(1)->startOfDay();
+
+        $months = max(1, $baseDate->copy()->startOfMonth()->diffInMonths($endDate->copy()->startOfMonth()) + 1);
 
         for ($offset = 0; $offset < $months; $offset++) {
             $dueDate = (clone $baseDate)->addMonthsNoOverflow($offset);
+
+            $monthlyTotal = 0.0;
+            foreach ($courses as $course) {
+                $courseStart = $course->start_date ? Carbon::parse($course->start_date)->startOfMonth() : null;
+                $courseEnd = $course->end_date ? Carbon::parse($course->end_date)->startOfMonth() : null;
+                $dueMonth = $dueDate->copy()->startOfMonth();
+
+                if ($courseStart && $dueMonth->lt($courseStart)) {
+                    continue;
+                }
+                if ($courseEnd && $dueMonth->gt($courseEnd)) {
+                    continue;
+                }
+
+                $monthlyTotal += (float) ($course->monthly_fee ?? 0);
+            }
+
+            if ($monthlyTotal <= 0) {
+                continue;
+            }
 
             EnrollmentInstallment::updateOrCreate(
                 [
@@ -630,7 +777,7 @@ class EnrollmentController extends Controller
                 [
                     'account_receivable_id' => $receivable?->id,
                     'due_date' => $dueDate->toDateString(),
-                    'amount' => $monthlyFee,
+                    'amount' => $monthlyTotal,
                     'currency' => 'USD',
                     'status' => ($offset === 0 && $firstMonthPaid) ? 'paid' : 'pending',
                     'is_first_month' => $offset === 0,

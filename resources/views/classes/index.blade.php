@@ -2,6 +2,17 @@
 
 @section('title')
     <title>Clases y Sedes | Little Brands Inc</title>
+    <meta name="description" content="Descubre las clases y sedes de Little Brands Inc, donde ofrecemos programas deportivos diseñados para niños de 18 meses a 5 años. Conoce nuestros horarios, ubicaciones en Caracas y agenda tu clase de prueba gratuita.">
+    <meta name="keywords" content="Clases deportivas para niños, sedes de Little Brands Inc, horarios de clases infantiles, fútbol para niños, pádel para niños, clases de prueba gratuita, programas deportivos para niños en Caracas">
+    <meta property="og:title" content="Clases y Sedes | Little Brands Inc">
+    <meta property="og:description" content="Descubre las clases y sedes de Little Brands Inc, donde ofrecemos programas deportivos diseñados para niños de 18 meses a 5 años. Conoce nuestros horarios, ubicaciones en Caracas y agenda tu clase de prueba gratuita.">
+    <meta property="og:image" content="{{ asset('landing_page/assets/images/img6.jpeg') }}">
+    <meta property="og:url" content="{{ url()->current() }}">   
+    <meta name="twitter:title" content="Clases y Sedes | Little Brands Inc">    
+    <meta name="twitter:description" content="Descubre las clases y sedes de Little Brands Inc, donde ofrecemos programas deportivos diseñados para niños de 18 meses a 5 años. Conoce nuestros horarios, ubicaciones en Caracas y agenda tu clase de prueba gratuita.">
+    <meta name="twitter:image" content="{{ asset('landing_page/assets/images/img6.jpeg') }}">
+    <meta name="twitter:card" content="summary_large_image">
+    
 @endsection
 
 @section('content')
@@ -27,7 +38,7 @@
                         <span class="classes-page-chip">🎁 Clases de prueba gratuita disponible</span>
                     </div>
 
-                    <a class="btn-main" href="{{ $freeTrialUrl }}">Agendar clase gratuita</a>
+                    <a class="btn-main" href="{{ $freeTrialUrl }}">Agendar Clase de prueba gratuita</a>
                 </div>
 
                 <div class="classes-page-gallery reveal" aria-label="Galería de programas deportivos">
@@ -47,8 +58,7 @@
                     <span class="section-kicker">Horarios</span>
                     <h2>Horarios y clases disponibles</h2>
                     <p>
-                        Aquí encontrarás la disponibilidad por programa y por sede, en un formato claro para facilitar
-                        tu inscripción.
+                        Aquí encontrarás la disponibilidad por programa y por sede para facilitar tu inscripción.
                     </p>
                 </div>
 
@@ -69,7 +79,7 @@
                                                 <p class="classes-item-title">{{ $item['title'] }}</p>
                                                 <p class="classes-item-schedule">{{ $item['schedule'] }}</p>
                                             </div>
-                                            <a class="classes-item-link" href="{{ $item['url'] }}">Inscribir</a>
+                                            {{--<a class="classes-item-link" href="{{ $item['url'] }}">Inscribir</a>--}}
                                         </li>
                                     @endforeach
                                 </ul>
@@ -77,7 +87,7 @@
                         @endforeach
                     </div>
 
-                    <a class="classes-program-cta" href="{{ $freeTrialUrl }}">👉 Agendar clase de Little Strikers</a>
+                    <a class="classes-program-cta" href="{{ $strikersFreeTrialUrl }}">👉 Agendar clase de prueba de Little Strikers</a>
                 </article>
 
                 <article class="classes-program-block reveal" id="little-paddlers">
@@ -97,7 +107,7 @@
                                                 <p class="classes-item-title">{{ $item['title'] }}</p>
                                                 <p class="classes-item-schedule">{{ $item['schedule'] }}</p>
                                             </div>
-                                            <a class="classes-item-link" href="{{ $item['url'] }}">Inscribir</a>
+                                            {{--<a class="classes-item-link" href="{{ $item['url'] }}">Inscribir</a>--}}    
                                         </li>
                                     @endforeach
                                 </ul>
@@ -105,7 +115,7 @@
                         @endforeach
                     </div>
 
-                    <a class="classes-program-cta" href="{{ $freeTrialUrl }}">👉 Agendar clase de Little Paddlers</a>
+                    <a class="classes-program-cta" href="{{ $paddlersFreeTrialUrl }}">👉 Agendar clase de prueba de Little Paddlers</a>
                 </article>
             </div>
         </section>
@@ -113,7 +123,7 @@
         <section class="classes-page-cta" id="clase-gratuita">
             <div class="container">
                 <div class="classes-page-cta-wrap reveal">
-                    <h2>🎁 Agenda una CLASE DE PRUEBA GRATUITA</h2>
+                    <h2>🎁 Agenda una Clase de Prueba Gratuita</h2>
                     <p>
                         Descubre por qué nuestras clases ofrecen una experiencia única para los más pequeños. A través de
                         una metodología dinámica y un currículo de ejercicios especialmente diseñado para cada etapa,
@@ -125,8 +135,8 @@
                     </p>
 
                     <div class="classes-page-cta-actions">
-                        <a class="btn-main" href="{{ $freeTrialUrl }}">👉 Agendar Clase de Little Strikers (Fútbol)</a>
-                        <a class="btn-soft" href="{{ $freeTrialUrl }}">👉 Agendar Clase de Little Paddlers (Pádel)</a>
+                        <a class="btn-main" href="{{ $strikersFreeTrialUrl }}">👉 Agendar Clase de Prueba de Little Strikers</a>
+                        <a class="btn-soft" href="{{ $paddlersFreeTrialUrl }}">👉 Agendar Clase de Prueba de Little Paddlers</a>
                     </div>
 
                 </div>

@@ -26,12 +26,17 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        DB::statement('ALTER TABLE transactions ADD CONSTRAINT transactions_enrollment_requires_student_course CHECK ((enrollment_id IS NULL) OR (student_id IS NOT NULL AND course_id IS NOT NULL))');
+        // CHECK constraint only supported on MySQL (SQLite does not support ALTER TABLE ADD CONSTRAINT)
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE transactions ADD CONSTRAINT transactions_enrollment_requires_student_course CHECK ((enrollment_id IS NULL) OR (student_id IS NOT NULL AND course_id IS NOT NULL))');
+        }
     }
 
     public function down(): void
     {
-        DB::statement('ALTER TABLE transactions DROP CONSTRAINT IF EXISTS transactions_enrollment_requires_student_course');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE transactions DROP CONSTRAINT IF EXISTS transactions_enrollment_requires_student_course');
+        }
         Schema::dropIfExists('transactions');
     }
 };

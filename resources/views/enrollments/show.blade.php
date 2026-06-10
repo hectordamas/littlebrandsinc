@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 @section('title')
-    <title>{{ env('APP_NAME') }} - Detalle de Inscripcion</title>
+    <title>{{ env('APP_NAME') }} - Detalle de Inscripción</title>
 @endsection
 
 @section('styles')
@@ -50,79 +50,97 @@
                 </div>
             </div>
             <div class="card-block">
+
                 <div class="detail-section">
-                    <span class="detail-chip">Curso</span>
-                    <div class="detail-section-title">Información del Curso Inscrito</div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        @if ($enrollment->is_free_trial)
+                            <span class="badge bg-info fs-6">Clase de prueba gratuita</span>
+                        @endif
+                        @if ($enrollment->image_consent_accepted)
+                            <span class="badge bg-success fs-6">Consentimiento de imagen: Aceptado</span>
+                        @else
+                            <span class="badge bg-secondary fs-6">Consentimiento de imagen: No aceptado</span>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <span class="detail-chip">Programa</span>
+                    <div class="detail-section-title">Información del Programa</div>
                     <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label text-muted">Programa</label>
+                        <input type="text" class="form-control" value="{{ optional($enrollment->program)->name ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted">Cuota de inscripción</label>
+                        <input type="text" class="form-control"
+                            value="{{ optional($enrollment->program)->enrollment_fee !== null ? '$' . number_format((float) $enrollment->program->enrollment_fee, 2) : 'N/A' }}" readonly>
+                    </div>
+                    @if (optional($enrollment->program)->description)
                     <div class="col-md-12">
+                        <label class="form-label text-muted">Descripción</label>
+                        <textarea class="form-control" rows="2" readonly>{{ $enrollment->program->description }}</textarea>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label text-muted">Curso</label>
-                        <input type="text" class="form-control" value="{{ optional($enrollment->course)->title ?? 'N/A' }}" readonly>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label text-muted">Sede</label>
-                        <input type="text" class="form-control"
-                            value="{{ optional(optional($enrollment->course)->branch)->name ?? 'N/A' }}" readonly>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label text-muted">Fecha de inicio</label>
-                        <input type="text" class="form-control"
-                            value="{{ optional($enrollment->course)->start_date ? \Carbon\Carbon::parse($enrollment->course->start_date)->format('d/m/Y') : 'N/A' }}" readonly>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label text-muted">Fecha de fin</label>
-                        <input type="text" class="form-control"
-                            value="{{ optional($enrollment->course)->end_date ? \Carbon\Carbon::parse($enrollment->course->end_date)->format('d/m/Y') : 'N/A' }}" readonly>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label text-muted">Precio de inscripción</label>
-                        <input type="text" class="form-control"
-                            value="{{ optional($enrollment->course)->price !== null ? '$' . number_format((float) $enrollment->course->price, 2) : 'N/A' }}" readonly>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label text-muted">Mensualidad</label>
-                        <input type="text" class="form-control"
-                            value="{{ optional($enrollment->course)->monthly_fee !== null ? '$' . number_format((float) $enrollment->course->monthly_fee, 2) : 'N/A' }}" readonly>
-                    </div>
-                    <div class="col-md-12">
-                        <label class="form-label text-muted">Descripcion</label>
-                        <textarea class="form-control" rows="2" readonly>{{ optional($enrollment->course)->description ?: 'Sin descripcion.' }}</textarea>
-                    </div>
+                    @endif
                 </div>
                 </div>
 
                 <div class="detail-section">
-                    <span class="detail-chip">Agenda</span>
-                    <div class="detail-section-title">Clases y Horarios</div>
-                    <div class="row g-3">
-                        <div class="col-md-12">
-                        <div class="table-responsive">
-                            <table class="table table-sm table-striped align-middle mb-0">
-                                <thead>
+                    <span class="detail-chip">Clases</span>
+                    <div class="detail-section-title">Clases Inscritas</div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Clase</th>
+                                    <th>Sede</th>
+                                    <th>Horario</th>
+                                    <th style="width: 1%; white-space: nowrap;">Cuota mensual</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($enrollment->courses as $course)
+                                    @php
+                                        $weekDays = [1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado', 7 => 'Domingo'];
+                                        $classes = $course->classes ?? collect([]);
+                                        $grouped = $classes->groupBy(function ($class) {
+                                            return optional(\Carbon\Carbon::parse($class->date))->dayOfWeekIso;
+                                        })->map(function ($classes, $day) use ($weekDays) {
+                                            $dayName = $weekDays[$day] ?? '';
+                                            $times = $classes->map(function ($class) {
+                                                $start = \Carbon\Carbon::parse($class->start_time);
+                                                $end   = \Carbon\Carbon::parse($class->end_time);
+                                                $fmt   = function ($t) {
+                                                    return $t->format('g:i') . ' ' . ($t->format('A') === 'AM' ? 'a.m.' : 'p.m.');
+                                                };
+                                                return $fmt($start) . ' - ' . $fmt($end);
+                                            })->unique()->values()->join(', ');
+                                            return $dayName ? $dayName . ' ' . $times : $times;
+                                        })->values();
+                                    @endphp
                                     <tr>
-                                        <th>Fecha</th>
-                                        <th>Horario</th>
-                                        <th>Coach</th>
+                                        <td>{{ $course->title }}</td>
+                                        <td>{{ optional($course->branch)->name ?? 'N/A' }}</td>
+                                        <td>
+                                            @if ($grouped->isNotEmpty())
+                                                @foreach ($grouped as $line)
+                                                    <div>{{ $line }}</div>
+                                                @endforeach
+                                            @else
+                                                <span class="text-muted">Sin horario</span>
+                                            @endif
+                                        </td>
+                                        <td>{{ $course->monthly_fee !== null ? '$' . number_format((float) $course->monthly_fee, 2) : 'N/A' }}</td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse (optional($enrollment->course)->classes ?? [] as $class)
-                                        <tr>
-                                            <td>{{ $class->date ? \Carbon\Carbon::parse($class->date)->format('d/m/Y') : 'N/A' }}</td>
-                                            <td>{{ $class->start_time ? \Carbon\Carbon::parse($class->start_time)->format('H:i') : 'N/A' }} - {{ $class->end_time ? \Carbon\Carbon::parse($class->end_time)->format('H:i') : 'N/A' }}</td>
-                                            <td>{{ optional($class->coach)->name ?? 'Sin asignar' }}</td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="3" class="text-muted">No hay clases registradas para este curso.</td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="text-muted">No hay Clases asociadas a esta inscripción.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
                     </div>
-                </div>
                 </div>
 
                 <div class="detail-section">
@@ -180,14 +198,6 @@
 
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <label class="form-label text-muted">Free trial / clase gratuita</label>
-                            <input type="text" class="form-control" value="{{ $enrollment->is_free_trial ? 'Si' : 'No' }}" readonly>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label text-muted">Consentimiento de imagen</label>
-                            <input type="text" class="form-control" value="{{ $enrollment->image_consent_accepted ? 'Aceptado' : 'No aceptado' }}" readonly>
-                        </div>
-                        <div class="col-md-4">
                             <label class="form-label text-muted">Comprobante adjunto</label>
                             @if ($enrollment->payment_receipt_path)
                                 <div>
@@ -211,9 +221,9 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-8 d-flex align-items-end">
+                        <div class="col-md-4 d-flex align-items-end">
                             <div class="alert alert-light border mb-0 w-100">
-                                El curso es solo lectura en este panel para proteger la trazabilidad de la inscripcion.
+                                El programa y las Clases son solo lectura en este panel para proteger la trazabilidad de la inscripción.
                             </div>
                         </div>
                     </div>

@@ -10,12 +10,22 @@ class Program extends Model
         'name',
         'slug',
         'description',
+        'enrollment_fee',
         'active',
+    ];
+
+    protected $casts = [
+        'enrollment_fee' => 'decimal:2',
     ];
 
     public function courses()
     {
         return $this->hasMany(Course::class);
+    }
+
+    public function enrollments()
+    {
+        return $this->hasMany(Enrollment::class);
     }
 
     public function contactMessages()

@@ -1,4 +1,4 @@
-Ya tengo el wizard (step-by-step form) funcional en Laravel Blade para inscripciones.
+Ya tengo el wizard (step-by-step form) funcional en Laravel Blade para Inscripciones.
 
 Quiero mejorarlo agregando lógica real de negocio, pagos con Stripe y validaciones robustas.
 
@@ -12,7 +12,7 @@ Mejorar el flujo actual con:
 
 - Stripe Elements (pago con tarjeta real)
 - Filtro de cursos vigentes
-- Prevención de inscripciones duplicadas
+- Prevención de Inscripciones duplicadas
 - Registro automático de transacción financiera
 
 ---
@@ -83,7 +83,7 @@ Debe:
 - Crear PaymentIntent
 - Retornar client_secret
 
-## 6. Crear una tabla de transacciones financieras (ledger) que sea flexible para soportar múltiples tipos de movimientos. al una inscripcion tener status de pagado debe registrar un movimiento en esta tabla
+## 6. Crear una tabla de transacciones financieras (ledger) que sea flexible para soportar múltiples tipos de movimientos. al una Inscripción tener status de pagado debe registrar un movimiento en esta tabla
 
 ### 🧱 Estructura de la tabla `transactions`
 
@@ -149,7 +149,7 @@ Referencia oficial: Stripe Testing Cards
 
 enrollments/index.blade.php
 
-Tengo un módulo de inscripciones en Laravel dentro de un panel administrativo. Ya existe un formulario modal funcional (NO crear desde cero), pero necesito mejorarlo a nivel de UX, validaciones y lógica de negocio.
+Tengo un módulo de Inscripciones en Laravel dentro de un panel administrativo. Ya existe un formulario modal funcional (NO crear desde cero), pero necesito mejorarlo a nivel de UX, validaciones y lógica de negocio.
 
 Voy a proporcionar el código Blade actual y quiero que lo optimices y extiendas.
 
@@ -272,10 +272,10 @@ Usar datatable en enrollments.index, que este formulario sea a traves del modal 
 
 
 
-Tengo un módulo de inscripciones en Laravel con un listado en Blade usando DataTables.
+Tengo un módulo de Inscripciones en Laravel con un listado en Blade usando DataTables.
 
 Ya existe:
-- Tabla de inscripciones
+- Tabla de Inscripciones
 - Botón individual para cambiar status
 - Vista de detalle por inscripción
 
@@ -285,9 +285,9 @@ Quiero mejorar el sistema de gestión SIN romper lo existente.
 
 # 🎯 OBJETIVO GENERAL
 
-Transformar el listado de inscripciones en un sistema de gestión más eficiente que permita:
+Transformar el listado de Inscripciones en un sistema de gestión más eficiente que permita:
 
-1. Selección múltiple de inscripciones
+1. Selección múltiple de Inscripciones
 2. Cambio de estado en lote (bulk update)
 3. Eliminación del botón individual de cambio rápido de status
 4. Mejora del flujo de visualización de detalles
@@ -300,7 +300,7 @@ Transformar el listado de inscripciones en un sistema de gestión más eficiente
 
 - Agregar checkbox en cada fila de la tabla
 - Agregar checkbox en el header para "seleccionar todo"
-- Permitir seleccionar múltiples inscripciones
+- Permitir seleccionar múltiples Inscripciones
 
 ---
 
@@ -311,7 +311,7 @@ Agregar encima de la tabla:
 - Dropdown o botones de acciones masivas:
   - Marcar como pendiente
   - Marcar como completado
-  - Cancelar inscripciones
+  - Cancelar Inscripciones
   - Marcar pago como pagado / pendiente
 
 - Botón: "Aplicar cambios"
@@ -467,7 +467,7 @@ Funciones:
 1. La firma digital es el checkbox de terminos y condiciones 
 en todo caso falta crear la pagina de terminos y condiciones, el checkbox cuenta como firma
 
-2. el Historial por temporada realmente son las inscripciones de los estudiante en cada temporada
+2. el Historial por temporada realmente son las Inscripciones de los estudiante en cada temporada
 por lo que creo que ya esta implementado en los detalles de cada estudiante
 
 3. la renovacion automatica por stripe si es muy Importante, y creo que ya la implementamos

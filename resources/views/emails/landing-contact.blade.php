@@ -9,8 +9,13 @@
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #dbeafe;border-radius:12px;overflow:hidden;">
         <tr>
             <td style="background:linear-gradient(120deg,#0ea5e9,#22c55e);padding:20px 24px;color:#ffffff;">
-                <h1 style="margin:0;font-size:22px;">Little Brands Inc</h1>
-                <p style="margin:8px 0 0;font-size:14px;opacity:0.95;">Nuevo mensaje desde la landing page</p>
+                <div style="display: inline-block; vertical-align: middle;">
+                    <img src="{{ isset($message) ? $message->embed(public_path('assets/img/logo-littlebrandsinc.png')) : asset('assets/img/logo-littlebrandsinc.png') }}" alt="Little Brands Inc Logo" style="max-height: 50px; width: auto; background: #ffffff; padding: 4px; border-radius: 6px;">
+                </div>
+                <div style="display: inline-block; vertical-align: middle; margin-left: 15px; text-align: left;">
+                    <h1 style="margin:0;font-size:22px;line-height:1.2;">Little Brands Inc</h1>
+                    <p style="margin:4px 0 0;font-size:14px;opacity:0.95;">Nuevo mensaje desde la landing page</p>
+                </div>
             </td>
         </tr>
         <tr>

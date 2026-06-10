@@ -5,8 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     @yield('title')
-    <meta name="description"
-        content="Holding especializado en formacion deportiva para ninos. Descubre Little Strikers y Little Paddlers.">
+
     <link rel="icon" type="image/png" href="{{ asset('landing_page/logos/favicon.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

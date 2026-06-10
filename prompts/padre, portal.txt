@@ -1,0 +1,14 @@
+El portal de padre es muy horrendo necesito que me ayudes a mejorarlo, 
+
+usa ui ux pro max skil para darle buena apariencia a la interfaz
+
+necesito que el padre pueda ver las clases de su hijo en un calendario aparte junto con las assitenacia,
+puedes crear un nuevo elemento en el menu que sea como: Clases y asistencias
+de esta forma el dashboard de esta seccion no se colapsa tan horrendo
+
+en la parte de pagos necesito que por favor hagas una nueva pagina que diga pagos
+en esta deben estar las cuotas proximas a vencerse, las pagadas y atrasadas
+en esta seccion el padre podra subir el comprobante de pago para que el administrador lo apruebe y alimente 
+su cuenta, 
+
+el dashboard puede quedarse pero que se vea mas estetico y menos saturado

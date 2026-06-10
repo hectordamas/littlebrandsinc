@@ -61,4 +61,9 @@ class User extends Authenticatable
         return $this->belongsToMany(Course::class, 'course_coach', 'coach_id', 'course_id')
             ->withTimestamps();
     }
+
+    public function parentPayments()
+    {
+        return $this->hasMany(ParentPayment::class);
+    }
 }

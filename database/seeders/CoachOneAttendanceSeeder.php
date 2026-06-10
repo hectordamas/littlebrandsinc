@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\LBClass;
 use App\Models\Student;
@@ -35,6 +36,8 @@ class CoachOneAttendanceSeeder extends Seeder
             return;
         }
 
+        $courses = Course::query()->whereIn('id', $courseIds)->get();
+
         $parents = User::query()
             ->where('role', 'Padre')
             ->orderBy('id')
@@ -66,19 +69,27 @@ class CoachOneAttendanceSeeder extends Seeder
                 $createdStudents++;
             }
 
-            foreach ($courseIds as $courseId) {
+            $programIdsDone = [];
+            foreach ($courses as $course) {
+                $programId = $course->program_id;
+                if (! $programId) {
+                    continue;
+                }
+
                 $enrollment = Enrollment::query()->firstOrCreate(
                     [
                         'student_id' => $student->id,
-                        'course_id' => $courseId,
+                        'program_id' => $programId,
+                        'parent_id' => $parent->id,
                     ],
                     [
-                        'parent_id' => $parent->id,
                         'status' => 'pending',
                         'payment_method' => 'manual',
                         'payment_status' => 'pending',
                     ]
                 );
+
+                $enrollment->courses()->syncWithoutDetaching([$course->id]);
 
                 if ($enrollment->wasRecentlyCreated) {
                     $createdEnrollments++;
