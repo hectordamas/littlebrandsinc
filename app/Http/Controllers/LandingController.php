@@ -114,6 +114,17 @@ class LandingController extends Controller
 
         $branches = collect($branchGroups)
             ->map(function ($items, $branch) {
+                if (mb_strtoupper($branch) === 'SEDE LOS CHORROS') {
+                    $items = collect($items)
+                        ->filter(function ($item) {
+                            $title = mb_strtolower($item['title'] ?? '');
+                            $schedule = mb_strtolower($item['schedule'] ?? '');
+                            return str_contains($title, 'sábado') || str_contains($title, 'sabado') ||
+                                   str_contains($schedule, 'sábado') || str_contains($schedule, 'sabado');
+                        })
+                        ->all();
+                }
+
                 $items = collect($items)
                     ->sortBy(fn ($item) => $this->courseTitleOrder((string) ($item['title'] ?? '')))
                     ->map(fn ($item) => [

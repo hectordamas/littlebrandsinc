@@ -232,20 +232,6 @@
             position: relative;
         }
 
-        .hero-copy::after {
-            content: '';
-            position: absolute;
-            right: 8%;
-            top: 8%;
-            width: 88px;
-            height: 88px;
-            border-radius: 28px;
-            border: 1px solid rgba(12, 127, 242, 0.12);
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(42, 199, 216, 0.16));
-            transform: rotate(16deg);
-            pointer-events: none;
-        }
-
         .hero-actions {
             display: flex;
             gap: 0.85rem;
@@ -1383,10 +1369,8 @@
 
         .classes-venues-bottom {
             margin-top: 1.25rem;
-            text-align: center;
             display: flex;
             flex-direction: column;
-            align-items: center;
             gap: 0.95rem;
             border-top: 1px dashed rgba(9, 23, 34, 0.14);
             padding: 1.1rem 0.8rem 0;
@@ -1403,7 +1387,6 @@
             margin: 0;
             color: var(--text);
             line-height: 1.72;
-            max-width: 76ch;
         }
 
         .classes-venues-cta-btn {
@@ -1423,6 +1406,7 @@
             padding: 0.9rem 1.2rem;
             box-shadow: 0 12px 28px rgba(9, 23, 34, 0.21);
             transition: transform 0.24s ease, box-shadow 0.24s ease;
+            max-width: 200px;
         }
 
         .classes-venues-cta-btn:hover {
@@ -1548,7 +1532,6 @@
         .birthday-actions {
             margin-top: 1.08rem;
             display: flex;
-            justify-content: center;
         }
 
         .birthday-btn {
@@ -2245,6 +2228,142 @@
                 border-radius: 22px;
             }
         }
+
+        /* ── Testimonials Section ── */
+        .testimonials-section {
+            position: relative;
+            padding-top: 84px;
+            padding-bottom: 84px;
+            background:
+                radial-gradient(circle at 86% 14%, rgba(245, 193, 93, 0.16), transparent 28%),
+                radial-gradient(circle at 12% 82%, rgba(12, 127, 242, 0.12), transparent 30%),
+                linear-gradient(180deg, rgba(241, 247, 252, 0.95), rgba(236, 244, 250, 0.98));
+        }
+
+        .testimonials-section .section-kicker {
+            color: var(--brand-orange);
+        }
+
+        .testimonials-section::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+                linear-gradient(rgba(9, 23, 34, 0.024) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(9, 23, 34, 0.024) 1px, transparent 1px);
+            background-size: 56px 56px;
+            mask-image: radial-gradient(circle at center, black 40%, transparent 96%);
+        }
+
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2.2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .testimonial-card {
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(255, 255, 255, 0.85);
+            border-radius: 28px;
+            padding: 2rem;
+            box-shadow: 0 16px 36px rgba(9, 23, 34, 0.05);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+            min-height: 250px;
+        }
+
+        .testimonial-card::after {
+            content: '';
+            position: absolute;
+            width: 140px;
+            height: 140px;
+            right: -40px;
+            bottom: -40px;
+            border-radius: 999px;
+            background: radial-gradient(circle, rgba(245, 193, 93, 0.12), transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .testimonial-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 24px 50px rgba(9, 23, 34, 0.1);
+            background: rgba(255, 255, 255, 0.9);
+            border-color: rgba(245, 141, 63, 0.25);
+        }
+
+        .testimonial-quote {
+            position: relative;
+            z-index: 1;
+            margin-bottom: 1.5rem;
+        }
+
+        .quote-icon {
+            font-family: 'Baloo 2', cursive;
+            font-size: 4rem;
+            line-height: 1;
+            color: rgba(245, 141, 63, 0.18);
+            position: absolute;
+            top: -1.8rem;
+            left: -0.5rem;
+            pointer-events: none;
+        }
+
+        .testimonial-quote p {
+            margin: 0;
+            font-size: 0.94rem;
+            line-height: 1.7;
+            color: #314d64;
+            font-style: italic;
+            position: relative;
+            z-index: 1;
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: relative;
+            z-index: 1;
+            border-top: 1px solid rgba(9, 23, 34, 0.06);
+            padding-top: 1.2rem;
+        }
+
+        .testimonial-author img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #fff;
+            box-shadow: 0 6px 16px rgba(9, 23, 34, 0.1);
+        }
+
+        .testimonial-author div {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .testimonial-author strong {
+            display: block;
+            font-size: 0.96rem;
+            color: #091722;
+            font-weight: 800;
+        }
+
+        .testimonial-author span {
+            font-size: 0.78rem;
+            color: #6d8494;
+            font-weight: 600;
+        }
     </style>
 </head>
 
@@ -2272,7 +2391,7 @@
                 </svg>
             </button>
 
-            <a class="cta-pill" href="{{ route('enrollment.wizard', ['is_free_trial' => 1]) }}">Inscribir a mi hijo</a>
+            <a class="cta-pill" href="{{ route('enrollment.wizard') }}">Inscribir a mi hijo</a>
         </div>
     </header>
 

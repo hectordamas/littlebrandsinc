@@ -12,6 +12,17 @@
             transform: translateY(-4px);
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
         }
+
+        #occupancy-bar {
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s;
+        }
+
+        #occupancy-bar:hover {
+            transform: scale(1.005);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            opacity: 0.95;
+        }
     </style>
 @endsection
 
@@ -50,8 +61,13 @@
 
                         <!-- Barra de ocupación -->
                         <div class="mb-3 col-md-12">
-                            <label class="form-label">Ocupación actual</label>
-                            <div id="occupancy-bar" class="progress" style="height: 28px;">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label mb-0">Ocupación actual</label>
+                                <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#enrolledStudentsModal">
+                                    <i class="fas fa-users"></i> Ver estudiantes inscritos
+                                </button>
+                            </div>
+                            <div id="occupancy-bar" class="progress" style="height: 28px;" data-bs-toggle="modal" data-bs-target="#enrolledStudentsModal" title="Click para ver la lista de estudiantes inscritos">
                                 <div id="occupancy-bar-inner" class="progress-bar bg-success" role="progressbar" style="width: 0%">Cargando...</div>
                             </div>
                             <div class="small text-muted mt-1" id="occupancy-info"></div>
@@ -319,6 +335,67 @@
 
                                 </form>
 
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Estudiantes Inscritos -->
+                    <div class="modal fade" id="enrolledStudentsModal" tabindex="-1" aria-labelledby="enrolledStudentsModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="enrolledStudentsModalLabel">Estudiantes Inscritos en {{ $course->title }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    @if($course->enrollments->isEmpty())
+                                        <p class="text-muted text-center my-3">No hay estudiantes inscritos en esta clase todavía.</p>
+                                    @else
+                                        <div class="table-responsive">
+                                            <table class="table table-hover align-middle">
+                                                <thead>
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>Estudiante</th>
+                                                        <th>Representante</th>
+                                                        <th>Teléfono / Correo</th>
+                                                        <th class="text-center">Estado de Pago</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach($course->enrollments as $index => $enrollment)
+                                                        <tr>
+                                                            <td>{{ $index + 1 }}</td>
+                                                            <td>
+                                                                <div class="fw-bold text-dark">{{ $enrollment->student->name ?? 'N/A' }}</div>
+                                                                @if($enrollment->student->birthdate)
+                                                                    <small class="text-muted">
+                                                                        Edad: {{ \Carbon\Carbon::parse($enrollment->student->birthdate)->age }} años
+                                                                    </small>
+                                                                @endif
+                                                            </td>
+                                                            <td>{{ $enrollment->parent->name ?? 'N/A' }}</td>
+                                                            <td>
+                                                                <div>{{ $enrollment->parent->dial_code ?? '' }} {{ $enrollment->parent->whatsapp ?? 'N/A' }}</div>
+                                                                <small class="text-muted">{{ $enrollment->parent->email ?? '' }}</small>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                @if($enrollment->payment_status === 'paid')
+                                                                    <span class="badge bg-success px-3 py-2 text-white">Pagado</span>
+                                                                @else
+                                                                    <span class="badge bg-warning text-dark px-3 py-2">Pendiente</span>
+                                                                @endif
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    @endif
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\{AccountsController, BranchesController, CoachPortalController, ContactMessageController, CoursesController, EnrollmentController, EnrollmentWizardController, FinanceController, HomeController, LandingController, ParentPortalController, StripeWebhookController, StudentsController, UsersController, WaitlistController};
+use App\Http\Controllers\{AccountsController, BirthdayInquiryController, BranchesController, CoachPortalController, ContactMessageController, CoursesController, EnrollmentController, EnrollmentWizardController, FinanceController, HomeController, LandingController, ParentPortalController, StripeWebhookController, StudentsController, UsersController, WaitlistController};
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
@@ -15,6 +15,7 @@ Route::get('courses/{id}/occupancy', [CoursesController::class, 'occupancy'])->n
 Route::get('/', [LandingController::class, 'index'])->name('landing.index');
 Route::get('/clases', [LandingController::class, 'classes'])->name('classes.index');
 Route::post('/contacto', [LandingController::class, 'contact'])->name('landing.contact');
+Route::post('/cumpleanos', [BirthdayInquiryController::class, 'store'])->name('birthdays.store');
 
 Auth::routes();
 
@@ -76,6 +77,10 @@ Route::middleware(['auth', 'role:Administrador'])->group(function () {
     Route::get('mensajes', [ContactMessageController::class, 'index'])->name('messages.index');
     Route::patch('mensajes/{message}/read', [ContactMessageController::class, 'markAsRead'])->name('messages.read');
     Route::patch('mensajes/{message}/unread', [ContactMessageController::class, 'markAsUnread'])->name('messages.unread');
+
+    Route::get('cumpleanos', [BirthdayInquiryController::class, 'index'])->name('birthdays.index');
+    Route::patch('cumpleanos/{birthday}/read', [BirthdayInquiryController::class, 'markAsRead'])->name('birthdays.read');
+    Route::patch('cumpleanos/{birthday}/unread', [BirthdayInquiryController::class, 'markAsUnread'])->name('birthdays.unread');
 
     Route::get('accounts', [AccountsController::class, 'index'])->name('accounts.index');
     Route::post('accounts', [AccountsController::class, 'store'])->name('accounts.store');

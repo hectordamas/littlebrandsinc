@@ -581,7 +581,7 @@
                                     </td>
                                     <td>{{ $enrollment->id }}</td>
                                     <td class="enrollment-student">{{ $enrollment->student->name }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($enrollment->student->birthdate)->age }} anos</td>
+                                    <td>{{ \Carbon\Carbon::parse($enrollment->student->birthdate)->age }} años</td>
                                     <td class="enrollment-parent">{{ $enrollment->student->user->name }}</td>
                                     <td class="enrollment-program">{{ $enrollment->program->name ?? 'N/A' }}</td>
                                     <td class="enrollment-courses">

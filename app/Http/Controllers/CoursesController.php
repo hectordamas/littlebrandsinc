@@ -208,7 +208,9 @@ class CoursesController extends Controller
 
     public function edit($id)
     {
-        $course = Course::findOrFail($id);
+        $course = Course::with(['enrollments' => function ($q) {
+            $q->where('status', '!=', 'cancelled')->with(['student', 'parent']);
+        }])->findOrFail($id);
         $branches = Branch::orderBy('id', 'desc')->get();
         $coaches = User::where('role', 'Coach')->get();
         $classes = LBClass::where('course_id', $course->id)->get();

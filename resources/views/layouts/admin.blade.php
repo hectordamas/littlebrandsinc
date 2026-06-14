@@ -284,6 +284,11 @@
                                                     <span class="pcoded-mtext">Mensajes</span>
                                                 </a>
                                             </li>
+                                            <li class="{{ request()->routeIs('birthdays.index') ? 'active' : '' }}">
+                                                <a href="{{ route('birthdays.index') }}">
+                                                    <span class="pcoded-mtext">Cumpleaños</span>
+                                                </a>
+                                            </li>
                                         </ul>
                                     </li>
 
