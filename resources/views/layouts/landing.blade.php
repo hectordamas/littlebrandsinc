@@ -1971,6 +1971,8 @@
             z-index: 3000;
             text-decoration: none;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border: none;
+            cursor: pointer;
         }
 
         .whatsapp-float:hover {
@@ -1981,6 +1983,142 @@
         .whatsapp-float svg {
             width: 30px;
             height: 30px;
+        }
+
+        /* ── WhatsApp Modal Styles ── */
+        .whatsapp-modal {
+            position: fixed;
+            bottom: 86px;
+            right: 18px;
+            width: 290px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            border-radius: 22px;
+            box-shadow: 0 15px 35px rgba(9, 23, 34, 0.15);
+            backdrop-filter: blur(12px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            z-index: 3001;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(12px) scale(0.95);
+            transform-origin: bottom right;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .whatsapp-modal.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+        }
+
+        .whatsapp-modal-header {
+            background: #091722;
+            padding: 0.9rem 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .whatsapp-modal-header h4 {
+            margin: 0;
+            font-family: 'Baloo 2', cursive;
+            color: #ffffff;
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+
+        .whatsapp-modal-close {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1.3rem;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+            transition: color 0.2s ease;
+        }
+
+        .whatsapp-modal-close:hover {
+            color: #ffffff;
+        }
+
+        .whatsapp-modal-body {
+            padding: 0.8rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .whatsapp-option {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            padding: 0.75rem 1rem;
+            border-radius: 14px;
+            text-decoration: none;
+            transition: all 0.25s ease;
+            border: 1px solid transparent;
+        }
+
+        .whatsapp-option-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .whatsapp-option-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .whatsapp-option-name {
+            font-weight: 800;
+            font-size: 0.92rem;
+            color: #091722;
+            line-height: 1.2;
+        }
+
+        .whatsapp-option-desc {
+            font-size: 0.76rem;
+            color: #6d8494;
+            font-weight: 600;
+        }
+
+        .paddlers-option {
+            background: rgba(14, 165, 233, 0.05);
+        }
+
+        .paddlers-option .whatsapp-option-icon {
+            background: #e0f2fe;
+            color: #0284c7;
+        }
+
+        .paddlers-option:hover {
+            background: rgba(14, 165, 233, 0.09);
+            border-color: rgba(14, 165, 233, 0.2);
+            transform: translateX(3px);
+        }
+
+        .strikers-option {
+            background: rgba(249, 115, 22, 0.05);
+        }
+
+        .strikers-option .whatsapp-option-icon {
+            background: #ffedd5;
+            color: #ea580c;
+        }
+
+        .strikers-option:hover {
+            background: rgba(249, 115, 22, 0.09);
+            border-color: rgba(249, 115, 22, 0.2);
+            transform: translateX(3px);
         }
 
         .reveal {
@@ -2224,6 +2362,12 @@
                 height: 52px;
             }
 
+            .whatsapp-modal {
+                right: 12px;
+                bottom: 78px;
+                width: 270px;
+            }
+
             .footer-cta {
                 border-radius: 22px;
             }
@@ -2462,13 +2606,36 @@
         </div>
     </footer>
 
-    <a class="whatsapp-float" href="https://api.whatsapp.com/send?phone=584141501108" target="_blank"
-        rel="noopener noreferrer" aria-label="Escribir por WhatsApp">
+    <!-- Micro Modal de WhatsApp -->
+    <div class="whatsapp-modal" id="whatsappModal" role="dialog" aria-modal="true" aria-labelledby="whatsappModalTitle">
+        <div class="whatsapp-modal-header">
+            <h4 id="whatsappModalTitle">¿Con quién deseas hablar?</h4>
+            <button class="whatsapp-modal-close" id="whatsappCloseBtn" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="whatsapp-modal-body">
+            <a href="https://api.whatsapp.com/send?phone=584141501108&text=Hola!%20Quisiera%20informaci%C3%B3n%20sobre%20las%20clases%20de%20Little%20Paddlers." target="_blank" rel="noopener noreferrer" class="whatsapp-option paddlers-option">
+                <span class="whatsapp-option-icon">🎾</span>
+                <div class="whatsapp-option-info">
+                    <span class="whatsapp-option-name">Little Paddlers</span>
+                    <span class="whatsapp-option-desc">Pádel Infantil</span>
+                </div>
+            </a>
+            <a href="https://api.whatsapp.com/send?phone=584144662043&text=Hola!%20Quisiera%20informaci%C3%B3n%20sobre%20las%20clases%20de%20Little%20Strikers." target="_blank" rel="noopener noreferrer" class="whatsapp-option strikers-option">
+                <span class="whatsapp-option-icon">⚽</span>
+                <div class="whatsapp-option-info">
+                    <span class="whatsapp-option-name">Little Strikers</span>
+                    <span class="whatsapp-option-desc">Fútbol Infantil</span>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <button class="whatsapp-float" id="whatsappFloatBtn" aria-label="Escribir por WhatsApp" aria-haspopup="true" aria-expanded="false">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M12.2 3.4c-4.8 0-8.7 3.9-8.7 8.7 0 1.6.4 3.2 1.2 4.5l-1.2 3.9 4-.9a8.7 8.7 0 0 0 4.6 1.3c4.8 0 8.7-3.9 8.7-8.7s-3.9-8.8-8.6-8.8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
             <path d="M9.3 8.8c.2-.5.5-.5.8-.5h.7c.2 0 .4.1.5.4l.8 1.8c.1.2.1.4 0 .5l-.4.6c-.1.2-.1.4 0 .6.4.8 1.1 1.5 1.9 2 .2.1.4.1.6 0l.6-.4c.2-.1.4-.1.6 0l1.7.8c.3.1.4.3.4.5v.7c0 .3-.1.6-.5.8-.5.2-1.6.3-3.1-.3a7.8 7.8 0 0 1-4.2-4.2c-.6-1.5-.5-2.6-.3-3.1Z" fill="currentColor" />
         </svg>
-    </a>
+    </button>
 
     <script>
         (function() {
@@ -2567,6 +2734,41 @@
             });
 
             reveals.forEach((item) => observer.observe(item));
+
+            // WhatsApp modal toggling logic
+            const whatsappFloatBtn = document.getElementById('whatsappFloatBtn');
+            const whatsappModal = document.getElementById('whatsappModal');
+            const whatsappCloseBtn = document.getElementById('whatsappCloseBtn');
+
+            if (whatsappFloatBtn && whatsappModal) {
+                whatsappFloatBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isShown = whatsappModal.classList.toggle('show');
+                    whatsappFloatBtn.setAttribute('aria-expanded', isShown ? 'true' : 'false');
+                });
+
+                if (whatsappCloseBtn) {
+                    whatsappCloseBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        whatsappModal.classList.remove('show');
+                        whatsappFloatBtn.setAttribute('aria-expanded', 'false');
+                    });
+                }
+
+                document.addEventListener('click', (e) => {
+                    if (!whatsappModal.contains(e.target) && e.target !== whatsappFloatBtn && !whatsappFloatBtn.contains(e.target)) {
+                        whatsappModal.classList.remove('show');
+                        whatsappFloatBtn.setAttribute('aria-expanded', 'false');
+                    }
+                });
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        whatsappModal.classList.remove('show');
+                        whatsappFloatBtn.setAttribute('aria-expanded', 'false');
+                    }
+                });
+            }
         })();
     </script>
 </body>
