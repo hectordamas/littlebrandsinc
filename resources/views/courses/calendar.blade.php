@@ -318,6 +318,28 @@
                         <span class="detail-label">Descripción de la Clase</span>
                         <div class="class-detail-item" id="detailDescription">Sin descripcion registrada.</div>
                     </div>
+
+                    <div class="mt-4">
+                        <span class="detail-label">Estudiantes Inscritos</span>
+                        <div id="enrolledStudentsSection" class="table-responsive border rounded p-2 bg-white" style="max-height: 250px; overflow-y: auto;">
+                            <table class="table table-sm table-hover align-middle mb-0" id="detailStudentsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Estudiante</th>
+                                        <th>Representante</th>
+                                        <th>Teléfono / Correo</th>
+                                        <th class="text-center">Detalles</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detailStudentsBody">
+                                    <!-- Contenido dinámico -->
+                                </tbody>
+                            </table>
+                            <div id="noStudentsMessage" class="text-muted text-center py-3 d-none">
+                                No hay estudiantes inscritos en esta clase todavía.
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
@@ -495,6 +517,56 @@
                     document.getElementById('detailStartDate').textContent = formatDate(props.course_start_date);
                     document.getElementById('detailEndDate').textContent = formatDate(props.course_end_date);
                     document.getElementById('detailDescription').textContent = props.course_description || 'Sin descripcion registrada.';
+
+                    // Populate students table
+                    const studentsBody = document.getElementById('detailStudentsBody');
+                    const noStudentsMessage = document.getElementById('noStudentsMessage');
+                    const studentsTable = document.getElementById('detailStudentsTable');
+                    studentsBody.innerHTML = '';
+
+                    const students = props.enrolled_students || [];
+                    if (students.length === 0) {
+                        studentsTable.classList.add('d-none');
+                        noStudentsMessage.classList.remove('d-none');
+                    } else {
+                        studentsTable.classList.remove('d-none');
+                        noStudentsMessage.classList.add('d-none');
+
+                        students.forEach(function(student) {
+                            let ageText = student.student_age !== null ? ` <small class="text-muted">(${student.student_age} años)</small>` : '';
+                            
+                            let paymentBadge = '';
+                            if (student.payment_status === 'paid') {
+                                paymentBadge = '<span class="badge bg-success text-white px-2 py-1">Pagado</span>';
+                            } else {
+                                paymentBadge = '<span class="badge bg-warning text-dark px-2 py-1">Pendiente</span>';
+                            }
+
+                            let trialBadge = '';
+                            if (student.is_free_trial) {
+                                trialBadge = '<span class="badge bg-info text-white px-2 py-1 ms-1">Prueba</span>';
+                            }
+
+                            const row = `
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark">${student.student_name}</div>
+                                        ${ageText}
+                                    </td>
+                                    <td>${student.parent_name}</td>
+                                    <td>
+                                        <div>${student.parent_whatsapp}</div>
+                                        <small class="text-muted">${student.parent_email}</small>
+                                    </td>
+                                    <td class="text-center">
+                                        ${paymentBadge}
+                                        ${trialBadge}
+                                    </td>
+                                </tr>
+                            `;
+                            studentsBody.insertAdjacentHTML('beforeend', row);
+                        });
+                    }
 
                     classDetailModal.show();
                 },

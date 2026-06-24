@@ -3,6 +3,7 @@
 use App\Models\{Branch, Course, Enrollment, Program, Student, User};
 use App\Models\AccountReceivable;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\UploadedFile;
 
 /**
  * Flujo 2: Admin crea enrollment multi-curso vía EnrollmentController@store.
@@ -118,4 +119,65 @@ test('admin crea enrollment free trial sin generar cuenta por cobrar', function 
     // Free trial no debe generar receivable
     $receivable = AccountReceivable::where('enrollment_id', $enrollment->id)->first();
     expect($receivable)->toBeNull();
+});
+
+test('admin crea enrollment con monto de inscripción personalizado', function () {
+    $this->actingAs($this->admin);
+
+    $response = $this->post(route('enrollment.store'), [
+        'student_id' => $this->student->id,
+        'user_id' => $this->student->user_id,
+        'program_id' => $this->program->id,
+        'course_ids' => [$this->course1->id],
+        'payment_status' => 'pending',
+        'is_free_trial' => false,
+        'image_consent_accepted' => true,
+        'enrollment_fee_type' => 'custom',
+        'custom_enrollment_fee' => 15.00,
+    ]);
+
+    $response->assertRedirect();
+
+    $enrollment = Enrollment::where('student_id', $this->student->id)
+        ->where('program_id', $this->program->id)
+        ->first();
+
+    expect($enrollment)->not->toBeNull();
+    expect($enrollment->custom_enrollment_fee)->toBe(15.00);
+
+    // El total debe ser: custom_enrollment_fee ($15) + (monthly_fee ($40) * 4 meses) = 15 + 160 = $175
+    $receivable = AccountReceivable::where('enrollment_id', $enrollment->id)->first();
+    expect($receivable)->not->toBeNull();
+    expect((float)$receivable->amount_total)->toBe(175.00);
+});
+
+test('admin crea enrollment con monto de inscripción personalizado a cero y estado pagado', function () {
+    $this->actingAs($this->admin);
+
+    $response = $this->post(route('enrollment.store'), [
+        'student_id' => $this->student->id,
+        'user_id' => $this->student->user_id,
+        'program_id' => $this->program->id,
+        'course_ids' => [$this->course1->id],
+        'payment_status' => 'paid',
+        'is_free_trial' => false,
+        'image_consent_accepted' => true,
+        'enrollment_fee_type' => 'custom',
+        'custom_enrollment_fee' => 0.00,
+        'payment_receipt' => UploadedFile::fake()->image('comprobante.jpg'),
+    ]);
+
+    $response->assertRedirect();
+
+    $enrollment = Enrollment::where('student_id', $this->student->id)
+        ->where('program_id', $this->program->id)
+        ->first();
+
+    expect($enrollment)->not->toBeNull();
+    expect($enrollment->custom_enrollment_fee)->toBe(0.00);
+
+    // Si está pagado, la transacción inicial debe ser: custom_enrollment_fee ($0) + monthly_fee ($40) = $40
+    $transaction = \App\Models\Transaction::where('enrollment_id', $enrollment->id)->first();
+    expect($transaction)->not->toBeNull();
+    expect((float)$transaction->amount)->toBe(40.00);
 });

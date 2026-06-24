@@ -30,12 +30,49 @@
 
     <style>
         .login-bg {
-            background-image: url('{{ asset('assets/img/background.png') }}');
-            background-attachment: fixed;
-            background-size: cover;
-            background-position: center;
+            position: relative;
             min-height: 100vh;
             padding: 60px 0;
+            background: #000;
+        }
+
+        /* Split screen with real photos of the programs */
+        .login-bg::before,
+        .login-bg::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            width: 50%;
+            background-size: cover;
+            background-position: center;
+            z-index: 0;
+        }
+
+        .login-bg::before {
+            left: 0;
+            background-image: url('{{ asset('landing_page/assets/images/img6.jpeg') }}');
+        }
+
+        .login-bg::after {
+            right: 0;
+            background-image: url('{{ asset('landing_page/assets/images/img4.jpeg') }}');
+        }
+
+        @media (max-width: 767.98px) {
+            .login-bg::before {
+                width: 100%;
+                height: 50%;
+                top: 0;
+                bottom: auto;
+            }
+            .login-bg::after {
+                width: 100%;
+                height: 50%;
+                top: 50%;
+                bottom: 0;
+                left: 0;
+            }
         }
 
         /* Overlay */
@@ -47,6 +84,7 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(2px);
+            z-index: 1;
         }
 
         /* Contenido encima */

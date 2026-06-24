@@ -31,7 +31,7 @@
 @endsection
 
 @section('content')
-    <div class="container">
+    <div class="container-fluid">
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0">Editar Clase</h5>
@@ -100,12 +100,12 @@
 
                     <div class="mb-3 col-md-3">
                         <label for="min_age" class="form-label">Edad Mínima</label>
-                        <input type="number" name="min_age" id="min_age" class="form-control"
+                        <input type="number" name="min_age" id="min_age" class="form-control" step="0.1"
                             value="{{ old('min_age', $course->min_age) }}">
                     </div>
                     <div class="mb-3 col-md-3">
                         <label for="max_age" class="form-label">Edad Máxima</label>
-                        <input type="number" name="max_age" id="max_age" class="form-control"
+                        <input type="number" name="max_age" id="max_age" class="form-control" step="0.1"
                             value="{{ old('max_age', $course->max_age) }}">
                     </div>
                     <div class="mb-3 col-md-3">
@@ -156,6 +156,14 @@
                             <option value="0" {{ old('active', $course->active) == '0' ? 'selected' : '' }}>No
                             </option>
                         </select>
+                    </div>
+                    <div class="mb-3 col-md-3 d-flex align-items-end">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="auto_extend_classes" id="auto_extend_classes" value="1" checked>
+                            <label class="form-check-label fw-bold small text-secondary" for="auto_extend_classes">
+                                Generar clases en rango extendido (basado en clases actuales)
+                            </label>
+                        </div>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label for="coach_ids" class="form-label">Entrenadores de la Clase</label>

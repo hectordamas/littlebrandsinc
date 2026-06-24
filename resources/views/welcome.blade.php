@@ -441,7 +441,7 @@
 
                         <div class="field">
                             <label for="comment">Objetivo o comentario adicional</label>
-                            <textarea id="comment" name="comment" required minlength="12" maxlength="1200">{{ old('comment') }}</textarea>
+                            <textarea id="comment" name="comment" required maxlength="5000">{{ old('comment') }}</textarea>
                             @error('comment')
                                 <span class="error">{{ $message }}</span>
                             @enderror

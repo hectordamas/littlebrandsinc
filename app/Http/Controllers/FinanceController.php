@@ -136,7 +136,7 @@ class FinanceController extends Controller
             'payment_date' => ['required', 'date'],
             'reference' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:2000'],
-            'payment_receipt' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:6144'],
+            'payment_receipt' => ['bail', 'nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:6144'],
         ]);
 
         if ((float) $validated['amount'] > (float) $receivable->balance_due) {
@@ -256,7 +256,7 @@ class FinanceController extends Controller
             'payment_date' => ['required', 'date'],
             'reference' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:2000'],
-            'payment_receipt' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:6144'],
+            'payment_receipt' => ['bail', 'nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:6144'],
         ]);
 
         if ((float) $validated['amount'] > (float) $payable->balance_due) {
@@ -316,7 +316,7 @@ class FinanceController extends Controller
             'status' => ['required', Rule::in(['pending', 'completed', 'failed'])],
             'reference' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'payment_receipt' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
+            'payment_receipt' => ['bail', 'nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
         ]);
 
         $account = Account::query()->findOrFail($validated['account_id']);
@@ -569,7 +569,7 @@ class FinanceController extends Controller
             }
 
             $firstCourse = $courses->first();
-            $amountTotal = $this->calculateEnrollmentReceivableTotal($program, $courses);
+            $amountTotal = $this->calculateEnrollmentReceivableTotal($program, $courses, $enrollment);
             $courseTitles = $courses->pluck('title')->join(', ');
 
             $receivable = AccountReceivable::query()
@@ -631,9 +631,13 @@ class FinanceController extends Controller
         }
     }
 
-    protected function calculateEnrollmentReceivableTotal(Program $program, $courses): float
+    protected function calculateEnrollmentReceivableTotal(Program $program, $courses, ?Enrollment $enrollment = null): float
     {
-        $total = (float) ($program->enrollment_fee ?? 50.00);
+        $enrollmentFee = ($enrollment && $enrollment->custom_enrollment_fee !== null)
+            ? (float) $enrollment->custom_enrollment_fee
+            : (float) ($program->enrollment_fee ?? 50.00);
+
+        $total = $enrollmentFee;
 
         foreach ($courses as $course) {
             $months = 1;

@@ -80,8 +80,8 @@ class LandingController extends Controller
             ];
         }
 
-        $strikersSchedules = $this->normalizeProgramSchedules($groupedPrograms['little-strikers'] ?? []);
-        $paddlersSchedules = $this->normalizeProgramSchedules($groupedPrograms['little-paddlers'] ?? []);
+        $strikersSchedules = $this->normalizeProgramSchedules($groupedPrograms['little-strikers'] ?? [], 'little-strikers');
+        $paddlersSchedules = $this->normalizeProgramSchedules($groupedPrograms['little-paddlers'] ?? [], 'little-paddlers');
         $freeTrialUrl = route('enrollment.wizard', ['is_free_trial' => 1]);
         $strikersFreeTrialParams = ['is_free_trial' => 1];
         if ($strikersProgram?->id) {
@@ -104,7 +104,7 @@ class LandingController extends Controller
         ]);
     }
 
-    protected function normalizeProgramSchedules(array $branchGroups): array
+    protected function normalizeProgramSchedules(array $branchGroups, string $programSlug = ''): array
     {
         $branchOrder = [
             'SEDE SAN LUIS' => 1,
@@ -113,8 +113,8 @@ class LandingController extends Controller
         ];
 
         $branches = collect($branchGroups)
-            ->map(function ($items, $branch) {
-                if (mb_strtoupper($branch) === 'SEDE LOS CHORROS') {
+            ->map(function ($items, $branch) use ($programSlug) {
+                if ($programSlug === 'little-strikers' && mb_strtoupper($branch) === 'SEDE LOS CHORROS') {
                     $items = collect($items)
                         ->filter(function ($item) {
                             $title = mb_strtolower($item['title'] ?? '');

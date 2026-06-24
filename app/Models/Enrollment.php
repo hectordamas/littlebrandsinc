@@ -18,12 +18,14 @@ class Enrollment extends Model
         'image_consent_accepted',
         'payment_receipt_path',
         'payment_receipt_original_name',
+        'custom_enrollment_fee',
     ];
 
     protected $casts = [
         'is_free_trial' => 'boolean',
         'terms_accepted' => 'boolean',
         'image_consent_accepted' => 'boolean',
+        'custom_enrollment_fee' => 'float',
     ];
 
     public function student()

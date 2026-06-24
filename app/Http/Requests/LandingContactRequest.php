@@ -26,7 +26,7 @@ class LandingContactRequest extends FormRequest
             'branch_id' => ['required', 'integer', 'exists:branches,id'],
             'email' => ['required', 'email', 'max:160'],
             'phone' => ['required', 'string', 'min:7', 'max:25'],
-            'comment' => ['required', 'string', 'min:12', 'max:1200'],
+            'comment' => ['required', 'string', 'max:5000'],
         ];
     }
 
@@ -42,7 +42,6 @@ class LandingContactRequest extends FormRequest
             'email.email' => 'Ingresa un correo electronico valido.',
             'phone.required' => 'Ingresa tu telefono.',
             'comment.required' => 'Cuentanos como podemos ayudarte.',
-            'comment.min' => 'Tu mensaje debe tener al menos 12 caracteres.',
         ];
     }
 }

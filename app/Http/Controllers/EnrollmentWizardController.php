@@ -537,7 +537,7 @@ class EnrollmentWizardController extends Controller
             'payment_method' => 'required|in:card,pending',
             'is_clase_prueba' => 'nullable|boolean',
             'stripe_payment_intent_id' => 'nullable|string|max:255',
-            'payment_receipt' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:6144',
+            'payment_receipt' => 'bail|nullable|file|mimes:jpg,jpeg,png,pdf|max:6144',
         ]);
 
         if ($validator->fails()) {

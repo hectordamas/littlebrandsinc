@@ -214,7 +214,7 @@ class ParentPortalController extends Controller
             'account_receivable_id' => 'required|exists:account_receivables,id',
             'amount' => 'required|numeric|min:0.01',
             'reference' => 'nullable|string|max:255',
-            'payment_receipt' => 'required|file|mimes:jpg,jpeg,png,pdf|max:6144',
+            'payment_receipt' => 'bail|required|file|mimes:jpg,jpeg,png,pdf|max:6144',
         ]);
 
         $receivable = AccountReceivable::query()

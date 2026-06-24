@@ -4,7 +4,7 @@
 @endsection
 
 @section('content')
-    <div class="container">
+    <div class="container-fluid">
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0">Agregar Nueva Clase</h5>
@@ -41,12 +41,12 @@
 
                         <div class="mb-3 col-md-3">
                             <label for="min_age" class="form-label">Edad Mínima</label>
-                            <input type="number" name="min_age" id="min_age" class="form-control"
+                            <input type="number" name="min_age" id="min_age" class="form-control" step="0.1"
                                 value="{{ old('min_age') }}">
                         </div>
                         <div class="mb-3 col-md-3">
                             <label for="max_age" class="form-label">Edad Máxima</label>
-                            <input type="number" name="max_age" id="max_age" class="form-control"
+                            <input type="number" name="max_age" id="max_age" class="form-control" step="0.1"
                                 value="{{ old('max_age') }}">
                         </div>
                         <div class="mb-3 col-md-3">

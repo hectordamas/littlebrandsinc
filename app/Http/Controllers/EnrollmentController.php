@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Barryvdh\DomPDF\Facade\Pdf;
-use App\Models\{Account, AccountReceivable, Course, Enrollment, EnrollmentBillingProfile, EnrollmentInstallment, Program, Student, Transaction, User};
+use App\Models\{Account, AccountReceivable, Branch, Course, Enrollment, EnrollmentBillingProfile, EnrollmentInstallment, Program, Student, Transaction, User};
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -33,6 +33,7 @@ class EnrollmentController extends Controller
             ->orderBy('title')
             ->get();
         $parents = User::where('role', 'Padre')->orderBy('name')->get();
+        $branches = Branch::orderBy('name')->get();
 
         return view('enrollments.index', [
             'enrollments' => $enrollments,
@@ -40,6 +41,7 @@ class EnrollmentController extends Controller
             'parents' => $parents,
             'programs' => $programs,
             'courses' => $courses,
+            'branches' => $branches,
         ]);
     }
 
@@ -55,6 +57,7 @@ class EnrollmentController extends Controller
             'is_free_trial' => ['nullable', 'boolean'],
             'image_consent_accepted' => ['nullable', 'boolean'],
             'payment_receipt' => [
+                'bail',
                 Rule::requiredIf(fn () => ! $request->boolean('is_free_trial') && $request->input('payment_status') === 'paid'),
                 'file',
                 'mimes:jpg,jpeg,png,pdf',
@@ -68,6 +71,8 @@ class EnrollmentController extends Controller
             'student.name' => ['nullable', 'string', 'max:255'],
             'student.birthdate' => ['nullable', 'date', 'before_or_equal:today'],
             'student.medical_notes' => ['nullable', 'string', 'max:2000'],
+            'enrollment_fee_type' => ['nullable', Rule::in(['standard', 'custom'])],
+            'custom_enrollment_fee' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         DB::transaction(function () use ($request): void {
@@ -138,6 +143,7 @@ class EnrollmentController extends Controller
                 'image_consent_accepted' => (bool) $request->boolean('image_consent_accepted'),
                 'payment_receipt_path' => $receiptPath,
                 'payment_receipt_original_name' => $receiptOriginalName,
+                'custom_enrollment_fee' => ($request->input('enrollment_fee_type') === 'custom') ? (float) $request->input('custom_enrollment_fee', 0.0) : null,
             ]);
 
             $enrollment->courses()->sync($courseIds);
@@ -382,7 +388,7 @@ class EnrollmentController extends Controller
             'branch_id' => $branchId,
             'account_id' => $this->resolveIncomeAccountId(),
             'account_receivable_id' => $receivable?->id,
-            'amount' => $this->calculateInitialChargeAmount($enrollment->program, $enrollment->courses),
+            'amount' => $this->calculateInitialChargeAmount($enrollment->program, $enrollment->courses, $enrollment),
             'currency' => 'USD',
             'type' => 'income',
             'status' => 'completed',
@@ -438,7 +444,7 @@ class EnrollmentController extends Controller
             return;
         }
 
-        $amountTotal = $this->calculateEnrollmentReceivableTotal($enrollment->program, $enrollment->courses);
+        $amountTotal = $this->calculateEnrollmentReceivableTotal($enrollment->program, $enrollment->courses, $enrollment);
 
         $receivable = AccountReceivable::query()
             ->where('enrollment_id', $enrollment->id)
@@ -653,9 +659,13 @@ class EnrollmentController extends Controller
         return (int) $account->id;
     }
 
-    protected function calculateInitialChargeAmount(Program $program, $courses): float
+    protected function calculateInitialChargeAmount(Program $program, $courses, ?Enrollment $enrollment = null): float
     {
-        $total = (float) ($program->enrollment_fee ?? 50.00);
+        $enrollmentFee = ($enrollment && $enrollment->custom_enrollment_fee !== null)
+            ? (float) $enrollment->custom_enrollment_fee
+            : (float) ($program->enrollment_fee ?? 50.00);
+
+        $total = $enrollmentFee;
 
         foreach ($courses as $course) {
             $total += (float) ($course->monthly_fee ?? 0);
@@ -664,9 +674,13 @@ class EnrollmentController extends Controller
         return $total;
     }
 
-    protected function calculateEnrollmentReceivableTotal(Program $program, $courses): float
+    protected function calculateEnrollmentReceivableTotal(Program $program, $courses, ?Enrollment $enrollment = null): float
     {
-        $total = (float) ($program->enrollment_fee ?? 50.00);
+        $enrollmentFee = ($enrollment && $enrollment->custom_enrollment_fee !== null)
+            ? (float) $enrollment->custom_enrollment_fee
+            : (float) ($program->enrollment_fee ?? 50.00);
+
+        $total = $enrollmentFee;
 
         foreach ($courses as $course) {
             $months = 1;

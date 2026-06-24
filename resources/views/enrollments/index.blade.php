@@ -226,6 +226,11 @@
         #totalDisplay hr {
             opacity: 0.4;
         }
+
+        #InscripcionesModal .select2-results__option[aria-disabled="true"],
+        #InscripcionesModal .select2-results__option--disabled {
+            display: none !important;
+        }
     </style>
 @endsection
 
@@ -363,7 +368,7 @@
                                 </div>
                             </div>
 
-                            <div class="col-md-6 mt-3">
+                            <div class="col-md-4 mt-3">
                                 <label class="form-label">Programa <span class="text-danger">*</span></label>
                                 <select name="program_id" id="programSelect" class="form-control select2" required>
                                     <option value="">-- Seleccionar programa --</option>
@@ -378,7 +383,17 @@
                                 @enderror
                             </div>
 
-                            <div class="col-md-6 mt-3">
+                            <div class="col-md-4 mt-3">
+                                <label class="form-label">Sede de filtrado (opcional)</label>
+                                <select id="branchFilterSelect" class="form-control select2">
+                                    <option value="">-- Todas las sedes --</option>
+                                    @foreach ($branches ?? [] as $branch)
+                                        <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 mt-3">
                                 <label class="form-label">Estado de pago</label>
                                 <select name="payment_status" id="paymentStatusSelect" class="form-control">
                                     <option value="pending">Pendiente</option>
@@ -387,6 +402,30 @@
                                 @error('payment_status')
                                     <div class="text-danger small mt-1">{{ $message }}</div>
                                 @enderror
+                            </div>
+
+                            <div class="col-12 mt-3">
+                                <label class="form-label">Costo de Inscripción</label>
+                                <div class="d-flex align-items-center gap-4 flex-wrap">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="enrollment_fee_type" id="feeStandard" value="standard" checked>
+                                        <label class="form-check-label" for="feeStandard">
+                                            Monto estándar del programa (<span id="standardFeeLabel">$0.00</span>)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="enrollment_fee_type" id="feeCustom" value="custom">
+                                        <label class="form-check-label" for="feeCustom">
+                                            Monto personalizado
+                                        </label>
+                                    </div>
+                                    <div class="d-none" id="customFeeInputContainer" style="width: 150px;">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" name="custom_enrollment_fee" id="customEnrollmentFee" class="form-control form-control-sm" step="0.01" min="0" placeholder="0.00" value="0.00">
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="col-12 mt-3">
@@ -414,6 +453,7 @@
                                         <option
                                             value="{{ $course->id }}"
                                             data-program-id="{{ $course->program_id }}"
+                                            data-branch-id="{{ $course->branch_id }}"
                                             data-monthly-fee="{{ $course->monthly_fee }}"
                                             data-title="{{ e($course->title) }}"
                                             data-branch="{{ e($branchName) }}"
@@ -436,7 +476,7 @@
                             <div class="col-12 mt-2">
                                 <div class="alert alert-info d-none" id="totalDisplay">
                                     <div class="d-flex justify-content-between">
-                                        <span>Matricula:</span>
+                                        <span>Inscripción:</span>
                                         <span id="enrollmentFeeDisplay">$0.00</span>
                                     </div>
                                     <div class="d-flex justify-content-between">
@@ -825,15 +865,21 @@
             return [1, 2, 3, 4, 5, 6, 7];
         }
 
-        function filterCoursesByProgram() {
+        function filterCourses() {
             const programId = $('#programSelect').val();
+            const branchId = $('#branchFilterSelect').val();
             const selectedCourseIds = ($('#courseSelect').val() || []).map(function(v) {
                 return String(v);
             });
 
             $('#courseSelect option').each(function() {
                 const optionProgramId = String($(this).data('program-id'));
-                const keepVisible = !!programId && optionProgramId === String(programId);
+                const optionBranchId = String($(this).data('branch-id'));
+
+                const programMatches = !!programId && optionProgramId === String(programId);
+                const branchMatches = !branchId || optionBranchId === String(branchId);
+                const keepVisible = programMatches && branchMatches;
+
                 $(this).prop('disabled', !keepVisible);
 
                 if (!keepVisible && selectedCourseIds.includes(String($(this).val()))) {
@@ -842,7 +888,16 @@
             });
 
             $('#courseSelect').trigger('change.select2');
-            $('#courseSelectHelp').text(programId ? 'Selecciona una o varias clases del programa.' : 'Selecciona un programa para habilitar sus clases.');
+            
+            let helpText = '';
+            if (!programId) {
+                helpText = 'Selecciona un programa para habilitar sus clases.';
+            } else if (branchId) {
+                helpText = 'Selecciona una o varias clases del programa y de la sede seleccionada.';
+            } else {
+                helpText = 'Selecciona una o varias clases del programa.';
+            }
+            $('#courseSelectHelp').text(helpText);
 
             recalculateTotal();
         }
@@ -850,7 +905,16 @@
         function recalculateTotal() {
             const programSelect = $('#programSelect');
             const selectedOption = programSelect.find('option:selected');
-            const enrollmentFee = selectedOption.data('enrollment-fee') ? parseFloat(selectedOption.data('enrollment-fee')) : 0;
+            const standardFee = selectedOption.data('enrollment-fee') ? parseFloat(selectedOption.data('enrollment-fee')) : 0;
+
+            // Update standard fee label
+            $('#standardFeeLabel').text('$' + standardFee.toFixed(2));
+
+            // Determine enrollment fee based on selected type
+            let enrollmentFee = standardFee;
+            if ($('#feeCustom').is(':checked')) {
+                enrollmentFee = parseFloat($('#customEnrollmentFee').val()) || 0;
+            }
 
             let monthlyFeesTotal = 0;
             $('#courseSelect option:selected').each(function() {
@@ -1033,7 +1097,7 @@
                     });
                 }
 
-                filterCoursesByProgram();
+                filterCourses();
                 updatePaymentReceiptState();
             });
 
@@ -1045,8 +1109,12 @@
                 $('#courseSelect option').prop('disabled', true).prop('selected', false);
                 $('#courseSelect').val(null).trigger('change');
                 $('#programSelect').val(null).trigger('change');
+                $('#branchFilterSelect').val(null).trigger('change');
                 $('#studentSelect').val(null).trigger('change');
                 $('#userSelect').val(null).trigger('change');
+                $('#feeStandard').prop('checked', true);
+                $('#customEnrollmentFee').val('0.00');
+                $('#customFeeInputContainer').addClass('d-none');
                 clearValidationErrors();
                 updatePaymentReceiptState();
             });
@@ -1130,11 +1198,24 @@
                 filterStudentsByParent();
             });
 
-            $('#programSelect').on('change', function() {
-                filterCoursesByProgram();
+            $('#programSelect, #branchFilterSelect').on('change', function() {
+                filterCourses();
             });
 
             $('#courseSelect').on('change', function() {
+                recalculateTotal();
+            });
+
+            $('input[name="enrollment_fee_type"]').on('change', function() {
+                if ($('#feeCustom').is(':checked')) {
+                    $('#customFeeInputContainer').removeClass('d-none');
+                } else {
+                    $('#customFeeInputContainer').addClass('d-none');
+                }
+                recalculateTotal();
+            });
+
+            $('#customEnrollmentFee').on('input', function() {
                 recalculateTotal();
             });
 
