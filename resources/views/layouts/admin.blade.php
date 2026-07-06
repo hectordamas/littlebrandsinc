@@ -348,6 +348,11 @@
                                                 </a>
                                             </li>
                                             <li class=" ">
+                                                <a href="{{ url('programs') }}">
+                                                    <span class="pcoded-mtext">Programas</span>
+                                                </a>
+                                            </li>
+                                            <li class=" ">
                                                 <a href="{{ url('calendar') }}">
                                                     <span class="pcoded-mtext">Calendario</span>
                                                 </a>

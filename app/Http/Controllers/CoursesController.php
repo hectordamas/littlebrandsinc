@@ -55,7 +55,7 @@ class CoursesController extends Controller
                         },
                     ])->with(['enrollments' => function ($eq) {
                         $eq->where('status', '!=', 'cancelled')->with(['student', 'parent']);
-                    }]);
+                    }, 'program']);
                 },
                 'branch',
                 'coach',
@@ -102,7 +102,7 @@ class CoursesController extends Controller
                     'course_description' => optional($class->course)->description,
                     'course_start_date' => optional($class->course)->start_date,
                     'course_end_date' => optional($class->course)->end_date,
-                    'course_price' => optional($class->course)->price,
+                    'course_price' => optional(optional($class->course)->program)->enrollment_fee,
                     'course_monthly_fee' => optional($class->course)->monthly_fee,
                     'course_capacity' => optional($class->course)->capacity,
                     'enrolled_children' => (int) (optional($class->course)->active_enrollments_count ?? 0),

@@ -87,7 +87,7 @@
                                         <td>{{ optional($course->program)->name ?? 'N/A' }}</td>
                                         <td>{{ $course->min_age ?? 'N/A' }}</td>
                                         <td>{{ $course->max_age ?? 'N/A' }}</td>
-                                        <td>{{ $course->price ? '$' . number_format($course->price, 2) : 'N/A' }}</td>
+                                        <td>{{ optional($course->program)->enrollment_fee ? '$' . number_format($course->program->enrollment_fee, 2) : 'N/A' }}</td>
                                         <td>{{ $course->monthly_fee ? '$' . number_format($course->monthly_fee, 2) : 'N/A' }}</td>
                                         <td>{{ $course->start_date ? \Carbon\Carbon::parse($course->start_date)->format('d/m/Y') : 'N/A' }}
                                         </td>

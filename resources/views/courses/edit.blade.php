@@ -113,13 +113,7 @@
                         <input type="number" name="capacity" id="capacity" class="form-control"
                             value="{{ old('capacity', $course->capacity) }}">
                     </div>
-                    <div class="mb-3 col-md-3">
-                        <label for="price" class="form-label">Precio de inscripción</label>
-                        <input type="number" name="price" id="price" class="form-control" step="0.01"
-                            value="{{ old('price', $course->price) }}">
-                        <span id="price-preview"
-                            class="fw-bold text-success">${{ number_format(old('price', $course->price ?? 0), 2) }}</span>
-                    </div>
+
                     <div class="mb-3 col-md-3">
                         <label for="monthly_fee" class="form-label">Mensualidad</label>
                         <input type="number" name="monthly_fee" id="monthly_fee" class="form-control" step="0.01"
@@ -391,10 +385,52 @@
                                                                 @if($enrollment->payment_status === 'paid')
                                                                     <span class="badge bg-success px-3 py-2 text-white">Pagado</span>
                                                                 @else
-                                                                    <span class="badge bg-warning text-dark px-3 py-2">Pendiente</span>
+                                                                    <div>
+                                                                        <span class="badge bg-warning text-dark px-3 py-2">Pendiente</span>
+                                                                        <button class="btn btn-sm btn-outline-primary d-block mx-auto mt-2" type="button" data-bs-toggle="collapse" data-bs-target="#attach-payment-{{ $enrollment->id }}" aria-expanded="false" aria-controls="attach-payment-{{ $enrollment->id }}">
+                                                                            <i class="fas fa-file-invoice-dollar"></i> Registrar Pago
+                                                                        </button>
+                                                                    </div>
                                                                 @endif
                                                             </td>
                                                         </tr>
+                                                        @if($enrollment->payment_status !== 'paid')
+                                                            <tr class="collapse" id="attach-payment-{{ $enrollment->id }}">
+                                                                <td colspan="5" class="bg-light p-0">
+                                                                    <div class="p-3 border rounded m-2 bg-white shadow-sm">
+                                                                        <form action="{{ route('enrollment.attach-payment', $enrollment->id) }}" method="POST" enctype="multipart/form-data">
+                                                                            @csrf
+                                                                            <div class="row g-3">
+                                                                                <div class="col-md-4 text-start">
+                                                                                    <label class="form-label small fw-bold">Método de Pago</label>
+                                                                                    <select name="payment_method" class="form-control form-control-sm" required>
+                                                                                        <option value="transferencia">Transferencia</option>
+                                                                                        <option value="pago_movil">Pago Móvil</option>
+                                                                                        <option value="zelle">Zelle</option>
+                                                                                        <option value="efectivo">Efectivo</option>
+                                                                                        <option value="stripe">Stripe</option>
+                                                                                        <option value="manual">Pago manual / Otro</option>
+                                                                                    </select>
+                                                                                </div>
+                                                                                <div class="col-md-4 text-start">
+                                                                                    <label class="form-label small fw-bold">Referencia / Observación</label>
+                                                                                    <input type="text" name="reference" class="form-control form-control-sm" placeholder="Ej. Transacción 1234">
+                                                                                </div>
+                                                                                <div class="col-md-4 text-start">
+                                                                                    <label class="form-label small fw-bold">Comprobante de Pago</label>
+                                                                                    <input type="file" name="payment_receipt" class="form-control form-control-sm" accept="image/*,.pdf">
+                                                                                </div>
+                                                                                <div class="col-md-12 text-end mt-2">
+                                                                                    <button type="submit" class="btn btn-sm btn-primary">
+                                                                                        <i class="fas fa-check"></i> Registrar Pago y Confirmar
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </form>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        @endif
                                                     @endforeach
                                                 </tbody>
                                             </table>
@@ -424,14 +460,7 @@
                 });
             }
 
-            $('#price').on('input', function() {
-                let value = parseFloat($(this).val());
-                if (isNaN(value)) value = 0;
-                $('#price-preview').text('$' + value.toLocaleString('es-ES', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                }));
-            }).trigger('input');
+
 
             $('#monthly_fee').on('input', function() {
                 let value = parseFloat($(this).val());

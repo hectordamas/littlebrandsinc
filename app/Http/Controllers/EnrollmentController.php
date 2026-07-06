@@ -308,7 +308,44 @@ class EnrollmentController extends Controller
             $this->applyEnrollmentState($enrollment, $status, $paymentStatus);
         });
 
-        return redirect()->to('enrollment')->with('success', 'Estado de Inscripción actualizado.');
+        return redirect()->back()->with('success', 'Estado de Inscripción actualizado.');
+    }
+
+    public function attachPayment(Request $request, Enrollment $enrollment): RedirectResponse
+    {
+        $request->validate([
+            'payment_method' => ['required', 'string', 'max:255'],
+            'reference' => ['nullable', 'string', 'max:255'],
+            'payment_receipt' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:6144'],
+        ]);
+
+        $paymentMethod = $request->input('payment_method');
+        $reference = $request->input('reference');
+        $receiptPath = $enrollment->payment_receipt_path;
+        $receiptOriginalName = $enrollment->payment_receipt_original_name;
+
+        if ($request->hasFile('payment_receipt')) {
+            $file = $request->file('payment_receipt');
+            $destinationPath = public_path('uploads/comprobantes');
+            if (! is_dir($destinationPath)) {
+                mkdir($destinationPath, 0775, true);
+            }
+
+            $file->move($destinationPath, $file->hashName());
+            $receiptPath = 'uploads/comprobantes/'.$file->hashName();
+            $receiptOriginalName = $file->getClientOriginalName();
+        }
+
+        DB::transaction(function () use ($enrollment, $paymentMethod, $reference, $receiptPath, $receiptOriginalName): void {
+            $enrollment->payment_method = $paymentMethod;
+            $enrollment->reference = $reference;
+            $enrollment->payment_receipt_path = $receiptPath;
+            $enrollment->payment_receipt_original_name = $receiptOriginalName;
+
+            $this->applyEnrollmentState($enrollment, 'completed', 'paid');
+        });
+
+        return redirect()->back()->with('success', 'Pago registrado e inscripción confirmada exitosamente.');
     }
 
     protected function applyEnrollmentState(
@@ -393,7 +430,7 @@ class EnrollmentController extends Controller
             'type' => 'income',
             'status' => 'completed',
             'payment_method' => $enrollment->payment_method ?: 'manual',
-            'reference' => 'admin-enrollment-'.$enrollment->id,
+            'reference' => $enrollment->reference ?: 'admin-enrollment-'.$enrollment->id,
             'description' => 'Pago confirmado de Inscripción + 1er mes: '.$courseTitles,
             'payment_receipt_path' => $enrollment->payment_receipt_path,
             'payment_receipt_original_name' => $enrollment->payment_receipt_original_name,

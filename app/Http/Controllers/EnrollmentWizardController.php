@@ -533,11 +533,15 @@ class EnrollmentWizardController extends Controller
 
     protected function handleStep4(Request $request): RedirectResponse|JsonResponse
     {
+        $stripeEnabled = (bool) config('services.stripe.enabled');
+
         $validator = Validator::make($request->all(), [
-            'payment_method' => 'required|in:card,pending',
+            'payment_method' => 'required|in:' . ($stripeEnabled ? 'card,pending' : 'pending'),
             'is_clase_prueba' => 'nullable|boolean',
             'stripe_payment_intent_id' => 'nullable|string|max:255',
             'payment_receipt' => 'bail|nullable|file|mimes:jpg,jpeg,png,pdf|max:6144',
+        ], [
+            'payment_method.in' => 'El método de pago seleccionado no está disponible.',
         ]);
 
         if ($validator->fails()) {
@@ -1144,7 +1148,7 @@ class EnrollmentWizardController extends Controller
             'capacity' => $course->capacity,
             'enrollments_count' => $course->enrollments_count ?? 0,
             'spots_left' => $spotsLeft,
-            'price' => $course->price !== null ? (float) $course->price : null,
+            'price' => optional($course->program)->enrollment_fee !== null ? (float) $course->program->enrollment_fee : null,
             'monthly_fee' => $course->monthly_fee !== null ? (float) $course->monthly_fee : null,
             'can_enroll' => (bool) ($course->can_enroll ?? true),
             'enroll_error' => $course->enroll_error,

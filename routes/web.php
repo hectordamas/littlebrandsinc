@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\{AccountsController, BirthdayInquiryController, BranchesController, CoachPortalController, ContactMessageController, CoursesController, EnrollmentController, EnrollmentWizardController, FinanceController, HomeController, LandingController, ParentPortalController, StripeWebhookController, StudentsController, UsersController, WaitlistController};
+use App\Http\Controllers\{AccountsController, BirthdayInquiryController, BranchesController, CoachPortalController, ContactMessageController, CoursesController, EnrollmentController, EnrollmentWizardController, FinanceController, HomeController, LandingController, ParentPortalController, ProgramsController, StripeWebhookController, StudentsController, UsersController, WaitlistController};
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
@@ -48,6 +48,7 @@ Route::middleware(['auth', 'role:Administrador'])->group(function () {
     Route::get('enrollment', [EnrollmentController::class, 'index']);
     Route::post('enrollment/store', [EnrollmentController::class, 'store'])->name('enrollment.store');
     Route::patch('enrollment/{enrollment}/status', [EnrollmentController::class, 'updateStatus'])->name('enrollment.status');
+    Route::post('enrollment/{enrollment}/attach-payment', [EnrollmentController::class, 'attachPayment'])->name('enrollment.attach-payment');
     Route::patch('enrollment/bulk-update', [EnrollmentController::class, 'bulkUpdate'])->name('enrollment.bulk-update');
     Route::get('enrollment/{enrollment}', [EnrollmentController::class, 'show'])->name('enrollment.show');
     Route::get('enrollment/{enrollment}/receipt', [EnrollmentController::class, 'downloadReceipt'])->name('enrollment.receipt');
@@ -87,7 +88,9 @@ Route::middleware(['auth', 'role:Administrador'])->group(function () {
     Route::get('accounts/{id}/edit', [AccountsController::class, 'edit'])->name('accounts.edit');
     Route::put('accounts/{id}', [AccountsController::class, 'update'])->name('accounts.update');
     
-    Route::get('programacion-y-operaciones');
+    Route::get('programs', [ProgramsController::class, 'index'])->name('programs.index');
+    Route::get('programs/{id}/edit', [ProgramsController::class, 'edit'])->name('programs.edit');
+    Route::put('programs/{id}', [ProgramsController::class, 'update'])->name('programs.update');
 
     Route::get('users', [UsersController::class, 'index'])->name('users.index');
     Route::get('users/{id}/edit', [UsersController::class, 'edit'])->name('users.edit');

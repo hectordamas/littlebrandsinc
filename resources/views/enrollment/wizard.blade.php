@@ -487,7 +487,7 @@ function enrollmentWizard(cfg) {
         selectedStudentId: p.selected_student_id,
         selectedProgramId: p.program_id || null,
         selectedCourseIds: (p.selected_course_ids || []).map(id => Number(id)),
-        paymentMethod: p.payment_method || 'card',
+        paymentMethod: (p.payment_method === 'card' && cfg.stripeEnabled === false) ? 'pending' : (p.payment_method || (cfg.stripeEnabled !== false ? 'card' : 'pending')),
         isFreeTrial: Boolean(p.is_free_trial),
         userType: 'new',
         emailLogin: '', passwordLogin: '',
@@ -573,6 +573,10 @@ function enrollmentWizard(cfg) {
             if (data.payment_method) this.paymentMethod = data.payment_method;
             if (data.is_free_trial !== undefined) this.isFreeTrial = Boolean(data.is_free_trial);
             if (data.payment_receipt_name !== undefined) this.paymentReceiptName = data.payment_receipt_name || '';
+
+            if (!this.stripeEnabled && this.paymentMethod === 'card') {
+                this.paymentMethod = 'pending';
+            }
         },
 
         fieldClass(name) {
