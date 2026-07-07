@@ -101,7 +101,8 @@
                                     <th>Programa</th>
                                     <th>Clases</th>
                                     <th>Sede</th>
-                                    <th>Pago</th>
+                                    <th>Pago / Estado</th>
+                                    <th class="text-center">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -118,16 +119,32 @@
                                         </td>
                                         <td>{{ optional(optional($firstCourse)->branch)->name ?? 'N/A' }}</td>
                                         <td>
-                                            @if ($enrollment->payment_status === 'paid')
+                                            @if ($enrollment->status === 'cancelled')
+                                                <span class="badge bg-danger">Cancelado</span>
+                                            @elseif ($enrollment->payment_status === 'paid')
                                                 <span class="badge bg-success">Pagado</span>
                                             @else
-                                                <span class="badge bg-secondary">Pendiente</span>
+                                                <span class="badge bg-warning text-dark">Pendiente</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            @if ($enrollment->status !== 'cancelled')
+                                                <form action="{{ route('enrollment.status', $enrollment->id) }}" method="POST" class="d-inline">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <input type="hidden" name="status" value="cancelled">
+                                                    <button type="submit" class="btn btn-xs btn-outline-danger" onclick="return confirm('¿Seguro que deseas retirar a este estudiante del curso? Se cancelará su inscripción.')" title="Retirar estudiante">
+                                                        <i class="fas fa-user-minus"></i> Retirar
+                                                    </button>
+                                                </form>
+                                            @else
+                                                <span class="text-muted small">-</span>
                                             @endif
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="text-muted">Este estudiante no tiene Clases inscritas.</td>
+                                        <td colspan="6" class="text-muted text-center">Este estudiante no tiene Clases inscritas.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -156,7 +173,7 @@
                                         <td>{{ $class->start_time ? \Carbon\Carbon::parse($class->start_time)->format('H:i') : 'N/A' }} - {{ $class->end_time ? \Carbon\Carbon::parse($class->end_time)->format('H:i') : 'N/A' }}</td>
                                         <td>{{ optional($class->course)->title ?? 'N/A' }}</td>
                                         <td>{{ optional(optional($class->course)->branch)->name ?? 'N/A' }}</td>
-                                        <td>{{ optional($class->coach)->name ?? 'Sin asignar' }}</td>
+                                        <td>{{ $class->coach_name ?? 'Sin asignar' }}</td>
                                     </tr>
                                 @empty
                                     <tr>

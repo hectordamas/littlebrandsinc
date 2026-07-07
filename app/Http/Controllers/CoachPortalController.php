@@ -61,7 +61,7 @@ class CoachPortalController extends Controller
                             'student_id' => optional($student)->id,
                             'student_name' => optional($student)->name ?? 'Sin nombre',
                             'check_in' => $attendance->status ?? 'pending',
-                            'notes' => $attendance->notes,
+                            'notes' => $attendance->notes ?? null,
                             'is_free_trial' => (bool) $enrollment->is_free_trial,
                         ];
                     })
@@ -69,8 +69,9 @@ class CoachPortalController extends Controller
                     ->values()
                 : collect();
 
-            $start = $class->date->format('Y-m-d') . 'T' . $class->start_time;
-            $end = $class->date->format('Y-m-d') . 'T' . $class->end_time;
+            $dateStr = $class->date instanceof \Carbon\Carbon ? $class->date->format('Y-m-d') : (string) $class->date;
+            $start = $dateStr . 'T' . $class->start_time;
+            $end = $dateStr . 'T' . $class->end_time;
 
             return [
                 'id' => $class->id,
@@ -82,6 +83,7 @@ class CoachPortalController extends Controller
                     'time' => substr((string) $class->start_time, 0, 5) . ' - ' . substr((string) $class->end_time, 0, 5),
                     'enrolled_count' => $students->count(),
                     'students' => $students,
+                    'observations' => $class->observations,
                 ],
             ];
         })->values();
@@ -107,7 +109,13 @@ class CoachPortalController extends Controller
             'attendance.*' => 'required|in:present,absent,late,pending',
             'notes' => 'nullable|array',
             'notes.*' => 'nullable|string|max:500',
+            'observations' => 'nullable|string|max:2000',
         ]);
+
+        if (array_key_exists('observations', $validated)) {
+            $class->observations = $validated['observations'];
+            $class->save();
+        }
 
         foreach (($validated['attendance'] ?? []) as $studentId => $status) {
             Attendance::query()->updateOrCreate(
@@ -125,7 +133,7 @@ class CoachPortalController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => 'Asistencia actualizada correctamente.',
+                'message' => 'Asistencia y observaciones actualizadas correctamente.',
             ]);
         }
 

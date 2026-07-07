@@ -63,9 +63,14 @@
                         <div class="mb-3 col-md-12">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <label class="form-label mb-0">Ocupación actual</label>
-                                <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#enrolledStudentsModal">
-                                    <i class="fas fa-users"></i> Ver estudiantes inscritos
-                                </button>
+                                <div class="d-flex gap-3">
+                                    <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none text-success" data-bs-toggle="modal" data-bs-target="#inscribirEstudianteModal">
+                                        <i class="fas fa-user-plus"></i> Inscribir Estudiante
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#enrolledStudentsModal">
+                                        <i class="fas fa-users"></i> Ver estudiantes inscritos
+                                    </button>
+                                </div>
                             </div>
                             <div id="occupancy-bar" class="progress" style="height: 28px;" data-bs-toggle="modal" data-bs-target="#enrolledStudentsModal" title="Click para ver la lista de estudiantes inscritos">
                                 <div id="occupancy-bar-inner" class="progress-bar bg-success" role="progressbar" style="width: 0%">Cargando...</div>
@@ -341,9 +346,156 @@
                         </div>
                     </div>
 
+                    <!-- Modal Registrar Inscripción en este Curso -->
+                    <div class="modal fade" id="inscribirEstudianteModal" tabindex="-1" aria-labelledby="inscribirEstudianteModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                            <div class="modal-content">
+                                <form id="inscribirEstudianteForm" enctype="multipart/form-data">
+                                    @csrf
+                                    <input type="hidden" name="program_id" value="{{ $course->program_id }}">
+                                    <input type="hidden" name="course_ids[]" value="{{ $course->id }}">
+                                    <input type="hidden" name="enrollment_fee_type" value="standard">
+
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="inscribirEstudianteModalLabel">Inscribir Estudiante en {{ $course->title }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+
+                                    <div class="modal-body text-start">
+                                        <div id="enrollmentErrorAlert" class="alert alert-danger d-none mb-3"></div>
+                                        
+                                        <div class="row g-3">
+                                            <!-- Representante -->
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold">Representante</label>
+                                                <select name="user_id" id="modalUserSelect" class="form-control select2-modal" style="width: 100%">
+                                                    <option value="">-- Seleccionar representante --</option>
+                                                    @foreach ($parents as $user)
+                                                        <option value="{{ $user->id }}">
+                                                            {{ $user->name }} - {{ $user->email }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                                <button type="button" class="btn btn-sm btn-link p-0 mt-1" onclick="toggleModalUserForm()">
+                                                    + Crear nuevo representante
+                                                </button>
+                                            </div>
+                                            <div class="col-md-6"></div>
+
+                                            <!-- Formulario Nuevo Representante -->
+                                            <div id="modalUserForm" class="col-12 d-none bg-light p-3 rounded border">
+                                                <h6 class="fw-bold mb-2">Nuevo Representante</h6>
+                                                <div class="row g-2">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label small mb-1">Nombre</label>
+                                                        <input type="text" name="user[name]" id="modal_user_name" class="form-control form-control-sm" placeholder="Ej: Maria Perez">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label small mb-1">Correo</label>
+                                                        <input type="email" name="user[email]" id="modal_user_email" class="form-control form-control-sm" placeholder="Ej: maria@email.com">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label small mb-1">WhatsApp</label>
+                                                        <div class="input-group input-group-sm">
+                                                            <select name="user[dial_code]" class="form-select" style="max-width: 100px;">
+                                                                @include('partials.dialcode_create')
+                                                            </select>
+                                                            <input type="text" name="user[whatsapp]" id="modal_user_whatsapp" class="form-control" placeholder="Ej: 4121234567">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label small mb-1">Contraseña temporal</label>
+                                                        <input type="password" name="user[password]" id="modal_user_password" class="form-control form-control-sm" placeholder="Ej: Temporal2026">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Estudiante -->
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold">Estudiante</label>
+                                                <select name="student_id" id="modalStudentSelect" class="form-control select2-modal" style="width: 100%">
+                                                    <option value="">-- Seleccionar estudiante --</option>
+                                                    @foreach ($students as $student)
+                                                        <option value="{{ $student->id }}" data-user="{{ $student->user_id }}">
+                                                            {{ $student->name }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                                <button type="button" class="btn btn-sm btn-link p-0 mt-1" onclick="toggleModalStudentForm()">
+                                                    + Crear nuevo estudiante
+                                                </button>
+                                            </div>
+                                            <div class="col-md-6"></div>
+
+                                            <!-- Formulario Nuevo Estudiante -->
+                                            <div id="modalStudentForm" class="col-12 d-none bg-light p-3 rounded border">
+                                                <h6 class="fw-bold mb-2">Nuevo Estudiante</h6>
+                                                <div class="row g-2">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label small mb-1">Nombre</label>
+                                                        <input type="text" name="student[name]" id="modal_student_name" class="form-control form-control-sm" placeholder="Ej: Sofia Martinez">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label small mb-1">Fecha de nacimiento</label>
+                                                        <input type="date" name="student[birthdate]" id="modal_student_birthdate" class="form-control form-control-sm">
+                                                    </div>
+                                                    <div class="col-md-12">
+                                                        <label class="form-label small mb-1">Notas médicas (opcional)</label>
+                                                        <input type="text" name="student[medical_notes]" id="modal_student_medical_notes" class="form-control form-control-sm" placeholder="Ej: Alergia al maní">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Opciones adicionales -->
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold">Estado de pago</label>
+                                                <select name="payment_status" id="modalPaymentStatusSelect" class="form-control">
+                                                    <option value="pending">Pendiente</option>
+                                                    <option value="paid">Pagado</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold">Comprobante de pago (opcional)</label>
+                                                <input type="file" name="payment_receipt" id="modalPaymentReceiptInput" class="form-control" accept=".jpg,.jpeg,.png,.pdf">
+                                            </div>
+
+                                            <div class="col-md-6 mt-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="is_free_trial" value="1" id="modalIsFreeTrial">
+                                                    <label class="form-check-label fw-bold" for="modalIsFreeTrial">
+                                                        Clase de prueba gratuita
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-6 mt-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="image_consent_accepted" value="1" id="modalImageConsentAccepted" checked>
+                                                    <label class="form-check-label fw-bold" for="modalImageConsentAccepted">
+                                                        Consentimiento de uso de imagen
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    </div>
+
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-primary" id="modalEnrollmentSubmitBtn">
+                                            <span class="spinner-border spinner-border-sm d-none me-1" id="modalEnrollmentSubmitSpinner" role="status"></span>
+                                            Inscribir Estudiante
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Modal Estudiantes Inscritos -->
                     <div class="modal fade" id="enrolledStudentsModal" tabindex="-1" aria-labelledby="enrolledStudentsModalLabel" aria-hidden="true">
-                        <div class="modal-dialog modal-lg">
+                        <div class="modal-dialog modal-xl">
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h5 class="modal-title" id="enrolledStudentsModalLabel">Estudiantes Inscritos en {{ $course->title }}</h5>
@@ -362,6 +514,7 @@
                                                         <th>Representante</th>
                                                         <th>Teléfono / Correo</th>
                                                         <th class="text-center">Estado de Pago</th>
+                                                        <th class="text-center">Acciones</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -369,9 +522,13 @@
                                                         <tr>
                                                             <td>{{ $index + 1 }}</td>
                                                             <td>
-                                                                <div class="fw-bold text-dark">{{ $enrollment->student->name ?? 'N/A' }}</div>
+                                                                <div>
+                                                                    <a href="{{ route('students.show', $enrollment->student->id) }}" target="_blank" class="text-primary text-decoration-none fw-bold" title="Ver perfil del estudiante">
+                                                                        {{ $enrollment->student->name ?? 'N/A' }} <i class="fas fa-external-link-alt fa-xs text-muted"></i>
+                                                                    </a>
+                                                                </div>
                                                                 @if($enrollment->student->birthdate)
-                                                                    <small class="text-muted">
+                                                                    <small class="text-muted d-block mt-1">
                                                                         Edad: {{ \Carbon\Carbon::parse($enrollment->student->birthdate)->age }} años
                                                                     </small>
                                                                 @endif
@@ -393,13 +550,67 @@
                                                                     </div>
                                                                 @endif
                                                             </td>
+                                                            <td class="text-center">
+                                                                <form action="{{ route('enrollment.status', $enrollment->id) }}" method="POST" class="d-inline">
+                                                                    @csrf
+                                                                    @method('PATCH')
+                                                                    <input type="hidden" name="status" value="cancelled">
+                                                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Seguro que deseas retirar a {{ $enrollment->student->name }} de este curso? Su inscripción se marcará como cancelada.')" title="Retirar estudiante del curso">
+                                                                        <i class="fas fa-user-minus"></i> Retirar
+                                                                    </button>
+                                                                </form>
+                                                            </td>
                                                         </tr>
                                                         @if($enrollment->payment_status !== 'paid')
                                                             <tr class="collapse" id="attach-payment-{{ $enrollment->id }}">
-                                                                <td colspan="5" class="bg-light p-0">
+                                                                <td colspan="6" class="bg-light p-0">
                                                                     <div class="p-3 border rounded m-2 bg-white shadow-sm">
                                                                         <form action="{{ route('enrollment.attach-payment', $enrollment->id) }}" method="POST" enctype="multipart/form-data">
                                                                             @csrf
+                                                                            
+                                                                            <!-- Visualización de montos -->
+                                                                            <div class="row g-3 mb-3">
+                                                                                <div class="col-md-12 text-start">
+                                                                                    <div class="alert alert-info p-2 mb-0 d-flex justify-content-between align-items-center">
+                                                                                        <div>
+                                                                                            <i class="fas fa-info-circle text-info me-1"></i>
+                                                                                            <strong>Monto sugerido (Inscripción + 1er Mes):</strong> 
+                                                                                            <span class="text-primary fw-bold">${{ number_format($enrollment->getInitialChargeAmount(), 2) }}</span>
+                                                                                        </div>
+                                                                                        @if($enrollment->receivable)
+                                                                                            <div>
+                                                                                                <strong>Saldo Total Pendiente:</strong> 
+                                                                                                <span class="text-danger fw-bold">${{ number_format($enrollment->receivable->balance_due, 2) }}</span>
+                                                                                            </div>
+                                                                                        @endif
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <!-- Opciones de pago -->
+                                                                            <div class="row g-3 mb-3">
+                                                                                <div class="col-md-12 text-start">
+                                                                                    <label class="form-label small fw-bold d-block">¿Cuánto desea pagar?</label>
+                                                                                    <div class="form-check form-check-inline">
+                                                                                        <input class="form-check-input payment-option-radio" type="radio" name="amount_option" id="amount_opt_suggested_{{ $enrollment->id }}" value="suggested" checked data-enrollment-id="{{ $enrollment->id }}">
+                                                                                        <label class="form-check-label" for="amount_opt_suggested_{{ $enrollment->id }}">
+                                                                                            Pagar monto sugerido (${{ number_format($enrollment->getInitialChargeAmount(), 2) }})
+                                                                                        </label>
+                                                                                    </div>
+                                                                                    <div class="form-check form-check-inline">
+                                                                                        <input class="form-check-input payment-option-radio" type="radio" name="amount_option" id="amount_opt_custom_{{ $enrollment->id }}" value="custom" data-enrollment-id="{{ $enrollment->id }}">
+                                                                                        <label class="form-check-label" for="amount_opt_custom_{{ $enrollment->id }}">
+                                                                                            Abonar otro monto
+                                                                                        </label>
+                                                                                    </div>
+                                                                                    
+                                                                                    <div class="mt-2 d-none" id="custom-amount-container-{{ $enrollment->id }}">
+                                                                                        <label class="form-label small fw-bold">Monto a abonar ($)</label>
+                                                                                        <input type="number" name="custom_amount" id="custom_amount_{{ $enrollment->id }}" class="form-control form-control-sm w-50" step="0.01" min="0.01" max="{{ $enrollment->receivable ? $enrollment->receivable->balance_due : '' }}" placeholder="Ingrese el monto a pagar">
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+
                                                                             <div class="row g-3">
                                                                                 <div class="col-md-4 text-start">
                                                                                     <label class="form-label small fw-bold">Método de Pago</label>
@@ -452,15 +663,62 @@
 
 @section('scripts')
     <script>
+        function toggleModalUserForm() {
+            const select = document.getElementById('modalUserSelect');
+            const form = document.getElementById('modalUserForm');
+            
+            if (form.classList.contains('d-none')) {
+                form.classList.remove('d-none');
+                select.value = '';
+                $(select).val('').trigger('change');
+                $(select).prop('disabled', true);
+                
+                document.getElementById('modal_user_name').setAttribute('required', 'required');
+                document.getElementById('modal_user_email').setAttribute('required', 'required');
+                document.getElementById('modal_user_password').setAttribute('required', 'required');
+            } else {
+                form.classList.add('d-none');
+                $(select).prop('disabled', false);
+                
+                document.getElementById('modal_user_name').removeAttribute('required');
+                document.getElementById('modal_user_email').removeAttribute('required');
+                document.getElementById('modal_user_password').removeAttribute('required');
+            }
+        }
+
+        function toggleModalStudentForm() {
+            const select = document.getElementById('modalStudentSelect');
+            const form = document.getElementById('modalStudentForm');
+            
+            if (form.classList.contains('d-none')) {
+                form.classList.remove('d-none');
+                select.value = '';
+                $(select).val('').trigger('change');
+                $(select).prop('disabled', true);
+                
+                document.getElementById('modal_student_name').setAttribute('required', 'required');
+                document.getElementById('modal_student_birthdate').setAttribute('required', 'required');
+            } else {
+                form.classList.add('d-none');
+                $(select).prop('disabled', false);
+                
+                document.getElementById('modal_student_name').removeAttribute('required');
+                document.getElementById('modal_student_birthdate').removeAttribute('required');
+            }
+        }
+
         $(document).ready(function() {
             if ($.fn.select2) {
                 $('#coach_ids').select2({
                     placeholder: 'Selecciona uno o más entrenadores',
                     width: '100%'
                 });
+
+                $('.select2-modal').select2({
+                    dropdownParent: $('#inscribirEstudianteModal'),
+                    width: '100%'
+                });
             }
-
-
 
             $('#monthly_fee').on('input', function() {
                 let value = parseFloat($(this).val());
@@ -470,6 +728,98 @@
                     maximumFractionDigits: 2
                 }));
             }).trigger('input');
+
+            $('.payment-option-radio').on('change', function() {
+                let enrollmentId = $(this).data('enrollment-id');
+                let customContainer = $('#custom-amount-container-' + enrollmentId);
+                let customInput = $('#custom_amount_' + enrollmentId);
+
+                if ($(this).val() === 'custom') {
+                    customContainer.removeClass('d-none');
+                    customInput.prop('required', true);
+                } else {
+                    customContainer.addClass('d-none');
+                    customInput.prop('required', false).val('');
+                }
+            });
+
+            // Filter students based on selected representative in modal
+            $('#modalUserSelect').on('change', function() {
+                const userId = $(this).val();
+                $('#modalStudentSelect option').each(function() {
+                    const studentUser = $(this).data('user');
+                    if (!userId || !studentUser || String(studentUser) === String(userId)) {
+                        $(this).prop('disabled', false);
+                    } else {
+                        $(this).prop('disabled', true);
+                    }
+                });
+                $('#modalStudentSelect').val('').trigger('change');
+            });
+
+            // AJAX submit for student enrollment
+            $('#inscribirEstudianteForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                $('#modalEnrollmentSubmitSpinner').removeClass('d-none');
+                $('#modalEnrollmentSubmitBtn').prop('disabled', true);
+                $('#enrollmentErrorAlert').addClass('d-none').text('');
+
+                // Temporarily enable disabled selects to send their values
+                $('#modalUserSelect, #modalStudentSelect').prop('disabled', false);
+
+                let formData = new FormData(this);
+
+                if ($('#modalUserForm').hasClass('d-none')) {
+                    formData.delete('user[name]');
+                    formData.delete('user[email]');
+                    formData.delete('user[dial_code]');
+                    formData.delete('user[whatsapp]');
+                    formData.delete('user[password]');
+                }
+                if ($('#modalStudentForm').hasClass('d-none')) {
+                    formData.delete('student[name]');
+                    formData.delete('student[birthdate]');
+                    formData.delete('student[medical_notes]');
+                }
+
+                $.ajax({
+                    url: "{{ route('enrollment.store') }}",
+                    type: "POST",
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        $('#modalEnrollmentSubmitSpinner').addClass('d-none');
+                        window.location.reload();
+                    },
+                    error: function(xhr) {
+                        $('#modalEnrollmentSubmitSpinner').addClass('d-none');
+                        $('#modalEnrollmentSubmitBtn').prop('disabled', false);
+                        
+                        if (!$('#modalUserForm').hasClass('d-none')) {
+                            $('#modalUserSelect').prop('disabled', true);
+                        }
+                        if (!$('#modalStudentForm').hasClass('d-none')) {
+                            $('#modalStudentSelect').prop('disabled', true);
+                        }
+
+                        let errors = xhr.responseJSON ? xhr.responseJSON.errors : null;
+                        let message = xhr.responseJSON ? xhr.responseJSON.message : 'Error al registrar la inscripción.';
+                        
+                        if (errors) {
+                            let errorList = '<ul>';
+                            for (let field in errors) {
+                                errorList += '<li>' + errors[field][0] + '</li>';
+                            }
+                            errorList += '</ul>';
+                            $('#enrollmentErrorAlert').removeClass('d-none').html(errorList);
+                        } else {
+                            $('#enrollmentErrorAlert').removeClass('d-none').text(message);
+                        }
+                    }
+                });
+            });
         });
     </script>
 @endsection

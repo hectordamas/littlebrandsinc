@@ -115,7 +115,7 @@ class ParentPortalController extends Controller
         $enrollments = \App\Models\Enrollment::query()
             ->whereIn('student_id', $studentIds)
             ->where('status', '!=', 'cancelled')
-            ->with(['student', 'courses.classes' => function ($query) use ($validated) {
+            ->with(['student', 'courses.coaches', 'courses.classes' => function ($query) use ($validated) {
                 $query->with(['branch', 'coach', 'attendances'])
                     ->when(isset($validated['start']), function ($q) use ($validated) {
                         $q->whereDate('date', '>=', $validated['start']);
@@ -160,7 +160,7 @@ class ParentPortalController extends Controller
                             'student_name' => $student->name,
                             'course_title' => $course->title,
                             'branch' => optional($class->branch)->name ?? 'Sin sede',
-                            'coach' => optional($class->coach)->name ?? 'Sin asignar',
+                            'coach' => $class->coach_name ?? 'Sin asignar',
                             'time' => substr((string) $class->start_time, 0, 5) . ' - ' . substr((string) $class->end_time, 0, 5),
                             'attendance' => $attendanceStatus,
                             'notes' => $attendanceNotes,

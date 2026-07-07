@@ -151,13 +151,11 @@ class FinanceController extends Controller
         $receiptOriginalName = null;
         if ($request->hasFile('payment_receipt')) {
             $destinationPath = public_path('uploads/comprobantes');
-            if (! is_dir($destinationPath)) {
-                mkdir($destinationPath, 0755, true);
-            }
 
             $file = $request->file('payment_receipt');
-            $file->move($destinationPath, $file->hashName());
-            $receiptPath = 'uploads/comprobantes/'.$file->hashName();
+            $filename = uniqid() . '.' . $file->getClientOriginalExtension();
+            $file->move($destinationPath, $filename);
+            $receiptPath = 'uploads/comprobantes/'.$filename;
             $receiptOriginalName = $file->getClientOriginalName();
         }
 
@@ -271,13 +269,11 @@ class FinanceController extends Controller
         $receiptOriginalName = null;
         if ($request->hasFile('payment_receipt')) {
             $destinationPath = public_path('uploads/comprobantes');
-            if (! is_dir($destinationPath)) {
-                mkdir($destinationPath, 0755, true);
-            }
 
             $file = $request->file('payment_receipt');
-            $file->move($destinationPath, $file->hashName());
-            $receiptPath = 'uploads/comprobantes/'.$file->hashName();
+            $filename = uniqid() . '.' . $file->getClientOriginalExtension();
+            $file->move($destinationPath, $filename);
+            $receiptPath = 'uploads/comprobantes/'.$filename;
             $receiptOriginalName = $file->getClientOriginalName();
         }
 
@@ -325,8 +321,9 @@ class FinanceController extends Controller
         $receiptOriginalName = null;
         if ($request->hasFile('payment_receipt')) {
             $file = $request->file('payment_receipt');
-            $receiptPath = $file->move(public_path('uploads/comprobantes'), $file->hashName());
-            $receiptPath = 'uploads/comprobantes/' . $file->hashName();
+            $filename = uniqid() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('uploads/comprobantes'), $filename);
+            $receiptPath = 'uploads/comprobantes/' . $filename;
             $receiptOriginalName = $file->getClientOriginalName();
         }
 
@@ -554,6 +551,28 @@ class FinanceController extends Controller
             ->get();
 
         foreach ($enrollments as $enrollment) {
+            if ($enrollment->status === 'cancelled') {
+                $receivable = AccountReceivable::query()
+                    ->where('enrollment_id', $enrollment->id)
+                    ->first();
+
+                if ($receivable) {
+                    $paidAmount = (float) $receivable->transactions()->where('status', 'completed')->sum('amount');
+                    if ($paidAmount <= 0) {
+                        $receivable->delete();
+                    } else {
+                        $receivable->update([
+                            'amount_total' => $paidAmount,
+                            'balance_due' => 0.0,
+                            'status' => 'paid',
+                        ]);
+                    }
+                }
+
+                $enrollment->installments()->where('status', 'pending')->delete();
+                continue;
+            }
+
             if ($enrollment->is_free_trial) {
                 AccountReceivable::query()
                     ->where('enrollment_id', $enrollment->id)

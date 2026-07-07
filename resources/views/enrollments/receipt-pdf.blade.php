@@ -215,7 +215,7 @@
                             <td>{{ $course->title }}</td>
                             <td>{{ $class->date ? \Carbon\Carbon::parse($class->date)->format('d/m/Y') : 'N/A' }}</td>
                             <td>{{ $class->start_time ? \Carbon\Carbon::parse($class->start_time)->format('H:i') : 'N/A' }} - {{ $class->end_time ? \Carbon\Carbon::parse($class->end_time)->format('H:i') : 'N/A' }}</td>
-                            <td>{{ optional($class->coach)->name ?? 'Sin asignar' }}</td>
+                            <td>{{ $class->coach_name ?? 'Sin asignar' }}</td>
                         </tr>
                     @empty
                     @endforelse

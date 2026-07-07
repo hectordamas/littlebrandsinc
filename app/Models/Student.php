@@ -36,6 +36,7 @@ class Student extends Model
     public function getCoursesAttribute()
     {
         return $this->enrollments
+            ->where('status', '!=', 'cancelled')
             ->flatMap(fn ($e) => $e->courses)
             ->unique('id')
             ->values();

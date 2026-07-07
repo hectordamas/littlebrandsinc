@@ -887,7 +887,7 @@
                 }
             });
 
-            $('#courseSelect').trigger('change.select2');
+            $('#courseSelect').trigger('change');
             
             let helpText = '';
             if (!programId) {

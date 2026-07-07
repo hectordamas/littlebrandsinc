@@ -314,9 +314,15 @@
                         </div>
                     </div>
 
-                    <div class="mt-3">
-                        <span class="detail-label">Descripción de la Clase</span>
-                        <div class="class-detail-item" id="detailDescription">Sin descripcion registrada.</div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <span class="detail-label">Descripción de la Clase</span>
+                            <div class="class-detail-item" id="detailDescription" style="min-height: 80px; overflow-y: auto;">Sin descripcion registrada.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="detail-label">Observaciones de la Sesión (Coach)</span>
+                            <div class="class-detail-item text-primary" id="detailObservations" style="min-height: 80px; overflow-y: auto; font-style: italic;">Sin observaciones registradas.</div>
+                        </div>
                     </div>
 
                     <div class="mt-4">
@@ -517,6 +523,7 @@
                     document.getElementById('detailStartDate').textContent = formatDate(props.course_start_date);
                     document.getElementById('detailEndDate').textContent = formatDate(props.course_end_date);
                     document.getElementById('detailDescription').textContent = props.course_description || 'Sin descripcion registrada.';
+                    document.getElementById('detailObservations').textContent = props.observations || 'Sin observaciones registradas.';
 
                     // Populate students table
                     const studentsBody = document.getElementById('detailStudentsBody');

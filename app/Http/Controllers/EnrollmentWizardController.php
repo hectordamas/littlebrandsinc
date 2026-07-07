@@ -593,8 +593,9 @@ class EnrollmentWizardController extends Controller
             }
 
             $file = $request->file('payment_receipt');
-            $storedPath = $file->move(public_path('uploads/comprobantes'), $file->hashName());
-            $request->session()->put('payment_receipt_path', 'uploads/comprobantes/' . $file->hashName());
+            $filename = uniqid() . '.' . $file->getClientOriginalExtension();
+            $storedPath = $file->move(public_path('uploads/comprobantes'), $filename);
+            $request->session()->put('payment_receipt_path', 'uploads/comprobantes/' . $filename);
             $request->session()->put('payment_receipt_original_name', $file->getClientOriginalName());
         } elseif ($paymentMethod === 'card' || $isFreeTrial) {
             $request->session()->forget(['payment_receipt_path', 'payment_receipt_original_name']);

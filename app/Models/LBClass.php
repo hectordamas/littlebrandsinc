@@ -16,6 +16,7 @@ class LBClass extends Model
         'start_time',
         'end_time',
         'coach_id',
+        'observations',
     ];
 
     protected $casts = [
@@ -40,6 +41,19 @@ class LBClass extends Model
     public function coach()
     {
         return $this->belongsTo(User::class, 'coach_id');
+    }
+
+    public function getCoachNameAttribute()
+    {
+        if ($this->coach) {
+            return $this->coach->name;
+        }
+
+        if ($this->course && $this->course->coaches->isNotEmpty()) {
+            return $this->course->coaches->pluck('name')->join(', ');
+        }
+
+        return null;
     }
 
     public function attendances()

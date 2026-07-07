@@ -109,12 +109,10 @@ class EnrollmentController extends Controller
             if ($request->hasFile('payment_receipt')) {
                 $file = $request->file('payment_receipt');
                 $destinationPath = public_path('uploads/comprobantes');
-                if (! is_dir($destinationPath)) {
-                    mkdir($destinationPath, 0775, true);
-                }
 
-                $file->move($destinationPath, $file->hashName());
-                $receiptPath = 'uploads/comprobantes/'.$file->hashName();
+                $filename = uniqid() . '.' . $file->getClientOriginalExtension();
+                $file->move($destinationPath, $filename);
+                $receiptPath = 'uploads/comprobantes/'.$filename;
                 $receiptOriginalName = $file->getClientOriginalName();
             }
 
@@ -200,6 +198,7 @@ class EnrollmentController extends Controller
             'student.user',
             'program',
             'courses.branch',
+            'courses.coaches',
             'courses.classes' => function ($query) {
                 $query->with('coach')->orderBy('date')->orderBy('start_time');
             },
@@ -317,6 +316,8 @@ class EnrollmentController extends Controller
             'payment_method' => ['required', 'string', 'max:255'],
             'reference' => ['nullable', 'string', 'max:255'],
             'payment_receipt' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:6144'],
+            'amount_option' => ['required', 'string', 'in:suggested,custom'],
+            'custom_amount' => ['nullable', 'numeric', 'min:0.01'],
         ]);
 
         $paymentMethod = $request->input('payment_method');
@@ -324,25 +325,38 @@ class EnrollmentController extends Controller
         $receiptPath = $enrollment->payment_receipt_path;
         $receiptOriginalName = $enrollment->payment_receipt_original_name;
 
+        // Calculate amount to pay
+        $suggestedAmount = $enrollment->getInitialChargeAmount();
+        $amountOption = $request->input('amount_option');
+        $paymentAmount = $suggestedAmount;
+
+        if ($amountOption === 'custom') {
+            $paymentAmount = (float) $request->input('custom_amount');
+            $receivable = $enrollment->receivable;
+            if ($receivable && $paymentAmount > (float) $receivable->balance_due) {
+                return redirect()->back()->withErrors([
+                    'custom_amount' => 'El monto del abono no puede superar el saldo pendiente del estudiante ($' . number_format($receivable->balance_due, 2) . ').'
+                ]);
+            }
+        }
+
         if ($request->hasFile('payment_receipt')) {
             $file = $request->file('payment_receipt');
             $destinationPath = public_path('uploads/comprobantes');
-            if (! is_dir($destinationPath)) {
-                mkdir($destinationPath, 0775, true);
-            }
 
-            $file->move($destinationPath, $file->hashName());
-            $receiptPath = 'uploads/comprobantes/'.$file->hashName();
+            $filename = uniqid() . '.' . $file->getClientOriginalExtension();
+            $file->move($destinationPath, $filename);
+            $receiptPath = 'uploads/comprobantes/'.$filename;
             $receiptOriginalName = $file->getClientOriginalName();
         }
 
-        DB::transaction(function () use ($enrollment, $paymentMethod, $reference, $receiptPath, $receiptOriginalName): void {
+        DB::transaction(function () use ($enrollment, $paymentMethod, $reference, $receiptPath, $receiptOriginalName, $paymentAmount): void {
             $enrollment->payment_method = $paymentMethod;
             $enrollment->reference = $reference;
             $enrollment->payment_receipt_path = $receiptPath;
             $enrollment->payment_receipt_original_name = $receiptOriginalName;
 
-            $this->applyEnrollmentState($enrollment, 'completed', 'paid');
+            $this->applyEnrollmentState($enrollment, 'completed', 'paid', $paymentAmount);
         });
 
         return redirect()->back()->with('success', 'Pago registrado e inscripción confirmada exitosamente.');
@@ -351,7 +365,8 @@ class EnrollmentController extends Controller
     protected function applyEnrollmentState(
         Enrollment $enrollment,
         ?string $status,
-        ?string $paymentStatus
+        ?string $paymentStatus,
+        ?float $paymentAmount = null
     ): void {
         $enrollment->loadMissing(['program', 'courses']);
         $previousPaymentStatus = (string) $enrollment->payment_status;
@@ -383,11 +398,11 @@ class EnrollmentController extends Controller
         $this->ensureManualBillingArtifacts($enrollment, $enrollment->payment_status === 'paid');
 
         if ($enrollment->payment_status === 'paid') {
-            $this->syncEnrollmentIncomeTransaction($enrollment);
+            $this->syncEnrollmentIncomeTransaction($enrollment, $paymentAmount);
         }
     }
 
-    protected function syncEnrollmentIncomeTransaction(Enrollment $enrollment): void
+    protected function syncEnrollmentIncomeTransaction(Enrollment $enrollment, ?float $paymentAmount = null): void
     {
         $enrollment->loadMissing(['program', 'courses']);
 
@@ -418,6 +433,18 @@ class EnrollmentController extends Controller
 
         $courseTitles = $enrollment->courses->pluck('title')->join(', ');
 
+        // If a specific payment amount was passed, use that.
+        // If not, but the transaction already exists, preserve its current amount.
+        // Otherwise, calculate the default initial charge amount.
+        $amount = $paymentAmount;
+        if ($amount === null) {
+            if ($incomeTransaction) {
+                $amount = (float) $incomeTransaction->amount;
+            } else {
+                $amount = $this->calculateInitialChargeAmount($enrollment->program, $enrollment->courses, $enrollment);
+            }
+        }
+
         $payload = [
             'enrollment_id' => $enrollment->id,
             'student_id' => $enrollment->student_id,
@@ -425,7 +452,7 @@ class EnrollmentController extends Controller
             'branch_id' => $branchId,
             'account_id' => $this->resolveIncomeAccountId(),
             'account_receivable_id' => $receivable?->id,
-            'amount' => $this->calculateInitialChargeAmount($enrollment->program, $enrollment->courses, $enrollment),
+            'amount' => $amount,
             'currency' => 'USD',
             'type' => 'income',
             'status' => 'completed',
@@ -464,6 +491,31 @@ class EnrollmentController extends Controller
     {
         $enrollment->loadMissing(['program', 'courses']);
 
+        // Handle cancelled enrollment (student removal)
+        if ($enrollment->status === 'cancelled') {
+            $receivable = AccountReceivable::query()
+                ->where('enrollment_id', $enrollment->id)
+                ->first();
+
+            if ($receivable) {
+                $paidAmount = (float) $receivable->transactions()->where('status', 'completed')->sum('amount');
+                if ($paidAmount <= 0) {
+                    $receivable->delete();
+                } else {
+                    $receivable->update([
+                        'amount_total' => $paidAmount,
+                        'balance_due' => 0.0,
+                        'status' => 'paid',
+                    ]);
+                }
+            }
+
+            // Cancel/delete pending installments
+            $enrollment->installments()->where('status', 'pending')->delete();
+
+            return;
+        }
+
         if ($enrollment->is_free_trial) {
             AccountReceivable::query()
                 ->where('enrollment_id', $enrollment->id)
@@ -493,7 +545,7 @@ class EnrollmentController extends Controller
 
         if ($enrollment->payment_status === 'pending') {
             if (! $receivable) {
-                AccountReceivable::create([
+                $receivable = AccountReceivable::create([
                     'branch_id' => $firstCourse->branch_id,
                     'enrollment_id' => $enrollment->id,
                     'title' => $title,
@@ -502,19 +554,18 @@ class EnrollmentController extends Controller
                     'currency' => 'USD',
                     'status' => 'pending',
                 ]);
-
-                return;
+            } else {
+                $receivable->update([
+                    'branch_id' => $firstCourse->branch_id,
+                    'title' => $title,
+                    'amount_total' => $amountTotal,
+                    'balance_due' => $amountTotal,
+                    'currency' => 'USD',
+                    'status' => 'pending',
+                ]);
             }
 
-            $receivable->update([
-                'branch_id' => $firstCourse->branch_id,
-                'title' => $title,
-                'amount_total' => $amountTotal,
-                'balance_due' => $amountTotal,
-                'currency' => 'USD',
-                'status' => 'pending',
-            ]);
-
+            $this->syncInstallmentsPaymentStatus($receivable);
             return;
         }
 
@@ -536,6 +587,50 @@ class EnrollmentController extends Controller
             'balance_due' => $balance,
             'status' => $status,
         ]);
+
+        $this->syncInstallmentsPaymentStatus($receivable);
+    }
+
+    protected function syncInstallmentsPaymentStatus(AccountReceivable $receivable): void
+    {
+        if (!$receivable->enrollment_id) {
+            return;
+        }
+
+        $enrollment = $receivable->enrollment;
+        if (!$enrollment) {
+            return;
+        }
+
+        $totalPaid = (float) $receivable->transactions()->where('status', 'completed')->sum('amount');
+        $program = $enrollment->program;
+        $enrollmentFee = $program ? (float) ($program->enrollment_fee ?? 50.00) : 0.0;
+        
+        $remainingPaid = max(0.0, $totalPaid - $enrollmentFee);
+        $installments = $enrollment->installments()->orderBy('due_date')->get();
+
+        foreach ($installments as $installment) {
+            $installmentAmount = (float) $installment->amount;
+            if ($remainingPaid >= $installmentAmount) {
+                $installment->update([
+                    'status' => 'paid',
+                    'paid_at' => $installment->paid_at ?? now(),
+                ]);
+                $remainingPaid -= $installmentAmount;
+            } elseif ($remainingPaid > 0) {
+                $installment->update([
+                    'status' => 'pending',
+                ]);
+                $remainingPaid = 0.0;
+            } else {
+                if ($installment->status === 'paid') {
+                    $installment->update([
+                        'status' => 'pending',
+                        'paid_at' => null,
+                    ]);
+                }
+            }
+        }
     }
 
     protected function enrollmentPayload(Enrollment $enrollment): array

@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use App\Models\{Course, Branch, LBClass, Program, User};
+use App\Models\{Course, Branch, LBClass, Program, User, Student};
 use Illuminate\Support\Facades\DB;
 
 class CoursesController extends Controller
@@ -55,7 +55,7 @@ class CoursesController extends Controller
                         },
                     ])->with(['enrollments' => function ($eq) {
                         $eq->where('status', '!=', 'cancelled')->with(['student', 'parent']);
-                    }, 'program']);
+                    }, 'program', 'coaches']);
                 },
                 'branch',
                 'coach',
@@ -76,7 +76,7 @@ class CoursesController extends Controller
         $events = $classes->map(function (LBClass $class) {
             $courseTitle = optional($class->course)->title ?? 'Clase';
             $branchName = optional($class->branch)->name ?? 'Sin sede';
-            $coachName = optional($class->coach)->name ?? 'Sin coach';
+            $coachName = $class->coach_name ?? 'Sin coach';
             $date = optional($class->date)->format('Y-m-d') ?: (string) $class->date;
             $start = $date . 'T' . $class->start_time;
             $end = $date . 'T' . $class->end_time;
@@ -224,13 +224,15 @@ class CoursesController extends Controller
     public function edit($id)
     {
         $course = Course::with(['enrollments' => function ($q) {
-            $q->where('status', '!=', 'cancelled')->with(['student', 'parent']);
+            $q->where('status', '!=', 'cancelled')->with(['student', 'parent', 'program', 'courses', 'receivable']);
         }])->findOrFail($id);
         $branches = Branch::orderBy('id', 'desc')->get();
         $coaches = User::where('role', 'Coach')->get();
         $classes = LBClass::where('course_id', $course->id)->get();
         $programs = Program::query()->where('active', true)->orderBy('name')->get();
         $selectedCoachIds = $course->coaches()->pluck('users.id')->all();
+        $parents = User::where('role', 'Padre')->orderBy('name')->get();
+        $students = Student::with('user')->orderBy('name')->get();
 
         return view('courses.edit', [
             'course' => $course,
@@ -239,6 +241,8 @@ class CoursesController extends Controller
             'classes' => $classes,
             'programs' => $programs,
             'selectedCoachIds' => $selectedCoachIds,
+            'parents' => $parents,
+            'students' => $students,
         ]);
     }
 

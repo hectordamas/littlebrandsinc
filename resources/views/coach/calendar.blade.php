@@ -248,6 +248,14 @@
                             <span id="attendanceSaveStatus" class="attendance-save-status">Guardado automático activo</span>
                         </div>
                         <div id="attendanceRows"></div>
+
+                        <!-- Observaciones generales de la clase -->
+                        <div class="mb-3 mt-3 border rounded p-3 bg-white shadow-sm" id="generalObservationsContainer">
+                            <label for="generalObservations" class="form-label fw-bold text-dark mb-2">
+                                <i class="fas fa-edit me-1 text-primary"></i> Observaciones Generales de la Sesión
+                            </label>
+                            <textarea id="generalObservations" class="form-control" rows="3" placeholder="Escribe observaciones generales del día, temas vistos, incidencias, etc."></textarea>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
@@ -300,6 +308,7 @@
                 return {
                     attendance: attendance,
                     notes: notes,
+                    observations: document.getElementById('generalObservations').value,
                 };
             }
 
@@ -325,6 +334,13 @@
                 });
 
                 currentEvent.setExtendedProp('students', updatedStudents);
+            }
+
+            function syncCurrentEventObservations(observations) {
+                if (!currentEvent) {
+                    return;
+                }
+                currentEvent.setExtendedProp('observations', observations);
             }
 
             function syncToggleAllState() {
@@ -384,13 +400,14 @@
                     }
 
                     syncCurrentEventStudents(payload.attendance || {});
+                    syncCurrentEventObservations(payload.observations || '');
 
                     setSaveStatus('Cambios guardados automaticamente', null);
                 } catch (error) {
                     setSaveStatus(error.message || 'Error al guardar asistencia', 'error');
                 } finally {
                     savingInProgress = false;
-
+                    
                     if (pendingSave) {
                         pendingSave = false;
                         saveAttendanceAjax();
@@ -449,6 +466,8 @@
                     attendanceTitleEl.textContent = info.event.title;
                     attendanceMetaEl.textContent = `Sede: ${props.branch || 'N/A'} | Horario: ${props.time || 'N/A'} | Inscritos: ${props.enrolled_count || 0}`;
                     attendanceForm.action = `{{ url('coach/clases') }}/${info.event.id}/attendance`;
+
+                    document.getElementById('generalObservations').value = props.observations || '';
 
                     attendanceRowsEl.innerHTML = '';
                     toggleAllAttendanceEl.checked = false;
@@ -537,6 +556,10 @@
                     checkbox.checked = shouldCheck;
                 });
 
+                saveAttendanceAjax();
+            });
+
+            document.getElementById('generalObservations').addEventListener('change', function() {
                 saveAttendanceAjax();
             });
 

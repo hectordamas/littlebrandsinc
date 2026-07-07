@@ -132,12 +132,14 @@ class StudentsController extends Controller
         $student->load([
             'user',
             'enrollments.courses.branch',
+            'enrollments.courses.coaches',
             'enrollments.courses.classes' => function ($query) {
                 $query->with('coach')->orderBy('date')->orderBy('start_time');
             },
         ]);
 
         $upcomingClasses = $student->enrollments
+            ->where('status', '!=', 'cancelled')
             ->flatMap(function ($enrollment) {
                 return $enrollment->courses->flatMap(fn ($course) => $course->classes ?? collect());
             })

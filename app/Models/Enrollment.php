@@ -63,4 +63,21 @@ class Enrollment extends Model
     {
         return $this->hasMany(EnrollmentInstallment::class);
     }
+
+    public function getInitialChargeAmount(): float
+    {
+        $this->loadMissing(['program', 'courses']);
+
+        $enrollmentFee = ($this->custom_enrollment_fee !== null)
+            ? (float) $this->custom_enrollment_fee
+            : (float) (optional($this->program)->enrollment_fee ?? 50.00);
+
+        $total = $enrollmentFee;
+
+        foreach ($this->courses as $course) {
+            $total += (float) ($course->monthly_fee ?? 0);
+        }
+
+        return $total;
+    }
 }
