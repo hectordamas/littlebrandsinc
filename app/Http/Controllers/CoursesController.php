@@ -369,7 +369,7 @@ class CoursesController extends Controller
             }
         });
 
-        return redirect()->route('courses.index')->with('success', 'Curso actualizado exitosamente');
+        return redirect()->back()->with('success', 'Curso actualizado exitosamente');
     }
 
     public function destroy($id)

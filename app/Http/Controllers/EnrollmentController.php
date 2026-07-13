@@ -129,6 +129,18 @@ class EnrollmentController extends Controller
                 }
             }
 
+            $customEnrollmentFee = null;
+            if ($request->input('enrollment_fee_type') === 'custom') {
+                $customAmount = (float) $request->input('custom_amount', 0.0);
+                $monthlyFeesSum = 0.0;
+                foreach ($courses as $course) {
+                    $monthlyFeesSum += (float) ($course->monthly_fee ?? 0);
+                }
+                $customEnrollmentFee = $customAmount - $monthlyFeesSum;
+            } elseif ($this->hasPaidProgramEnrollmentFee($student->id, $program->id)) {
+                $customEnrollmentFee = 0.0;
+            }
+
             $enrollment = Enrollment::create([
                 'student_id' => $student->id,
                 'program_id' => $program->id,
@@ -141,7 +153,7 @@ class EnrollmentController extends Controller
                 'image_consent_accepted' => (bool) $request->boolean('image_consent_accepted'),
                 'payment_receipt_path' => $receiptPath,
                 'payment_receipt_original_name' => $receiptOriginalName,
-                'custom_enrollment_fee' => ($request->input('enrollment_fee_type') === 'custom') ? (float) $request->input('custom_enrollment_fee', 0.0) : null,
+                'custom_enrollment_fee' => $customEnrollmentFee,
             ]);
 
             $enrollment->courses()->sync($courseIds);
@@ -332,12 +344,6 @@ class EnrollmentController extends Controller
 
         if ($amountOption === 'custom') {
             $paymentAmount = (float) $request->input('custom_amount');
-            $receivable = $enrollment->receivable;
-            if ($receivable && $paymentAmount > (float) $receivable->balance_due) {
-                return redirect()->back()->withErrors([
-                    'custom_amount' => 'El monto del abono no puede superar el saldo pendiente del estudiante ($' . number_format($receivable->balance_due, 2) . ').'
-                ]);
-            }
         }
 
         if ($request->hasFile('payment_receipt')) {
@@ -350,11 +356,19 @@ class EnrollmentController extends Controller
             $receiptOriginalName = $file->getClientOriginalName();
         }
 
-        DB::transaction(function () use ($enrollment, $paymentMethod, $reference, $receiptPath, $receiptOriginalName, $paymentAmount): void {
+        DB::transaction(function () use ($enrollment, $paymentMethod, $reference, $receiptPath, $receiptOriginalName, $paymentAmount, $amountOption): void {
             $enrollment->payment_method = $paymentMethod;
             $enrollment->reference = $reference;
             $enrollment->payment_receipt_path = $receiptPath;
             $enrollment->payment_receipt_original_name = $receiptOriginalName;
+
+            if ($amountOption === 'custom') {
+                $monthlyFeesSum = 0.0;
+                foreach ($enrollment->courses as $course) {
+                    $monthlyFeesSum += (float) ($course->monthly_fee ?? 0);
+                }
+                $enrollment->custom_enrollment_fee = $paymentAmount - $monthlyFeesSum;
+            }
 
             $this->applyEnrollmentState($enrollment, 'completed', 'paid', $paymentAmount);
         });
@@ -484,6 +498,8 @@ class EnrollmentController extends Controller
                 'balance_due' => $balance,
                 'status' => $status,
             ]);
+
+            $this->syncInstallmentsPaymentStatus($receivable);
         }
     }
 
@@ -574,7 +590,7 @@ class EnrollmentController extends Controller
         }
 
         $paidAmount = (float) $receivable->transactions()->sum('amount');
-        $balance = max(0, (float) $receivable->amount_total - $paidAmount);
+        $balance = max(0, (float) $amountTotal - $paidAmount);
 
         $status = 'pending';
         if ($balance <= 0) {
@@ -584,6 +600,7 @@ class EnrollmentController extends Controller
         }
 
         $receivable->update([
+            'amount_total' => $amountTotal,
             'balance_due' => $balance,
             'status' => $status,
         ]);
@@ -604,7 +621,9 @@ class EnrollmentController extends Controller
 
         $totalPaid = (float) $receivable->transactions()->where('status', 'completed')->sum('amount');
         $program = $enrollment->program;
-        $enrollmentFee = $program ? (float) ($program->enrollment_fee ?? 50.00) : 0.0;
+        $enrollmentFee = ($enrollment->custom_enrollment_fee !== null)
+            ? (float) $enrollment->custom_enrollment_fee
+            : ($program ? (float) ($program->enrollment_fee ?? 50.00) : 0.0);
         
         $remainingPaid = max(0.0, $totalPaid - $enrollmentFee);
         $installments = $enrollment->installments()->orderBy('due_date')->get();
@@ -742,6 +761,7 @@ class EnrollmentController extends Controller
     {
         foreach ($courses as $course) {
             $existingEnrollment = Enrollment::where('student_id', $student->id)
+                ->where('status', '!=', 'cancelled')
                 ->whereHas('courses', function ($query) use ($course) {
                     $query->where('courses.id', $course->id);
                 })
@@ -774,6 +794,25 @@ class EnrollmentController extends Controller
                 }
             }
         }
+    }
+
+    protected function hasPaidProgramEnrollmentFee(int $studentId, int $programId, ?int $excludeEnrollmentId = null): bool
+    {
+        $query = Enrollment::where('student_id', $studentId)
+            ->where('program_id', $programId)
+            ->where('is_free_trial', false)
+            ->where(function ($query) {
+                $query->where('payment_status', 'paid')
+                      ->orWhereHas('receivable.transactions', function ($q) {
+                          $q->where('status', 'completed');
+                      });
+            });
+
+        if ($excludeEnrollmentId) {
+            $query->where('id', '!=', $excludeEnrollmentId);
+        }
+
+        return $query->exists();
     }
 
     protected function resolveIncomeAccountId(): int

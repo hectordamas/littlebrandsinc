@@ -225,7 +225,9 @@ class StripeWebhookController extends Controller
 
         $totalPaid = (float) $receivable->transactions()->where('status', 'completed')->sum('amount');
         $program = $enrollment->program;
-        $enrollmentFee = $program ? (float) ($program->enrollment_fee ?? 50.00) : 0.0;
+        $enrollmentFee = ($enrollment->custom_enrollment_fee !== null)
+            ? (float) $enrollment->custom_enrollment_fee
+            : ($program ? (float) ($program->enrollment_fee ?? 50.00) : 0.0);
         
         $remainingPaid = max(0.0, $totalPaid - $enrollmentFee);
         $installments = $enrollment->installments()->orderBy('due_date')->get();

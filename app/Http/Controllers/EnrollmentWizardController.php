@@ -163,7 +163,8 @@ class EnrollmentWizardController extends Controller
             ], 422);
         }
 
-        $initialAmount = $this->calculateInitialChargeAmount($program, $courses->all());
+        $studentId = (int) $request->session()->get('selected_student_id');
+        $initialAmount = $this->calculateInitialChargeAmount($program, $courses->all(), $studentId);
         $amount = (int) round($initialAmount * 100);
         if ($amount <= 0) {
             return response()->json([
@@ -462,6 +463,7 @@ class EnrollmentWizardController extends Controller
 
             $existingEnrollment = Enrollment::query()
                 ->where('student_id', $student->id)
+                ->where('status', '!=', 'cancelled')
                 ->whereHas('courses', fn($q) => $q->where('course_id', $course->id))
                 ->first();
 
@@ -574,10 +576,12 @@ class EnrollmentWizardController extends Controller
         $program = $programId ? Program::find($programId) : null;
         $selectedCourses = Course::whereIn('id', $courseIds)->get();
 
-        $total = 0;
-        if ($program) {
-            $total += (float) ($program->enrollment_fee ?? 50.00);
-        }
+        $studentId = (int) $request->session()->get('selected_student_id');
+        $enrollmentFee = ($program && !$this->hasPaidProgramEnrollmentFee($studentId, $program->id))
+            ? (float) ($program->enrollment_fee ?? 50.00)
+            : 0.0;
+
+        $total = $enrollmentFee;
         foreach ($selectedCourses as $course) {
             $total += (float) ($course->monthly_fee ?? 0);
         }
@@ -679,6 +683,7 @@ class EnrollmentWizardController extends Controller
 
             $existingEnrollment = Enrollment::query()
                 ->where('student_id', $student->id)
+                ->where('status', '!=', 'cancelled')
                 ->whereHas('courses', fn($q) => $q->where('course_id', $course->id))
                 ->where('is_free_trial', false)
                 ->exists();
@@ -836,6 +841,11 @@ class EnrollmentWizardController extends Controller
                 $enrollment->image_consent_accepted = true;
                 $enrollment->payment_receipt_path = $paymentReceiptPath;
                 $enrollment->payment_receipt_original_name = $paymentReceiptOriginalName;
+                
+                if ($this->hasPaidProgramEnrollmentFee($studentId, $programId)) {
+                    $enrollment->custom_enrollment_fee = 0.0;
+                }
+                
                 $enrollment->save();
 
                 $enrollment->courses()->sync($courseIds);
@@ -868,7 +878,9 @@ class EnrollmentWizardController extends Controller
                 }
 
                 $installmentMonths = $this->calculateCombinedInstallmentMonths($courses);
-                $enrollmentFee = (float) ($program->enrollment_fee ?? 50.00);
+                $enrollmentFee = ($enrollment->custom_enrollment_fee !== null)
+                    ? (float) $enrollment->custom_enrollment_fee
+                    : (float) ($program->enrollment_fee ?? 50.00);
                 $totalMonthlyFee = $courses->sum(fn($c) => (float) ($c->monthly_fee ?? 0));
                 $totalReceivable = $enrollmentFee + ($totalMonthlyFee * $installmentMonths);
 
@@ -892,7 +904,7 @@ class EnrollmentWizardController extends Controller
                 $this->createInstallmentsForEnrollment($enrollment, $courses, $receivable, $installmentMonths, $totalMonthlyFee, $paymentMethod === 'card');
 
                 if ($enrollment->payment_status === 'paid') {
-                    $initialAmount = $this->calculateInitialChargeAmount($program, $courses->all());
+                    $initialAmount = $this->calculateInitialChargeAmount($program, $courses->all(), null, $enrollment);
 
                     Transaction::create([
                         'enrollment_id' => $enrollment->id,
@@ -1202,9 +1214,36 @@ class EnrollmentWizardController extends Controller
             ->implode(' • ');
     }
 
-    protected function calculateInitialChargeAmount(Program $program, array $courses): float
+    protected function hasPaidProgramEnrollmentFee(int $studentId, int $programId, ?int $excludeEnrollmentId = null): bool
     {
-        $enrollmentFee = (float) ($program->enrollment_fee ?? 50.00);
+        $query = Enrollment::where('student_id', $studentId)
+            ->where('program_id', $programId)
+            ->where('is_free_trial', false)
+            ->where(function ($query) {
+                $query->where('payment_status', 'paid')
+                      ->orWhereHas('receivable.transactions', function ($q) {
+                          $q->where('status', 'completed');
+                      });
+            });
+
+        if ($excludeEnrollmentId) {
+            $query->where('id', '!=', $excludeEnrollmentId);
+        }
+
+        return $query->exists();
+    }
+
+    protected function calculateInitialChargeAmount(Program $program, array $courses, ?int $studentId = null, ?Enrollment $enrollment = null): float
+    {
+        $enrollmentFee = ($enrollment && $enrollment->custom_enrollment_fee !== null)
+            ? (float) $enrollment->custom_enrollment_fee
+            : (float) ($program->enrollment_fee ?? 50.00);
+
+        $checkStudentId = $studentId ?? ($enrollment ? $enrollment->student_id : session('selected_student_id'));
+        if ($checkStudentId && $this->hasPaidProgramEnrollmentFee($checkStudentId, $program->id, $enrollment?->id)) {
+            $enrollmentFee = 0.0;
+        }
+
         $monthlySum = array_sum(array_map(fn($c) => (float) ($c->monthly_fee ?? 0), $courses));
 
         return $enrollmentFee + $monthlySum;
@@ -1388,7 +1427,9 @@ class EnrollmentWizardController extends Controller
 
         $totalPaid = (float) $receivable->transactions()->where('status', 'completed')->sum('amount');
         $program = $enrollment->program;
-        $enrollmentFee = $program ? (float) ($program->enrollment_fee ?? 50.00) : 0.0;
+        $enrollmentFee = ($enrollment->custom_enrollment_fee !== null)
+            ? (float) $enrollment->custom_enrollment_fee
+            : ($program ? (float) ($program->enrollment_fee ?? 50.00) : 0.0);
         
         $remainingPaid = max(0.0, $totalPaid - $enrollmentFee);
         $installments = $enrollment->installments()->orderBy('due_date')->get();

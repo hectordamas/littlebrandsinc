@@ -454,10 +454,41 @@
                                                     <option value="paid">Pagado</option>
                                                 </select>
                                             </div>
-
                                             <div class="col-md-6">
                                                 <label class="form-label fw-bold">Comprobante de pago (opcional)</label>
                                                 <input type="file" name="payment_receipt" id="modalPaymentReceiptInput" class="form-control" accept=".jpg,.jpeg,.png,.pdf">
+                                            </div>
+
+                                            <!-- Costo de Inscripción / Opciones de pago -->
+                                            <div class="col-12 mt-3 text-start">
+                                                <div class="alert alert-info p-2 mb-3">
+                                                    <i class="fas fa-info-circle text-info me-1"></i>
+                                                    <strong>Monto sugerido (Inscripción + 1er Mes):</strong> 
+                                                    <span class="text-primary fw-bold">${{ number_format(($course->program->enrollment_fee ?? 50.00) + ($course->monthly_fee ?? 0.00), 2) }}</span>
+                                                </div>
+
+                                                <label class="form-label fw-bold">Costo de Inscripción</label>
+                                                <div class="d-flex align-items-center gap-4 flex-wrap">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input modal-fee-option" type="radio" name="enrollment_fee_type" id="modalFeeStandard" value="standard" checked>
+                                                        <label class="form-check-label" for="modalFeeStandard">
+                                                            Monto sugerido (${{ number_format(($course->program->enrollment_fee ?? 50.00) + ($course->monthly_fee ?? 0.00), 2) }})
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input modal-fee-option" type="radio" name="enrollment_fee_type" id="modalFeeCustom" value="custom">
+                                                        <label class="form-check-label" for="modalFeeCustom">
+                                                            Monto personalizado
+                                                        </label>
+                                                    </div>
+                                                    <div class="d-none" id="modalCustomAmountContainer" style="width: 180px;">
+                                                        <label class="form-label small fw-bold mb-1">Monto personalizado ($)</label>
+                                                        <div class="input-group input-group-sm">
+                                                            <span class="input-group-text">$</span>
+                                                            <input type="number" name="custom_amount" id="modalCustomAmount" class="form-control form-control-sm" step="0.01" min="0" placeholder="0.00">
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
 
                                             <div class="col-md-6 mt-3">
@@ -590,23 +621,23 @@
                                                                             <!-- Opciones de pago -->
                                                                             <div class="row g-3 mb-3">
                                                                                 <div class="col-md-12 text-start">
-                                                                                    <label class="form-label small fw-bold d-block">¿Cuánto desea pagar?</label>
+                                                                                    <label class="form-label small fw-bold d-block">Costo de Inscripción</label>
                                                                                     <div class="form-check form-check-inline">
                                                                                         <input class="form-check-input payment-option-radio" type="radio" name="amount_option" id="amount_opt_suggested_{{ $enrollment->id }}" value="suggested" checked data-enrollment-id="{{ $enrollment->id }}">
                                                                                         <label class="form-check-label" for="amount_opt_suggested_{{ $enrollment->id }}">
-                                                                                            Pagar monto sugerido (${{ number_format($enrollment->getInitialChargeAmount(), 2) }})
+                                                                                            Monto sugerido (${{ number_format($enrollment->getInitialChargeAmount(), 2) }})
                                                                                         </label>
                                                                                     </div>
                                                                                     <div class="form-check form-check-inline">
                                                                                         <input class="form-check-input payment-option-radio" type="radio" name="amount_option" id="amount_opt_custom_{{ $enrollment->id }}" value="custom" data-enrollment-id="{{ $enrollment->id }}">
                                                                                         <label class="form-check-label" for="amount_opt_custom_{{ $enrollment->id }}">
-                                                                                            Abonar otro monto
+                                                                                            Monto personalizado
                                                                                         </label>
                                                                                     </div>
                                                                                     
                                                                                     <div class="mt-2 d-none" id="custom-amount-container-{{ $enrollment->id }}">
-                                                                                        <label class="form-label small fw-bold">Monto a abonar ($)</label>
-                                                                                        <input type="number" name="custom_amount" id="custom_amount_{{ $enrollment->id }}" class="form-control form-control-sm w-50" step="0.01" min="0.01" max="{{ $enrollment->receivable ? $enrollment->receivable->balance_due : '' }}" placeholder="Ingrese el monto a pagar">
+                                                                                        <label class="form-label small fw-bold">Monto personalizado ($)</label>
+                                                                                        <input type="number" name="custom_amount" id="custom_amount_{{ $enrollment->id }}" class="form-control form-control-sm w-50" step="0.01" min="0.01" max="{{ $enrollment->receivable ? $enrollment->receivable->balance_due : '' }}" placeholder="Ingrese el monto personalizado">
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
@@ -740,6 +771,14 @@
                 } else {
                     customContainer.addClass('d-none');
                     customInput.prop('required', false).val('');
+                }
+            });
+
+            $('.modal-fee-option').on('change', function() {
+                if ($(this).val() === 'custom') {
+                    $('#modalCustomAmountContainer').removeClass('d-none');
+                } else {
+                    $('#modalCustomAmountContainer').addClass('d-none');
                 }
             });
 
