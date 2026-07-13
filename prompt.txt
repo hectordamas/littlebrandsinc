@@ -1,4 +1,0 @@
-tal como en la inscripcion que el monto personalizado modifica el monto de inscripcion y de la cuenta por cobrar, 
-este que dice "abonar otro monto" deberia servir para alterar el precio de la inscripcion y de la cxc, por tanto, 
-es una forma de inscribirlo en el programa en caso de que se hayan inscrito en la clase de forma gratuita y se haya acordado 
-con ellos otro monto para la inscripcion 
