@@ -104,7 +104,7 @@ test('abono del administrador en CxC se refleja en las cuotas del padre', functi
     expect($this->installment1->fresh()->status)->toBe('pending');
     expect($this->installment2->fresh()->status)->toBe('pending');
 
-    // 2. Administrador registra un abono de $90 (cubre matrícula $50 + cuota 1 $40)
+    // 2. Administrador registra un abono de $90 (cubre inscripción $50 + cuota 1 $40)
     $this->actingAs($this->admin);
 
     $response = $this->post(route('finance.collections.payments.store', $this->receivable), [

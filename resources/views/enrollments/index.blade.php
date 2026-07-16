@@ -404,25 +404,45 @@
                                 @enderror
                             </div>
 
+                            <div class="col-md-4 mt-3 d-none" id="accountSelectContainer">
+                                <label class="form-label">Cuenta de Pago <span class="text-danger">*</span></label>
+                                <select name="account_id" id="accountSelect" class="form-control">
+                                    @foreach ($accounts ?? [] as $account)
+                                        <option value="{{ $account->id }}">{{ $account->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('account_id')
+                                    <div class="text-danger small mt-1">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="col-md-4 mt-3 d-none" id="referenceContainer">
+                                <label class="form-label">Referencia / Observación</label>
+                                <input type="text" name="reference" id="referenceInput" class="form-control" placeholder="Ej. Transacción 1234">
+                                @error('reference')
+                                    <div class="text-danger small mt-1">{{ $message }}</div>
+                                @enderror
+                            </div>
+
                             <div class="col-12 mt-3">
-                                <label class="form-label">Costo de Inscripción</label>
+                                <label class="form-label fw-bold">Monto Inicial (Inscripción + 1er Mes)</label>
                                 <div class="d-flex align-items-center gap-4 flex-wrap">
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="enrollment_fee_type" id="feeStandard" value="standard" checked>
                                         <label class="form-check-label" for="feeStandard">
-                                            Monto estándar del programa (<span id="standardFeeLabel">$0.00</span>)
+                                            Monto sugerido (<span id="standardFeeLabel">$0.00</span>)
                                         </label>
                                     </div>
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="enrollment_fee_type" id="feeCustom" value="custom">
                                         <label class="form-check-label" for="feeCustom">
-                                            Monto personalizado
+                                            Monto total personalizado
                                         </label>
                                     </div>
-                                    <div class="d-none" id="customFeeInputContainer" style="width: 150px;">
+                                    <div class="d-none" id="customFeeInputContainer" style="width: 180px;">
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text">$</span>
-                                            <input type="number" name="custom_enrollment_fee" id="customEnrollmentFee" class="form-control form-control-sm" step="0.01" min="0" placeholder="0.00" value="0.00">
+                                            <input type="number" name="custom_total_amount" id="customTotalAmount" class="form-control form-control-sm" step="0.01" min="0" placeholder="0.00" value="0.00">
                                         </div>
                                     </div>
                                 </div>
@@ -902,18 +922,40 @@
             recalculateTotal();
         }
 
+        let studentHasPaidFee = false;
+
+        async function checkEnrollmentFee() {
+            const studentId = $('#studentSelect').val();
+            const programId = $('#programSelect').val();
+
+            if (!studentId || !programId) {
+                studentHasPaidFee = false;
+                recalculateTotal();
+                return;
+            }
+
+            try {
+                const response = await fetch(`{{ route('enrollment.check-fee') }}?student_id=${studentId}&program_id=${programId}`, {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                studentHasPaidFee = !!data.has_paid;
+            } catch (e) {
+                console.error(e);
+                studentHasPaidFee = false;
+            }
+            recalculateTotal();
+        }
+
         function recalculateTotal() {
             const programSelect = $('#programSelect');
             const selectedOption = programSelect.find('option:selected');
-            const standardFee = selectedOption.data('enrollment-fee') ? parseFloat(selectedOption.data('enrollment-fee')) : 0;
+            let standardFee = selectedOption.data('enrollment-fee') ? parseFloat(selectedOption.data('enrollment-fee')) : 0;
 
-            // Update standard fee label
-            $('#standardFeeLabel').text('$' + standardFee.toFixed(2));
-
-            // Determine enrollment fee based on selected type
-            let enrollmentFee = standardFee;
-            if ($('#feeCustom').is(':checked')) {
-                enrollmentFee = parseFloat($('#customEnrollmentFee').val()) || 0;
+            if (studentHasPaidFee) {
+                standardFee = 0;
             }
 
             let monthlyFeesTotal = 0;
@@ -922,7 +964,17 @@
                 monthlyFeesTotal += fee;
             });
 
-            const total = enrollmentFee + monthlyFeesTotal;
+            // Update standard fee label (now it shows standard total: inscripción + monthly fees)
+            const standardTotal = standardFee + monthlyFeesTotal;
+            $('#standardFeeLabel').text('$' + standardTotal.toFixed(2));
+
+            let total = standardTotal;
+            let enrollmentFee = standardFee;
+
+            if ($('#feeCustom').is(':checked')) {
+                total = parseFloat($('#customTotalAmount').val()) || 0;
+                enrollmentFee = Math.max(0, total - monthlyFeesTotal);
+            }
 
             if (programSelect.val() || monthlyFeesTotal > 0) {
                 $('#totalDisplay').removeClass('d-none');
@@ -943,6 +995,10 @@
                 receiptInput.prop('required', false).prop('disabled', true).val('');
                 $('#paymentStatusSelect').val('paid');
                 helpEl.text('No se requiere comprobante para clase de prueba gratuita.');
+                $('#accountSelectContainer').addClass('d-none');
+                $('#accountSelect').prop('required', false);
+                $('#referenceContainer').addClass('d-none');
+                $('#referenceInput').val('');
                 return;
             }
 
@@ -951,6 +1007,17 @@
             helpEl.text(mustAttach ?
                 'Pago marcado como pagado: adjunta el comprobante (obligatorio).' :
                 'Formatos: JPG, PNG, PDF. Max 6 MB.');
+
+            if (mustAttach) {
+                $('#accountSelectContainer').removeClass('d-none');
+                $('#accountSelect').prop('required', true);
+                $('#referenceContainer').removeClass('d-none');
+            } else {
+                $('#accountSelectContainer').addClass('d-none');
+                $('#accountSelect').prop('required', false);
+                $('#referenceContainer').addClass('d-none');
+                $('#referenceInput').val('');
+            }
         }
 
         const selectedIds = new Set();
@@ -1113,7 +1180,7 @@
                 $('#studentSelect').val(null).trigger('change');
                 $('#userSelect').val(null).trigger('change');
                 $('#feeStandard').prop('checked', true);
-                $('#customEnrollmentFee').val('0.00');
+                $('#customTotalAmount').val('0.00');
                 $('#customFeeInputContainer').addClass('d-none');
                 clearValidationErrors();
                 updatePaymentReceiptState();
@@ -1200,6 +1267,11 @@
 
             $('#programSelect, #branchFilterSelect').on('change', function() {
                 filterCourses();
+                checkEnrollmentFee();
+            });
+
+            $('#studentSelect').on('change', function() {
+                checkEnrollmentFee();
             });
 
             $('#courseSelect').on('change', function() {
@@ -1215,7 +1287,7 @@
                 recalculateTotal();
             });
 
-            $('#customEnrollmentFee').on('input', function() {
+            $('#customTotalAmount').on('input', function() {
                 recalculateTotal();
             });
 

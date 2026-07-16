@@ -50,11 +50,24 @@ class WaitlistController extends Controller
             }
         }
 
+        // Verificar si el estudiante ya está inscrito en el mismo curso en otra inscripción activa
+        $alreadyEnrolled = Enrollment::where('student_id', $student->id)
+            ->where('status', '!=', 'cancelled')
+            ->whereHas('courses', function ($query) use ($course) {
+                $query->where('courses.id', $course->id);
+            })
+            ->exists();
+
+        if ($alreadyEnrolled) {
+            return redirect()->back()->with('error', 'El estudiante ya está inscrito en el curso "' . $course->title . '".');
+        }
+
         DB::transaction(function () use ($waitlist, $course, $student): void {
             $waitlist->update(['status' => 'approved']);
 
             $enrollment = Enrollment::where('student_id', $student->id)
                 ->where('program_id', $course->program_id)
+                ->where('status', '!=', 'cancelled')
                 ->first();
 
             if ($enrollment) {

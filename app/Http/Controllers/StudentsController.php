@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use App\Models\{Student, User, Enrollment};
+use App\Models\{Student, User, Enrollment, Account};
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
@@ -151,9 +151,12 @@ class StudentsController extends Controller
             })
             ->values();
 
+        $accounts = Account::where('active', true)->orderBy('name')->get();
+
         return view('students.show', [
             'student' => $student,
             'upcomingClasses' => $upcomingClasses,
+            'accounts' => $accounts,
         ]);
     }
 

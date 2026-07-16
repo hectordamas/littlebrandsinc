@@ -48,7 +48,7 @@
                         <tbody>
                             @forelse($students as $student)
                                 <tr>
-                                    <td>{{ $loop->iteration }}</td>
+                                    <td>{{ $student->id }}</td>
 
                                     <td>
                                         <strong>{{ $student->name }}</strong>

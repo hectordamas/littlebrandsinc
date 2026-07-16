@@ -201,7 +201,7 @@
                             <label class="form-label text-muted">Comprobante adjunto</label>
                             @if ($enrollment->payment_receipt_path)
                                 <div>
-                                    <a class="btn btn-sm btn-outline-primary" href="{{ asset('storage/'.$enrollment->payment_receipt_path) }}" target="_blank" rel="noopener">
+                                    <a class="btn btn-sm btn-outline-primary" href="{{ asset($enrollment->payment_receipt_path) }}" target="_blank" rel="noopener">
                                         Ver comprobante
                                     </a>
                                 </div>

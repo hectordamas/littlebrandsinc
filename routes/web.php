@@ -45,6 +45,7 @@ Route::middleware(['auth'])->group(function () {
 
 Route::middleware(['auth', 'role:Administrador'])->group(function () {
     Route::get('enrollment', [EnrollmentController::class, 'index']);
+    Route::get('enrollment/check-fee', [EnrollmentController::class, 'checkFee'])->name('enrollment.check-fee');
     Route::post('enrollment/store', [EnrollmentController::class, 'store'])->name('enrollment.store');
     Route::patch('enrollment/{enrollment}/status', [EnrollmentController::class, 'updateStatus'])->name('enrollment.status');
     Route::post('enrollment/{enrollment}/attach-payment', [EnrollmentController::class, 'attachPayment'])->name('enrollment.attach-payment');

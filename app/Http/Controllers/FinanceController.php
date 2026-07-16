@@ -35,7 +35,7 @@ class FinanceController extends Controller
 
         $summary = $this->buildSummary($branchId);
 
-        if ($request->ajax()) {
+        if ($request->ajax() || $request->input('format') === 'json') {
             $transactions = $this->transactionsQuery($branchId)->get();
 
             return response()->json([
@@ -362,7 +362,7 @@ class FinanceController extends Controller
 
     protected function transactionsQuery(?int $branchId = null)
     {
-        $query = Transaction::with(['account', 'branch', 'enrollment'])
+        $query = Transaction::with(['account', 'branch', 'enrollment', 'student', 'course'])
             ->orderBy('created_at', 'desc');
 
         if ($branchId) {
@@ -433,6 +433,10 @@ class FinanceController extends Controller
                 'account' => optional($transaction->account)->name ?? 'N/A',
                 'branch' => optional($transaction->branch)->name ?? 'N/A',
                 'reference' => $transaction->reference ?? 'N/A',
+                'description' => $transaction->description ?? 'Sin descripción',
+                'student_name' => optional($transaction->student)->name ?? 'N/A',
+                'course_title' => optional($transaction->course)->title ?? 'N/A',
+                'payment_method' => $transaction->payment_method ?? 'N/A',
                 'receipt_url' => route('finance.transactions.receipt', $transaction),
                 'payment_receipt_url' => $this->resolvePaymentReceiptUrl($receiptPath),
                 'payment_receipt_name' => $receiptName,
@@ -497,9 +501,7 @@ class FinanceController extends Controller
 
         $totalPaid = (float) $receivable->transactions()->where('status', 'completed')->sum('amount');
         $program = $enrollment->program;
-        $enrollmentFee = ($enrollment->custom_enrollment_fee !== null)
-            ? (float) $enrollment->custom_enrollment_fee
-            : ($program ? (float) ($program->enrollment_fee ?? 50.00) : 0.0);
+        $enrollmentFee = $enrollment->getEnrollmentFee();
         
         $remainingPaid = max(0.0, $totalPaid - $enrollmentFee);
         $installments = $enrollment->installments()->orderBy('due_date')->get();
@@ -654,8 +656,8 @@ class FinanceController extends Controller
 
     protected function calculateEnrollmentReceivableTotal(Program $program, $courses, ?Enrollment $enrollment = null): float
     {
-        $enrollmentFee = ($enrollment && $enrollment->custom_enrollment_fee !== null)
-            ? (float) $enrollment->custom_enrollment_fee
+        $enrollmentFee = $enrollment 
+            ? $enrollment->getEnrollmentFee() 
             : (float) ($program->enrollment_fee ?? 50.00);
 
         $total = $enrollmentFee;

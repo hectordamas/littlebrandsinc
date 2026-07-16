@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use App\Models\{Course, Branch, LBClass, Program, User, Student};
+use App\Models\{Course, Branch, LBClass, Program, User, Student, Account};
 use Illuminate\Support\Facades\DB;
 
 class CoursesController extends Controller
@@ -234,6 +234,8 @@ class CoursesController extends Controller
         $parents = User::where('role', 'Padre')->orderBy('name')->get();
         $students = Student::with('user')->orderBy('name')->get();
 
+        $accounts = Account::where('active', true)->orderBy('name')->get();
+
         return view('courses.edit', [
             'course' => $course,
             'branches' => $branches,
@@ -243,6 +245,7 @@ class CoursesController extends Controller
             'selectedCoachIds' => $selectedCoachIds,
             'parents' => $parents,
             'students' => $students,
+            'accounts' => $accounts,
         ]);
     }
 

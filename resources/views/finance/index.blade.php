@@ -193,6 +193,70 @@
         </div>
     </div>
 
+    <div class="modal fade" id="transactionDetailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="mb-0">Detalle del movimiento</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <table class="table table-striped table-bordered mb-0" style="font-size: 0.9rem;">
+                        <tbody>
+                            <tr>
+                                <th class="bg-light text-dark" style="width: 35%;">ID</th>
+                                <td id="detail-id"></td>
+                            </tr>
+                            <tr>
+                                <th class="bg-light text-dark">Fecha</th>
+                                <td id="detail-date"></td>
+                            </tr>
+                            <tr>
+                                <th class="bg-light text-dark">Tipo</th>
+                                <td id="detail-type"></td>
+                            </tr>
+                            <tr>
+                                <th class="bg-light text-dark">Monto</th>
+                                <td id="detail-amount"></td>
+                            </tr>
+                            <tr>
+                                <th class="bg-light text-dark">Estado</th>
+                                <td id="detail-status"></td>
+                            </tr>
+                            <tr>
+                                <th class="bg-light text-dark">Cuenta / Método</th>
+                                <td id="detail-account"></td>
+                            </tr>
+                            <tr>
+                                <th class="bg-light text-dark">Sede</th>
+                                <td id="detail-branch"></td>
+                            </tr>
+                            <tr>
+                                <th class="bg-light text-dark">Referencia</th>
+                                <td id="detail-reference"></td>
+                            </tr>
+                            <tr>
+                                <th class="bg-light text-dark">Estudiante</th>
+                                <td id="detail-student"></td>
+                            </tr>
+                            <tr>
+                                <th class="bg-light text-dark">Curso / Concepto</th>
+                                <td id="detail-course"></td>
+                            </tr>
+                            <tr>
+                                <th class="bg-light text-dark">Descripción / Nota</th>
+                                <td id="detail-description" style="white-space: pre-wrap; word-break: break-all;"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="col-md-12">
         <div class="finance-toolbar">
             <div class="form-group">
@@ -296,6 +360,7 @@
     <script>
         let transactionsTableInstance;
         let financeFilterRequest = null;
+        let currentTransactionsList = [];
 
         function transactionsExportColumns() {
             return [0, 1, 2, 3, 4, 5, 6, 7];
@@ -452,6 +517,7 @@
                         <td>${escapeHtml(transaction.reference)}</td>
                         <td>
                             <div class="d-flex gap-1 justify-content-end">
+                                <button type="button" class="btn btn-sm btn-outline-info js-open-details" data-transaction-id="${transaction.id}" title="Ver Detalle"><i class="fas fa-eye"></i></button>
                                 ${renderPaymentProofButton(transaction)}
                                 ${renderReceiptButton(transaction)}
                             </div>
@@ -468,8 +534,11 @@
             const spinner = $('#financeFilterSpinner');
             const tableLoading = $('#financeTableLoading');
             const requestData = branchId ? {
-                branch_id: branchId
-            } : {};
+                branch_id: branchId,
+                format: 'json'
+            } : {
+                format: 'json'
+            };
 
             if (financeFilterRequest) {
                 financeFilterRequest.abort();
@@ -496,6 +565,7 @@
                             $('#transactionsTable').DataTable().destroy();
                         }
 
+                        currentTransactionsList = response.transactions || [];
                         updateSummary(response.summary);
                         renderTransactionsRows(response.transactions);
                         initializeTransactionsTable();
@@ -533,6 +603,27 @@
             $('#financeBranchFilter').on('change', function() {
                 $('#transactionReturnBranchId').val($(this).val());
                 loadFinanceData($(this).val());
+            });
+
+            $(document).on('click', '.js-open-details', function() {
+                const transactionId = $(this).data('transaction-id');
+                const transaction = currentTransactionsList.find(t => t.id == transactionId);
+                if (!transaction) return;
+
+                $('#detail-id').text(transaction.id);
+                $('#detail-date').text(transaction.created_at);
+                $('#detail-type').html(renderTypeBadge(transaction.type));
+                $('#detail-amount').text(formatCurrency(transaction.amount));
+                $('#detail-status').html(renderStatusBadge(transaction.status));
+                $('#detail-account').text(transaction.account);
+                $('#detail-branch').text(transaction.branch);
+                $('#detail-reference').text(transaction.reference);
+                $('#detail-student').text(transaction.student_name);
+                $('#detail-course').text(transaction.course_title);
+                $('#detail-description').text(transaction.description);
+
+                const modal = new bootstrap.Modal(document.getElementById('transactionDetailModal'));
+                modal.show();
             });
 
             $(document).on('click', '.js-open-proof', function() {

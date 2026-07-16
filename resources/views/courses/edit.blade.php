@@ -454,6 +454,18 @@
                                                     <option value="paid">Pagado</option>
                                                 </select>
                                             </div>
+                                            <div class="col-md-6 d-none" id="modalAccountSelectContainer">
+                                                <label class="form-label fw-bold">Cuenta de Pago <span class="text-danger">*</span></label>
+                                                <select name="account_id" id="modalAccountSelect" class="form-control">
+                                                    @foreach ($accounts ?? [] as $account)
+                                                        <option value="{{ $account->id }}">{{ $account->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6 d-none" id="modalReferenceContainer">
+                                                <label class="form-label fw-bold">Referencia / Observación</label>
+                                                <input type="text" name="reference" id="modalReferenceInput" class="form-control" placeholder="Ej. Transacción 1234">
+                                            </div>
                                             <div class="col-md-6">
                                                 <label class="form-label fw-bold">Comprobante de pago (opcional)</label>
                                                 <input type="file" name="payment_receipt" id="modalPaymentReceiptInput" class="form-control" accept=".jpg,.jpeg,.png,.pdf">
@@ -461,18 +473,13 @@
 
                                             <!-- Costo de Inscripción / Opciones de pago -->
                                             <div class="col-12 mt-3 text-start">
-                                                <div class="alert alert-info p-2 mb-3">
-                                                    <i class="fas fa-info-circle text-info me-1"></i>
-                                                    <strong>Monto sugerido (Inscripción + 1er Mes):</strong> 
-                                                    <span class="text-primary fw-bold">${{ number_format(($course->program->enrollment_fee ?? 50.00) + ($course->monthly_fee ?? 0.00), 2) }}</span>
-                                                </div>
-
+                                                
                                                 <label class="form-label fw-bold">Costo de Inscripción</label>
                                                 <div class="d-flex align-items-center gap-4 flex-wrap">
                                                     <div class="form-check">
                                                         <input class="form-check-input modal-fee-option" type="radio" name="enrollment_fee_type" id="modalFeeStandard" value="standard" checked>
                                                         <label class="form-check-label" for="modalFeeStandard">
-                                                            Monto sugerido (${{ number_format(($course->program->enrollment_fee ?? 50.00) + ($course->monthly_fee ?? 0.00), 2) }})
+                                                            Monto sugerido (<span id="modalStandardFeeLabel">${{ number_format(($course->program->enrollment_fee ?? 50.00) + ($course->monthly_fee ?? 0.00), 2) }}</span>)
                                                         </label>
                                                     </div>
                                                     <div class="form-check">
@@ -482,12 +489,20 @@
                                                         </label>
                                                     </div>
                                                     <div class="d-none" id="modalCustomAmountContainer" style="width: 180px;">
-                                                        <label class="form-label small fw-bold mb-1">Monto personalizado ($)</label>
+                                                        <label class="form-label small fw-bold mb-1">Monto total personalizado ($)</label>
                                                         <div class="input-group input-group-sm">
                                                             <span class="input-group-text">$</span>
-                                                            <input type="number" name="custom_amount" id="modalCustomAmount" class="form-control form-control-sm" step="0.01" min="0" placeholder="0.00">
+                                                            <input type="number" name="custom_total_amount" id="modalCustomAmount" class="form-control form-control-sm" step="0.01" min="0" placeholder="0.00">
                                                         </div>
                                                     </div>
+                                                </div>
+
+                                                <!-- Breakdown -->
+                                                <div class="mt-3 p-3 bg-light rounded border">
+                                                    <div class="d-flex justify-content-between mb-1"><span>Inscripción:</span> <span id="modalEnrollmentFeeDisplay">$0.00</span></div>
+                                                    <div class="d-flex justify-content-between mb-1"><span>1er Mensualidad:</span> <span id="modalMonthlyFeesDisplay">$0.00</span></div>
+                                                    <hr class="my-1">
+                                                    <div class="d-flex justify-content-between fw-bold"><span>Total a pagar:</span> <span id="modalTotalAmountDisplay">$0.00</span></div>
                                                 </div>
                                             </div>
 
@@ -602,16 +617,33 @@
                                                                             <!-- Visualización de montos -->
                                                                             <div class="row g-3 mb-3">
                                                                                 <div class="col-md-12 text-start">
-                                                                                    <div class="alert alert-info p-2 mb-0 d-flex justify-content-between align-items-center">
-                                                                                        <div>
-                                                                                            <i class="fas fa-info-circle text-info me-1"></i>
-                                                                                            <strong>Monto sugerido (Inscripción + 1er Mes):</strong> 
-                                                                                            <span class="text-primary fw-bold">${{ number_format($enrollment->getInitialChargeAmount(), 2) }}</span>
+                                                                                    @php
+                                                                                        $enrollmentFee = $enrollment->getEnrollmentFee();
+                                                                                        $monthlyFees = 0.0;
+                                                                                        foreach ($enrollment->courses as $c) {
+                                                                                            $monthlyFees += (float) ($c->monthly_fee ?? 0);
+                                                                                        }
+                                                                                        $suggestedTotal = $enrollmentFee + $monthlyFees;
+                                                                                    @endphp
+                                                                                    <div class="p-3 border rounded bg-light mb-0" style="border-left: 4px solid #0d6efd !important;">
+                                                                                        <h6 class="fw-bold mb-2 small text-dark"><i class="fas fa-file-invoice-dollar text-primary me-1"></i> Detalle de la Factura (Monto Sugerido)</h6>
+                                                                                        <div class="d-flex justify-content-between small mb-1">
+                                                                                            <span class="text-muted">Inscripción:</span>
+                                                                                            <span class="fw-semibold">${{ number_format($enrollmentFee, 2) }}</span>
+                                                                                        </div>
+                                                                                        <div class="d-flex justify-content-between small mb-1">
+                                                                                            <span class="text-muted">Mensualidad:</span>
+                                                                                            <span class="fw-semibold">${{ number_format($monthlyFees, 2) }}</span>
+                                                                                        </div>
+                                                                                        <div class="d-flex justify-content-between small mb-1 text-primary fw-bold">
+                                                                                            <span>Total Sugerido:</span>
+                                                                                            <span>${{ number_format($suggestedTotal, 2) }}</span>
                                                                                         </div>
                                                                                         @if($enrollment->receivable)
-                                                                                            <div>
-                                                                                                <strong>Saldo Total Pendiente:</strong> 
-                                                                                                <span class="text-danger fw-bold">${{ number_format($enrollment->receivable->balance_due, 2) }}</span>
+                                                                                            <hr class="my-1">
+                                                                                            <div class="d-flex justify-content-between small mb-0 text-danger fw-bold">
+                                                                                                <span>Saldo Total Pendiente:</span>
+                                                                                                <span>${{ number_format($enrollment->receivable->balance_due, 2) }}</span>
                                                                                             </div>
                                                                                         @endif
                                                                                     </div>
@@ -625,13 +657,13 @@
                                                                                     <div class="form-check form-check-inline">
                                                                                         <input class="form-check-input payment-option-radio" type="radio" name="amount_option" id="amount_opt_suggested_{{ $enrollment->id }}" value="suggested" checked data-enrollment-id="{{ $enrollment->id }}">
                                                                                         <label class="form-check-label" for="amount_opt_suggested_{{ $enrollment->id }}">
-                                                                                            Monto sugerido (${{ number_format($enrollment->getInitialChargeAmount(), 2) }})
+                                                                                            Monto sugerido (${{ number_format($suggestedTotal, 2) }})
                                                                                         </label>
                                                                                     </div>
                                                                                     <div class="form-check form-check-inline">
                                                                                         <input class="form-check-input payment-option-radio" type="radio" name="amount_option" id="amount_opt_custom_{{ $enrollment->id }}" value="custom" data-enrollment-id="{{ $enrollment->id }}">
                                                                                         <label class="form-check-label" for="amount_opt_custom_{{ $enrollment->id }}">
-                                                                                            Monto personalizado
+                                                                                            Monto total personalizado
                                                                                         </label>
                                                                                     </div>
                                                                                     
@@ -644,14 +676,11 @@
 
                                                                             <div class="row g-3">
                                                                                 <div class="col-md-4 text-start">
-                                                                                    <label class="form-label small fw-bold">Método de Pago</label>
-                                                                                    <select name="payment_method" class="form-control form-control-sm" required>
-                                                                                        <option value="transferencia">Transferencia</option>
-                                                                                        <option value="pago_movil">Pago Móvil</option>
-                                                                                        <option value="zelle">Zelle</option>
-                                                                                        <option value="efectivo">Efectivo</option>
-                                                                                        <option value="stripe">Stripe</option>
-                                                                                        <option value="manual">Pago manual / Otro</option>
+                                                                                    <label class="form-label small fw-bold">Cuenta de Pago</label>
+                                                                                    <select name="account_id" class="form-control form-control-sm" required>
+                                                                                        @foreach ($accounts ?? [] as $account)
+                                                                                            <option value="{{ $account->id }}">{{ $account->name }}</option>
+                                                                                        @endforeach
                                                                                     </select>
                                                                                 </div>
                                                                                 <div class="col-md-4 text-start">
@@ -774,12 +803,107 @@
                 }
             });
 
+            let modalStudentHasPaidFee = false;
+
+            async function checkModalEnrollmentFee() {
+                const studentId = $('#modalStudentSelect').val();
+                const programId = "{{ $course->program_id }}";
+
+                if (!studentId || !programId) {
+                    modalStudentHasPaidFee = false;
+                    recalculateModalTotal();
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`{{ route('enrollment.check-fee') }}?student_id=${studentId}&program_id=${programId}`, {
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+                    const data = await response.json();
+                    modalStudentHasPaidFee = !!data.has_paid;
+                } catch (e) {
+                    console.error(e);
+                    modalStudentHasPaidFee = false;
+                }
+                recalculateModalTotal();
+            }
+
+            $('#modalStudentSelect').on('change', function() {
+                checkModalEnrollmentFee();
+            });
+
+            function recalculateModalTotal() {
+                const monthlyFee = parseFloat("{{ $course->monthly_fee ?? 0.00 }}");
+                let standardFee = parseFloat("{{ $course->program->enrollment_fee ?? 50.00 }}");
+                
+                if (modalStudentHasPaidFee) {
+                    standardFee = 0;
+                }
+                
+                const standardTotal = standardFee + monthlyFee;
+                
+                let total = standardTotal;
+                let enrollmentFee = standardFee;
+
+                if ($('#modalFeeCustom').is(':checked')) {
+                    total = parseFloat($('#modalCustomAmount').val()) || 0;
+                    enrollmentFee = Math.max(0, total - monthlyFee);
+                }
+
+                $('#modalStandardFeeLabel').text('$' + standardTotal.toFixed(2));
+
+                $('#modalEnrollmentFeeDisplay').text('$' + enrollmentFee.toFixed(2));
+                $('#modalMonthlyFeesDisplay').text('$' + monthlyFee.toFixed(2));
+                $('#modalTotalAmountDisplay').text('$' + total.toFixed(2));
+            }
+
+            function updateModalPaymentReceiptState() {
+                const isFreeTrial = $('#modalIsFreeTrial').is(':checked');
+                const paymentStatus = $('#modalPaymentStatusSelect').val();
+
+                if (isFreeTrial) {
+                    $('#modalPaymentStatusSelect').val('paid');
+                    $('#modalAccountSelectContainer').addClass('d-none');
+                    $('#modalAccountSelect').prop('required', false);
+                    $('#modalReferenceContainer').addClass('d-none');
+                    $('#modalReferenceInput').val('');
+                    return;
+                }
+
+                if (paymentStatus === 'paid') {
+                    $('#modalAccountSelectContainer').removeClass('d-none');
+                    $('#modalAccountSelect').prop('required', true);
+                    $('#modalReferenceContainer').removeClass('d-none');
+                } else {
+                    $('#modalAccountSelectContainer').addClass('d-none');
+                    $('#modalAccountSelect').prop('required', false);
+                    $('#modalReferenceContainer').addClass('d-none');
+                    $('#modalReferenceInput').val('');
+                }
+            }
+
+            $('#modalIsFreeTrial, #modalPaymentStatusSelect').on('change', function() {
+                updateModalPaymentReceiptState();
+            });
+
+            $('#inscribirEstudianteModal').on('shown.bs.modal', function() {
+                updateModalPaymentReceiptState();
+                checkModalEnrollmentFee();
+            });
+
             $('.modal-fee-option').on('change', function() {
                 if ($(this).val() === 'custom') {
                     $('#modalCustomAmountContainer').removeClass('d-none');
                 } else {
                     $('#modalCustomAmountContainer').addClass('d-none');
                 }
+                recalculateModalTotal();
+            });
+
+            $('#modalCustomAmount').on('input', function() {
+                recalculateModalTotal();
             });
 
             // Filter students based on selected representative in modal

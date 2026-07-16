@@ -64,13 +64,33 @@ class Enrollment extends Model
         return $this->hasMany(EnrollmentInstallment::class);
     }
 
+    public function getEnrollmentFee(): float
+    {
+        if ($this->custom_enrollment_fee !== null) {
+            return (float) $this->custom_enrollment_fee;
+        }
+
+        $query = self::where('student_id', $this->student_id)
+            ->where('program_id', $this->program_id)
+            ->where('status', '!=', 'cancelled')
+            ->where('is_free_trial', false);
+
+        if ($this->exists) {
+            $query->where('id', '<', $this->id);
+        }
+
+        if ($query->exists()) {
+            return 0.0;
+        }
+
+        return (float) (optional($this->program)->enrollment_fee ?? 50.00);
+    }
+
     public function getInitialChargeAmount(): float
     {
         $this->loadMissing(['program', 'courses']);
 
-        $enrollmentFee = ($this->custom_enrollment_fee !== null)
-            ? (float) $this->custom_enrollment_fee
-            : (float) (optional($this->program)->enrollment_fee ?? 50.00);
+        $enrollmentFee = $this->getEnrollmentFee();
 
         $total = $enrollmentFee;
 

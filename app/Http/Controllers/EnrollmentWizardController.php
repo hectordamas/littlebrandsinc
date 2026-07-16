@@ -1100,7 +1100,9 @@ class EnrollmentWizardController extends Controller
         $programs = Program::where('active', true)->orderBy('name')->get()->map(fn($p) => [
             'id' => $p->id,
             'name' => $p->name,
-            'enrollment_fee' => (float) ($p->enrollment_fee ?? 50.00),
+            'enrollment_fee' => $studentId && $this->hasPaidProgramEnrollmentFee((int) $studentId, $p->id)
+                ? 0.0
+                : (float) ($p->enrollment_fee ?? 50.00),
         ])->values()->all();
 
         $branches = Branch::orderBy('name')->get()->map(fn($b) => [
@@ -1134,8 +1136,8 @@ class EnrollmentWizardController extends Controller
             'selected_course_ids' => array_map('intval', $courseIds),
             'selected_courses' => $selectedCourseModels->map(fn($c) => $this->serializeCourse($c))->values()->all(),
             'course_schedules' => $courseSchedules,
-            'enrollment_fee' => $programModel ? (float) ($programModel->enrollment_fee ?? 50.00) : null,
-            'program_enrollment_fee' => $programModel ? (float) ($programModel->enrollment_fee ?? 50.00) : null,
+            'enrollment_fee' => $programModel ? (($studentId && $this->hasPaidProgramEnrollmentFee((int) $studentId, $programModel->id)) ? 0.0 : (float) ($programModel->enrollment_fee ?? 50.00)) : null,
+            'program_enrollment_fee' => $programModel ? (($studentId && $this->hasPaidProgramEnrollmentFee((int) $studentId, $programModel->id)) ? 0.0 : (float) ($programModel->enrollment_fee ?? 50.00)) : null,
             'total' => $total !== null ? (float) $total : null,
             'locked_course_id' => $lockedCourseId ? (int) $lockedCourseId : null,
             'payment_method' => $request->session()->get('payment_method'),
@@ -1218,13 +1220,8 @@ class EnrollmentWizardController extends Controller
     {
         $query = Enrollment::where('student_id', $studentId)
             ->where('program_id', $programId)
-            ->where('is_free_trial', false)
-            ->where(function ($query) {
-                $query->where('payment_status', 'paid')
-                      ->orWhereHas('receivable.transactions', function ($q) {
-                          $q->where('status', 'completed');
-                      });
-            });
+            ->where('status', '!=', 'cancelled')
+            ->where('is_free_trial', false);
 
         if ($excludeEnrollmentId) {
             $query->where('id', '!=', $excludeEnrollmentId);
