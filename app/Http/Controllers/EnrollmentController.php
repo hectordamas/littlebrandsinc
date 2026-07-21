@@ -267,9 +267,13 @@ class EnrollmentController extends Controller
         $validated = $request->validate([
             'status' => ['nullable', Rule::in(['pending', 'completed', 'cancelled'])],
             'payment_status' => ['required', Rule::in(['pending', 'paid'])],
+            'is_free_trial' => ['nullable', 'boolean'],
         ]);
 
         DB::transaction(function () use ($enrollment, $validated): void {
+            if (array_key_exists('is_free_trial', $validated)) {
+                $enrollment->is_free_trial = (bool) $validated['is_free_trial'];
+            }
             $this->applyEnrollmentState(
                 $enrollment,
                 $validated['status'] ?? null,
@@ -397,6 +401,7 @@ class EnrollmentController extends Controller
             $enrollment->payment_method = $account->name;
             $enrollment->payment_receipt_path = $receiptPath;
             $enrollment->payment_receipt_original_name = $receiptOriginalName;
+            $enrollment->is_free_trial = false;
 
             if ($amountOption === 'custom') {
                 $monthlyFeesSum = 0.0;

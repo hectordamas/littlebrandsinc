@@ -183,7 +183,7 @@ class FinanceController extends Controller
             $this->refreshReceivableBalance($receivable->fresh());
         });
 
-        return redirect()->route('finance.collections.show', $receivable)->with('success', 'Abono registrado correctamente.');
+        return redirect()->back()->with('success', 'Abono registrado correctamente.');
     }
 
     public function payables()

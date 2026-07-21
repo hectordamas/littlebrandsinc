@@ -63,7 +63,7 @@
                                     </td>
 
                                     <td>
-                                        {{ $student->enrollments->pluck('program.name')->filter()->join(', ') ?: '-' }}
+                                        {{ $student->enrollments->pluck('program.name')->filter()->unique()->join(', ') ?: '-' }}
                                     </td>
 
                                     <td>

@@ -119,7 +119,8 @@ class StudentsController extends Controller
     public function index()
     {
         $students = Student::with([
-            'user'
+            'user',
+            'enrollments.program'
         ])->orderBy('id', 'desc')->get();
 
         return view('students.index', [
@@ -131,12 +132,18 @@ class StudentsController extends Controller
     {
         $student->load([
             'user',
+            'enrollments.receivable',
+            'enrollments.transactions.account',
             'enrollments.courses.branch',
             'enrollments.courses.coaches',
             'enrollments.courses.classes' => function ($query) {
                 $query->with('coach')->orderBy('date')->orderBy('start_time');
             },
         ]);
+
+        foreach ($student->enrollments as $enrollment) {
+            $enrollment->syncReceivable();
+        }
 
         $upcomingClasses = $student->enrollments
             ->where('status', '!=', 'cancelled')

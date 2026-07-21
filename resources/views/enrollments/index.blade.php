@@ -726,8 +726,11 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <div class="small text-muted">
-                                    Para ver horarios, sesiones de clase y datos completos, abre el detalle completo.
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="is_free_trial" value="1" id="detailIsFreeTrial">
+                                    <label class="form-check-label" for="detailIsFreeTrial">
+                                        Clase de prueba gratuita
+                                    </label>
                                 </div>
                             </div>
                         </div>
@@ -865,6 +868,7 @@
             $('#detailStudentName').val(enrollment.student_name || '');
             $('#detailParentName').val(enrollment.parent_name || '');
             $('#detailPaymentStatus').val(enrollment.payment_status);
+            $('#detailIsFreeTrial').prop('checked', !!enrollment.is_free_trial);
             $('#detailProgramName').val(enrollment.program_name || '');
 
             if (enrollment.courses && enrollment.courses.length) {
@@ -1549,6 +1553,7 @@
                         },
                         body: JSON.stringify({
                             payment_status: $('#detailPaymentStatus').val(),
+                            is_free_trial: $('#detailIsFreeTrial').is(':checked') ? 1 : 0
                         })
                     });
 
