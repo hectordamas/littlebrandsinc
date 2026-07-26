@@ -231,8 +231,7 @@
 
     <div class="modal fade" id="attendanceModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <form id="attendanceForm" method="POST">
+            <form id="attendanceForm" method="POST" class="modal-content">
                     @csrf
                     <div class="modal-header">
                         <h5 class="modal-title" id="attendanceTitle">Asistencia</h5>
@@ -261,7 +260,6 @@
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
                     </div>
                 </form>
-            </div>
         </div>
     </div>
 @endsection

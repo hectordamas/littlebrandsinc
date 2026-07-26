@@ -151,38 +151,12 @@
         }
 
         #courseSelect+.select2 .select2-selection {
-            min-height: 46px;
+            min-height: 42px;
             border: 1px solid #cbd5e1;
             border-radius: 0.6rem;
-            background: #f8fafc;
+            background: #ffffff;
         }
 
-        #courseSelect+.select2 .select2-selection__choice {
-            background: #e0f2fe;
-            border: 1px solid #7dd3fc;
-            color: #0b1f3a !important;
-            font-weight: 600;
-            font-size: 0.78rem;
-            max-width: 320px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            border-radius: 999px;
-            padding: 0.15rem 0.5rem;
-        }
-
-        #courseSelect+.select2 .select2-selection__choice .select2-selection__choice__display {
-            color: #0b1f3a !important;
-        }
-
-        #courseSelect+.select2 .select2-selection__choice .select2-selection__choice__remove {
-            color: #1e3a8a !important;
-            margin-right: 4px;
-        }
-
-        #courseSelect+.select2 .select2-selection__choice .select2-selection__choice__remove:hover {
-            color: #0b1f3a !important;
-        }
 
         #InscripcionesModal .select2-container--default .select2-results__option {
             padding: 0.55rem 0.65rem;
@@ -241,9 +215,7 @@
 
     <div class="modal fade" id="InscripcionesModal" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-
-                <form method="POST" action="{{ route('enrollment.store') }}" id="enrollmentForm" enctype="multipart/form-data">
+            <form method="POST" action="{{ route('enrollment.store') }}" id="enrollmentForm" class="modal-content" enctype="multipart/form-data">
                     @csrf
 
                     <div class="modal-header">
@@ -554,8 +526,6 @@
                     </div>
 
                 </form>
-
-            </div>
         </div>
     </div>
 
@@ -674,8 +644,7 @@
 
     <div class="modal fade" id="enrollmentDetailModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <form id="enrollmentDetailForm" method="POST" action="">
+            <form id="enrollmentDetailForm" method="POST" action="" class="modal-content">
                     @csrf
                     @method('PATCH')
                     <div class="modal-header">
@@ -745,7 +714,6 @@
                         </div>
                     </div>
                 </form>
-            </div>
         </div>
     </div>
 @endsection
@@ -1139,7 +1107,7 @@
             }
 
             // Scroll to the first error within the modal body
-            const $firstError = $('#enrollmentForm .is-invalid, #enrollmentForm .field-error').first();
+            const $firstError = $('#enrollmentGlobalError:not(.d-none), #enrollmentForm .is-invalid, #enrollmentForm .field-error').first();
             if ($firstError.length) {
                 const $modalBody = $('#InscripcionesModal .modal-body');
                 const scrollTo = $firstError.offset().top - $modalBody.offset().top + $modalBody.scrollTop() - 20;

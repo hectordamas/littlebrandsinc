@@ -349,8 +349,7 @@
                     <!-- Modal Registrar Inscripción en este Curso -->
                     <div class="modal fade" id="inscribirEstudianteModal" tabindex="-1" aria-labelledby="inscribirEstudianteModalLabel" aria-hidden="true">
                         <div class="modal-dialog modal-lg modal-dialog-scrollable">
-                            <div class="modal-content">
-                                <form id="inscribirEstudianteForm" enctype="multipart/form-data">
+                            <form id="inscribirEstudianteForm" class="modal-content" enctype="multipart/form-data">
                                     @csrf
                                     <input type="hidden" name="program_id" value="{{ $course->program_id }}">
                                     <input type="hidden" name="course_ids[]" value="{{ $course->id }}">
@@ -535,7 +534,6 @@
                                         </button>
                                     </div>
                                 </form>
-                            </div>
                         </div>
                     </div>
 
@@ -980,6 +978,9 @@
                         } else {
                             $('#enrollmentErrorAlert').removeClass('d-none').text(message);
                         }
+
+                        // Auto-scroll modal body to top so user immediately sees the error alert
+                        $('#inscribirEstudianteModal .modal-body').animate({ scrollTop: 0 }, 300);
                     }
                 });
             });
