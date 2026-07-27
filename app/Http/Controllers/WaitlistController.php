@@ -33,7 +33,9 @@ class WaitlistController extends Controller
             return redirect()->back()->with('error', 'La entrada de lista de espera no tiene curso o estudiante asociado.');
         }
 
-        $course->loadCount('enrollments');
+        $course->loadCount(['enrollments' => function ($q) {
+            $q->where('status', '!=', 'cancelled');
+        }]);
 
         if ((int) $course->enrollments_count + 1 > (int) $course->capacity) {
             return redirect()->back()->with('error', 'El curso "' . $course->title . '" no tiene cupos disponibles.');

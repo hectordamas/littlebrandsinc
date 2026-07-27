@@ -35,6 +35,13 @@ class Course extends Model
             ->withTimestamps();
     }
 
+    public function activeEnrollments()
+    {
+        return $this->belongsToMany(Enrollment::class, 'enrollment_course', 'course_id', 'enrollment_id')
+            ->where('enrollments.status', '!=', 'cancelled')
+            ->withTimestamps();
+    }
+
     public function waitlistEntries()
     {
         return $this->hasMany(Waitlist::class);

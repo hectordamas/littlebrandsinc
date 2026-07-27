@@ -24,7 +24,9 @@ class EnrollmentController extends Controller
             ->orderBy('name')
             ->get();
         $courses = Course::query()
-            ->withCount('enrollments')
+            ->withCount(['enrollments' => function ($q) {
+                $q->where('status', '!=', 'cancelled');
+            }])
             ->with(['branch', 'classes' => function ($q) {
                 $q->orderBy('date')->orderBy('start_time');
             }])
@@ -103,7 +105,9 @@ class EnrollmentController extends Controller
             $program = Program::findOrFail((int) $request->input('program_id'));
             $courseIds = collect($request->input('course_ids'))->map(fn ($id) => (int) $id)->unique()->values();
             $courses = Course::query()
-                ->withCount('enrollments')
+                ->withCount(['enrollments' => function ($q) {
+                    $q->where('status', '!=', 'cancelled');
+                }])
                 ->where('active', true)
                 ->whereDate('end_date', '>=', now()->toDateString())
                 ->whereIn('id', $courseIds)
@@ -224,7 +228,9 @@ class EnrollmentController extends Controller
         ]);
 
         foreach ($enrollment->courses as $course) {
-            $course->loadCount('enrollments');
+            $course->loadCount(['enrollments' => function ($q) {
+                $q->where('status', '!=', 'cancelled');
+            }]);
         }
 
         if ($request->expectsJson()) {
@@ -251,7 +257,9 @@ class EnrollmentController extends Controller
         ]);
 
         foreach ($enrollment->courses as $course) {
-            $course->loadCount('enrollments');
+            $course->loadCount(['enrollments' => function ($q) {
+                $q->where('status', '!=', 'cancelled');
+            }]);
         }
 
         $pdf = Pdf::loadView('enrollments.receipt-pdf', [
