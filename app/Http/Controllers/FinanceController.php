@@ -107,6 +107,38 @@ class FinanceController extends Controller
         return redirect()->route('finance.collections')->with('success', 'Cuenta por cobrar creada correctamente.');
     }
 
+    public function updateCollection(Request $request, AccountReceivable $receivable): RedirectResponse
+    {
+        $validated = $request->validate([
+            'amount_total' => ['required', 'numeric', 'gt:0'],
+            'due_date' => ['nullable', 'date'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'title' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $updateData = [
+            'amount_total' => $validated['amount_total'],
+            'is_custom_amount' => true,
+        ];
+
+        if ($request->has('due_date')) {
+            $updateData['due_date'] = $validated['due_date'] ?? null;
+        }
+
+        if ($request->has('notes')) {
+            $updateData['notes'] = $validated['notes'] ?? null;
+        }
+
+        if ($request->has('title') && !empty($validated['title'])) {
+            $updateData['title'] = $validated['title'];
+        }
+
+        $receivable->update($updateData);
+        $this->refreshReceivableBalance($receivable->fresh());
+
+        return redirect()->back()->with('success', 'Monto de la cuenta por cobrar actualizado correctamente.');
+    }
+
     public function showCollection(AccountReceivable $receivable)
     {
         $receivable->load([
@@ -348,6 +380,89 @@ class FinanceController extends Controller
             ->with('success', 'Movimiento financiero registrado correctamente.');
     }
 
+    public function updateTransaction(Request $request, Transaction $transaction): RedirectResponse
+    {
+        $validated = $request->validate([
+            'amount' => ['required', 'numeric', 'gt:0'],
+            'account_id' => ['required', 'integer', 'exists:accounts,id'],
+            'payment_date' => ['required', 'date'],
+            'reference' => ['nullable', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'payment_receipt' => ['bail', 'nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:6144'],
+        ]);
+
+        $account = Account::findOrFail($validated['account_id']);
+
+        $receiptPath = $transaction->payment_receipt_path;
+        $receiptOriginalName = $transaction->payment_receipt_original_name;
+
+        if ($request->hasFile('payment_receipt')) {
+            $destinationPath = public_path('uploads/comprobantes');
+            $file = $request->file('payment_receipt');
+            $filename = uniqid() . '.' . $file->getClientOriginalExtension();
+            $file->move($destinationPath, $filename);
+            $receiptPath = 'uploads/comprobantes/' . $filename;
+            $receiptOriginalName = $file->getClientOriginalName();
+        }
+
+        $transaction->update([
+            'amount' => $validated['amount'],
+            'account_id' => $account->id,
+            'payment_method' => $account->name,
+            'currency' => strtoupper($account->currency),
+            'reference' => $validated['reference'] ?? null,
+            'description' => $validated['description'] ?? null,
+            'payment_receipt_path' => $receiptPath,
+            'payment_receipt_original_name' => $receiptOriginalName,
+            'created_at' => $validated['payment_date'],
+            'updated_at' => $validated['payment_date'],
+        ]);
+
+        if ($transaction->account_receivable_id) {
+            $receivable = AccountReceivable::find($transaction->account_receivable_id);
+            if ($receivable) {
+                $this->refreshReceivableBalance($receivable);
+            }
+        }
+
+        if ($transaction->account_payable_id) {
+            $payable = AccountPayable::find($transaction->account_payable_id);
+            if ($payable) {
+                $this->refreshPayableBalance($payable);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Abono actualizado correctamente.');
+    }
+
+    public function destroyTransaction(Transaction $transaction): RedirectResponse
+    {
+        $receivableId = $transaction->account_receivable_id;
+        $payableId = $transaction->account_payable_id;
+
+        if ($transaction->payment_receipt_path && is_file(public_path($transaction->payment_receipt_path))) {
+            @unlink(public_path($transaction->payment_receipt_path));
+        }
+
+        $transaction->delete();
+
+        if ($receivableId) {
+            $receivable = AccountReceivable::find($receivableId);
+            if ($receivable) {
+                $this->refreshReceivableBalance($receivable);
+            }
+        }
+
+        if ($payableId) {
+            $payable = AccountPayable::find($payableId);
+            if ($payable) {
+                $this->refreshPayableBalance($payable);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Abono eliminado correctamente.');
+    }
+
     public function downloadTransactionReceipt(Transaction $transaction)
     {
         $transaction->loadMissing(['branch', 'account']);
@@ -485,6 +600,16 @@ class FinanceController extends Controller
             'status' => $status,
         ]);
 
+        if ($receivable->enrollment) {
+            $enrollment = $receivable->enrollment;
+            if ($enrollment->status !== 'cancelled') {
+                $enrollment->update([
+                    'payment_status' => ($status === 'paid') ? 'paid' : 'pending',
+                    'status' => ($status === 'paid') ? 'completed' : 'pending',
+                ]);
+            }
+        }
+
         $this->syncInstallmentsPaymentStatus($receivable);
     }
 
@@ -592,12 +717,17 @@ class FinanceController extends Controller
             }
 
             $firstCourse = $courses->first();
-            $amountTotal = $this->calculateEnrollmentReceivableTotal($program, $courses, $enrollment);
-            $courseTitles = $courses->pluck('title')->join(', ');
-
             $receivable = AccountReceivable::query()
                 ->where('enrollment_id', $enrollment->id)
                 ->first();
+
+            if ($receivable && $receivable->is_custom_amount) {
+                $amountTotal = (float) $receivable->amount_total;
+            } else {
+                $amountTotal = $this->calculateEnrollmentReceivableTotal($program, $courses, $enrollment);
+            }
+
+            $courseTitles = $courses->pluck('title')->join(', ');
 
             if ($enrollment->payment_status === 'pending') {
                 $studentName = optional($enrollment->student)->name ?? 'Estudiante';
@@ -614,15 +744,18 @@ class FinanceController extends Controller
                         'status' => 'pending',
                     ]);
                 } else {
-                    $receivable->update([
+                    $updateData = [
                         'branch_id' => $firstCourse->branch_id,
-                        'title' => $cleanTitle,
-                        'amount_total' => $amountTotal,
                         'currency' => 'USD',
                         'status' => in_array($receivable->status, ['partial', 'paid'], true)
                             ? $receivable->status
                             : 'pending',
-                    ]);
+                    ];
+                    if (!$receivable->is_custom_amount) {
+                        $updateData['title'] = $cleanTitle;
+                        $updateData['amount_total'] = $amountTotal;
+                    }
+                    $receivable->update($updateData);
                 }
 
                 $this->refreshReceivableBalance($receivable->fresh());

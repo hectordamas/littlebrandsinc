@@ -163,11 +163,43 @@
                                         @endif
                                     </td>
                                     <td class="text-end">
-                                        <a href="{{ route('finance.collections.show', $receivable) }}" class="btn btn-sm btn-inverse">
-                                            <i class="far fa-eye"></i>
-                                        </a>
+                                        <div class="d-inline-flex gap-1">
+                                            <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#editReceivableModalList{{ $receivable->id }}" title="Editar Cuenta">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <a href="{{ route('finance.collections.show', $receivable) }}" class="btn btn-sm btn-inverse" title="Ver detalle">
+                                                <i class="far fa-eye"></i>
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
+
+                                <!-- Modal Editar Cuenta -->
+                                <div class="modal fade" id="editReceivableModalList{{ $receivable->id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content text-start">
+                                            <form method="POST" action="{{ route('finance.collections.update', $receivable) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <div class="modal-header">
+                                                    <h6 class="mb-0 fw-bold"><i class="fas fa-edit me-1 text-primary"></i> Editar monto de la cuenta #{{ $receivable->id }}</h6>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-2">
+                                                        <label class="form-label small fw-bold">Monto total ($) <span class="text-danger">*</span></label>
+                                                        <input type="number" step="0.01" name="amount_total" class="form-control form-control-sm" value="{{ old('amount_total', $receivable->amount_total) }}" required min="0.01">
+                                                        <small class="text-muted d-block mt-2">💡 Al modificar el monto total, el saldo pendiente se recalculará automáticamente.</small>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer bg-light">
+                                                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                                                    <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save me-1"></i> Guardar cambios</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
                             @empty
                                 <tr>
                                     <td colspan="9" class="text-center text-muted">No hay cuentas por cobrar registradas.</td>

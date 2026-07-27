@@ -149,7 +149,14 @@
                                                 @if ($isFreeTrial)
                                                     <span class="text-muted small">Prueba Gratis</span>
                                                 @else
-                                                    <span class="fw-semibold text-dark">${{ number_format($amountTotal, 2) }}</span>
+                                                    <div class="d-flex align-items-center">
+                                                        <span class="fw-semibold text-dark">${{ number_format($amountTotal, 2) }}</span>
+                                                        @if ($enrollment->receivable)
+                                                            <button class="btn btn-link btn-xs p-0 ms-2 text-primary" type="button" data-bs-toggle="modal" data-bs-target="#edit-receivable-modal-{{ $enrollment->receivable->id }}" title="Editar Monto Cuenta">
+                                                                <i class="fas fa-pencil-alt"></i>
+                                                            </button>
+                                                        @endif
+                                                    </div>
                                                 @endif
                                             </td>
                                             <td>
@@ -285,6 +292,7 @@
                                                             <th>Método</th>
                                                             <th>Referencia</th>
                                                             <th>Comprobante</th>
+                                                            <th class="text-center">Acciones</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -304,6 +312,20 @@
                                                                         <span class="text-muted">-</span>
                                                                     @endif
                                                                 </td>
+                                                                <td class="text-center">
+                                                                    <div class="d-flex justify-content-center gap-1">
+                                                                        <button type="button" class="btn btn-xs btn-outline-warning" data-bs-toggle="modal" data-bs-target="#edit-transaction-modal-{{ $transaction->id }}" title="Editar Abono">
+                                                                            <i class="fas fa-edit"></i>
+                                                                        </button>
+                                                                        <form action="{{ route('finance.transactions.destroy', $transaction->id) }}" method="POST" class="d-inline mb-0" onsubmit="return confirm('¿Seguro que deseas eliminar este abono? El saldo de la cuenta será recalculado automáticamente.');">
+                                                                            @csrf
+                                                                            @method('DELETE')
+                                                                            <button type="submit" class="btn btn-xs btn-outline-danger" title="Eliminar Abono">
+                                                                                <i class="fas fa-trash"></i>
+                                                                            </button>
+                                                                        </form>
+                                                                    </div>
+                                                                </td>
                                                             </tr>
                                                         @endforeach
                                                     </tbody>
@@ -313,6 +335,98 @@
                                         <div class="modal-footer bg-light">
                                             <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @foreach ($enrollment->transactions as $transaction)
+                                <!-- Modal Editar Abono -->
+                                <div class="modal fade" id="edit-transaction-modal-{{ $transaction->id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <form action="{{ route('finance.transactions.update', $transaction->id) }}" method="POST" enctype="multipart/form-data">
+                                                @csrf
+                                                @method('PUT')
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title fw-bold text-dark">
+                                                        <i class="fas fa-edit text-warning me-2"></i>Editar Abono (#{{ $transaction->id }})
+                                                    </h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body text-start">
+                                                    <div class="mb-3">
+                                                        <label class="form-label small fw-bold">Monto del Abono ($) <span class="text-danger">*</span></label>
+                                                        <input type="number" step="0.01" name="amount" class="form-control form-control-sm" value="{{ old('amount', $transaction->amount) }}" required min="0.01">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label small fw-bold">Cuenta de Pago <span class="text-danger">*</span></label>
+                                                        <select name="account_id" class="form-control form-control-sm" required>
+                                                            @foreach ($accounts ?? [] as $account)
+                                                                <option value="{{ $account->id }}" @selected($transaction->account_id == $account->id)>{{ $account->name }} ({{ strtoupper($account->currency) }})</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label small fw-bold">Fecha del Pago <span class="text-danger">*</span></label>
+                                                        <input type="date" name="payment_date" value="{{ old('payment_date', $transaction->created_at ? \Carbon\Carbon::parse($transaction->created_at)->format('Y-m-d') : now()->toDateString()) }}" class="form-control form-control-sm" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label small fw-bold">Referencia / Observación</label>
+                                                        <input type="text" name="reference" value="{{ old('reference', $transaction->reference) }}" class="form-control form-control-sm">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label small fw-bold">Notas o Comentarios</label>
+                                                        <textarea name="description" class="form-control form-control-sm" rows="2">{{ old('description', $transaction->description) }}</textarea>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label small fw-bold">Cambiar Comprobante de Pago</label>
+                                                        <input type="file" name="payment_receipt" class="form-control form-control-sm" accept="image/*,.pdf">
+                                                        @if ($transaction->payment_receipt_path)
+                                                            <small class="text-muted d-block mt-1">Comprobante actual: <a href="{{ asset($transaction->payment_receipt_path) }}" target="_blank">Ver archivo</a></small>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer bg-light">
+                                                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                    <button type="submit" class="btn btn-sm btn-warning">
+                                                        <i class="fas fa-save me-1"></i>Actualizar Abono
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        @endif
+
+                        <!-- Modal Editar Cuenta por Cobrar -->
+                        @if ($enrollment->receivable)
+                            <div class="modal fade" id="edit-receivable-modal-{{ $enrollment->receivable->id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <form action="{{ route('finance.collections.update', $enrollment->receivable->id) }}" method="POST">
+                                            @csrf
+                                            @method('PATCH')
+                                            <div class="modal-header">
+                                                <h5 class="modal-title fw-bold text-dark">
+                                                    <i class="fas fa-pencil-alt text-primary me-2"></i>Editar Monto de la Cuenta (#{{ $enrollment->receivable->id }})
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body text-start">
+                                                <div class="mb-2">
+                                                    <label class="form-label small fw-bold">Monto Total de la Cuenta ($) <span class="text-danger">*</span></label>
+                                                    <input type="number" step="0.01" name="amount_total" class="form-control form-control-sm" value="{{ old('amount_total', $enrollment->receivable->amount_total) }}" required min="0.01">
+                                                    <small class="text-muted d-block mt-2">💡 Al modificar este monto, el saldo pendiente "Por Cobrar" se actualizará automáticamente.</small>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer bg-light">
+                                                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                <button type="submit" class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-save me-1"></i>Guardar Cambios
+                                                </button>
+                                            </div>
+                                        </form>
                                     </div>
                                 </div>
                             </div>

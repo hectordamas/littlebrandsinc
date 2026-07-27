@@ -891,6 +891,37 @@
                 checkModalEnrollmentFee();
             });
 
+            $('#inscribirEstudianteModal').on('hidden.bs.modal', function() {
+                const form = document.getElementById('inscribirEstudianteForm');
+                if (form) {
+                    form.reset();
+                }
+                $('#enrollmentErrorAlert').addClass('d-none').text('');
+
+                // Ocultar y limpiar formulario de nuevo representante
+                $('#modalUserForm').addClass('d-none');
+                $('#modalUserSelect').prop('disabled', false).val('').trigger('change');
+                $('#modal_user_name, #modal_user_email, #modal_user_whatsapp, #modal_user_password').prop('required', false).val('');
+
+                // Ocultar y limpiar formulario de nuevo estudiante
+                $('#modalStudentForm').addClass('d-none');
+                $('#modalStudentSelect').prop('disabled', false).val('').trigger('change');
+                $('#modal_student_name, #modal_student_birthdate, #modal_student_medical_notes').prop('required', false).val('');
+
+                // Habilitar todas las opciones de estudiantes
+                $('#modalStudentSelect option').prop('disabled', false);
+
+                // Restablecer opciones de pago y costo
+                $('#modalFeeStandard').prop('checked', true);
+                $('#modalCustomAmountContainer').addClass('d-none');
+                $('#modalCustomAmount').val('');
+                $('#modalIsFreeTrial').prop('checked', false);
+                $('#modalPaymentStatusSelect').val('pending');
+
+                updateModalPaymentReceiptState();
+                recalculateModalTotal();
+            });
+
             $('.modal-fee-option').on('change', function() {
                 if ($(this).val() === 'custom') {
                     $('#modalCustomAmountContainer').removeClass('d-none');

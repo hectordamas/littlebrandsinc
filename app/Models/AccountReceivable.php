@@ -11,6 +11,7 @@ class AccountReceivable extends Model
         'enrollment_id',
         'title',
         'amount_total',
+        'is_custom_amount',
         'balance_due',
         'currency',
         'status',
@@ -20,6 +21,7 @@ class AccountReceivable extends Model
 
     protected $casts = [
         'amount_total' => 'decimal:2',
+        'is_custom_amount' => 'boolean',
         'balance_due' => 'decimal:2',
         'due_date' => 'date',
     ];

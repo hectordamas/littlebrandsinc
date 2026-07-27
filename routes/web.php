@@ -65,12 +65,15 @@ Route::middleware(['auth', 'role:Administrador'])->group(function () {
     Route::get('finanzas-y-facturacion/cobranzas', [FinanceController::class, 'collections'])->name('finance.collections');
     Route::post('finanzas-y-facturacion/cobranzas', [FinanceController::class, 'storeCollection'])->name('finance.collections.store');
     Route::get('finanzas-y-facturacion/cobranzas/{receivable}', [FinanceController::class, 'showCollection'])->name('finance.collections.show');
+    Route::patch('finanzas-y-facturacion/cobranzas/{receivable}', [FinanceController::class, 'updateCollection'])->name('finance.collections.update');
     Route::post('finanzas-y-facturacion/cobranzas/{receivable}/abonos', [FinanceController::class, 'storeCollectionPayment'])->name('finance.collections.payments.store');
     Route::get('finanzas-y-facturacion/cuentas-por-pagar', [FinanceController::class, 'payables'])->name('finance.payables');
     Route::post('finanzas-y-facturacion/cuentas-por-pagar', [FinanceController::class, 'storePayable'])->name('finance.payables.store');
     Route::get('finanzas-y-facturacion/cuentas-por-pagar/{payable}', [FinanceController::class, 'showPayable'])->name('finance.payables.show');
     Route::post('finanzas-y-facturacion/cuentas-por-pagar/{payable}/abonos', [FinanceController::class, 'storePayablePayment'])->name('finance.payables.payments.store');
     Route::post('finanzas-y-facturacion/movimientos', [FinanceController::class, 'storeTransaction'])->name('finance.transactions.store');
+    Route::put('finanzas-y-facturacion/movimientos/{transaction}', [FinanceController::class, 'updateTransaction'])->name('finance.transactions.update');
+    Route::delete('finanzas-y-facturacion/movimientos/{transaction}', [FinanceController::class, 'destroyTransaction'])->name('finance.transactions.destroy');
     Route::get('finanzas-y-facturacion/movimientos/{transaction}/comprobante', [FinanceController::class, 'downloadTransactionReceipt'])->name('finance.transactions.receipt');
     Route::get('finanzas-y-facturacion/pagos-padres', [FinanceController::class, 'parentPayments'])->name('finance.parent-payments');
     Route::patch('finanzas-y-facturacion/pagos-padres/{payment}/approve', [FinanceController::class, 'approveParentPayment'])->name('finance.parent-payments.approve');

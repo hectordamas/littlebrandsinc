@@ -148,23 +148,28 @@ class Enrollment extends Model
             return null;
         }
 
+        $receivable = $this->receivable;
+
         // Calculate amount total
-        $enrollmentFee = $this->getEnrollmentFee();
-        $amountTotal = $enrollmentFee;
-        foreach ($courses as $course) {
-            $months = 1;
-            if ($course->start_date && $course->end_date) {
-                $start = \Carbon\Carbon::parse($course->start_date)->startOfMonth();
-                $end = \Carbon\Carbon::parse($course->end_date)->startOfMonth();
-                $months = max(1, $start->diffInMonths($end) + 1);
+        if ($receivable && $receivable->is_custom_amount) {
+            $amountTotal = (float) $receivable->amount_total;
+        } else {
+            $enrollmentFee = $this->getEnrollmentFee();
+            $amountTotal = $enrollmentFee;
+            foreach ($courses as $course) {
+                $months = 1;
+                if ($course->start_date && $course->end_date) {
+                    $start = \Carbon\Carbon::parse($course->start_date)->startOfMonth();
+                    $end = \Carbon\Carbon::parse($course->end_date)->startOfMonth();
+                    $months = max(1, $start->diffInMonths($end) + 1);
+                }
+                $amountTotal += (float) ($course->monthly_fee ?? 0) * $months;
             }
-            $amountTotal += (float) ($course->monthly_fee ?? 0) * $months;
         }
 
         $courseTitles = $courses->pluck('title')->join(', ');
         $title = 'Inscripción + mensualidades #' . $this->id . ' - ' . ($program->name ?? 'Programa') . ' (' . $courseTitles . ')';
 
-        $receivable = $this->receivable;
         if ($this->payment_status === 'pending') {
             if (!$receivable) {
                 $receivable = \App\Models\AccountReceivable::create([
@@ -177,14 +182,17 @@ class Enrollment extends Model
                     'status' => 'pending',
                 ]);
             } else {
-                $receivable->update([
+                $updateData = [
                     'branch_id' => $firstCourse->branch_id,
-                    'title' => $title,
-                    'amount_total' => $amountTotal,
-                    'balance_due' => $amountTotal,
                     'currency' => 'USD',
                     'status' => 'pending',
-                ]);
+                ];
+                if (!$receivable->is_custom_amount) {
+                    $updateData['title'] = $title;
+                    $updateData['amount_total'] = $amountTotal;
+                    $updateData['balance_due'] = $amountTotal;
+                }
+                $receivable->update($updateData);
             }
         } else {
             // payment_status is paid
@@ -199,12 +207,15 @@ class Enrollment extends Model
                     'status' => 'pending',
                 ]);
             } else {
-                $receivable->update([
+                $updateData = [
                     'branch_id' => $firstCourse->branch_id,
-                    'title' => $title,
-                    'amount_total' => $amountTotal,
                     'currency' => 'USD',
-                ]);
+                ];
+                if (!$receivable->is_custom_amount) {
+                    $updateData['title'] = $title;
+                    $updateData['amount_total'] = $amountTotal;
+                }
+                $receivable->update($updateData);
             }
         }
 

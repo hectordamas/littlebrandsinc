@@ -571,6 +571,14 @@
             document.addEventListener('DOMContentLoaded', function() {
                 document.querySelectorAll('input[data-money-format]').forEach(bindMoneyInput);
             });
+
+            $(document).on('hidden.bs.modal', '.modal', function () {
+                const $modal = $(this);
+                $modal.find('form').each(function() {
+                    this.reset();
+                });
+                $modal.find('.alert-danger').addClass('d-none').text('');
+            });
         })();
     </script>
 
