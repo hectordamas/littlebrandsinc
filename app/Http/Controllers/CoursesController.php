@@ -44,7 +44,7 @@ class CoursesController extends Controller
             'end' => 'nullable|date',
         ]);
 
-        $branchId = isset($validated['branch_id']) ? (int) $validated['branch_id'] : null;
+        $branchId = ! empty($validated['branch_id']) ? (int) $validated['branch_id'] : null;
 
         $classes = LBClass::query()
             ->with([
@@ -61,7 +61,12 @@ class CoursesController extends Controller
                 'coach',
             ])
             ->when($branchId, function ($query) use ($branchId) {
-                $query->where('branch_id', $branchId);
+                $query->where(function ($q) use ($branchId) {
+                    $q->where('branch_id', $branchId)
+                        ->orWhereHas('course', function ($cq) use ($branchId) {
+                            $cq->where('branch_id', $branchId);
+                        });
+                });
             })
             ->when(isset($validated['start']), function ($query) use ($validated) {
                 $query->whereDate('date', '>=', $validated['start']);

@@ -248,10 +248,21 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="text-muted small" id="calendarStatus">Cargando calendario...</div>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="spinner-border spinner-border-sm text-primary" id="calendarSpinner" role="status"></div>
+                        <span class="text-muted small fw-semibold" id="calendarStatus">Cargando calendario...</span>
+                    </div>
                 </div>
 
-                <div id="classesCalendar"></div>
+                <div class="position-relative">
+                    <div id="calendarLoadingOverlay" class="position-absolute top-0 start-0 w-100 h-100 bg-white bg-opacity-75 d-flex align-items-center justify-content-center" style="z-index: 10; border-radius: 0.95rem; backdrop-filter: blur(2px);">
+                        <div class="text-center p-3 bg-white rounded-3 shadow-sm border">
+                            <div class="spinner-border text-primary mb-2" role="status" style="width: 2.2rem; height: 2.2rem;"></div>
+                            <div class="fw-bold text-dark small">Filtrando sesiones de clase...</div>
+                        </div>
+                    </div>
+                    <div id="classesCalendar"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -436,6 +447,21 @@
                 };
             }
 
+            const spinnerEl = document.getElementById('calendarSpinner');
+            const overlayEl = document.getElementById('calendarLoadingOverlay');
+
+            function showCalendarLoading() {
+                if (spinnerEl) spinnerEl.classList.remove('d-none');
+                if (overlayEl) overlayEl.classList.remove('d-none');
+                if (statusEl) statusEl.textContent = 'Filtrando sesiones de clase...';
+            }
+
+            function hideCalendarLoading(message) {
+                if (spinnerEl) spinnerEl.classList.add('d-none');
+                if (overlayEl) overlayEl.classList.add('d-none');
+                if (statusEl && message) statusEl.textContent = message;
+            }
+
             const calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
                 locale: 'es',
@@ -453,15 +479,16 @@
                     day: 'Dia'
                 },
                 events: function(fetchInfo, successCallback, failureCallback) {
-                    statusEl.textContent = 'Cargando sesiones de clase...';
+                    showCalendarLoading();
 
                     const params = new URLSearchParams({
                         start: fetchInfo.startStr,
                         end: fetchInfo.endStr,
                     });
 
-                    if (branchFilterEl.value) {
-                        params.set('branch_id', branchFilterEl.value);
+                    const selectedBranch = (branchFilterEl && branchFilterEl.value) || (window.jQuery ? $('#calendarBranchFilter').val() : '');
+                    if (selectedBranch) {
+                        params.set('branch_id', selectedBranch);
                     }
 
                     fetch(`{{ route('calendar.events') }}?${params.toString()}`, {
@@ -478,11 +505,11 @@
                         return response.json();
                     })
                     .then(function(events) {
-                        statusEl.textContent = `Mostrando ${events.length} sesión(es) de clase.`;
+                        hideCalendarLoading(`Mostrando ${events.length} sesión(es) de clase.`);
                         successCallback(events);
                     })
                     .catch(function(error) {
-                        statusEl.textContent = 'Error al cargar sesiones de clase.';
+                        hideCalendarLoading('Error al cargar sesiones de clase.');
                         failureCallback(error);
                         Swal.fire({
                             icon: 'error',
@@ -601,9 +628,22 @@
 
             calendar.render();
 
-            branchFilterEl.addEventListener('change', function() {
+            function refetchCalendar() {
                 calendar.refetchEvents();
-            });
+            }
+
+            branchFilterEl.addEventListener('change', refetchCalendar);
+
+            if (window.jQuery) {
+                $('#calendarBranchFilter').on('change', refetchCalendar);
+                if ($.fn.select2) {
+                    $('#calendarBranchFilter').select2({
+                        placeholder: 'Todas las sedes',
+                        allowClear: true,
+                        width: '100%'
+                    }).on('change', refetchCalendar);
+                }
+            }
         });
     </script>
 @endsection

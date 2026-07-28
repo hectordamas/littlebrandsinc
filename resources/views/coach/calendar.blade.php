@@ -220,7 +220,10 @@
                         <h5 class="mb-1">Mi Programación de Sesiones de Clase</h5>
                         <span class="text-muted">Cada sesión de clase muestra inscritos, nombres de estudiantes y estado de check in.</span>
                     </div>
-                    <span class="badge bg-primary" id="calendarStatus">Cargando...</span>
+                    <span class="badge bg-primary d-inline-flex align-items-center gap-1" id="calendarStatus">
+                        <span class="spinner-border spinner-border-sm d-none" id="coachSpinner" style="width: 0.85rem; height: 0.85rem;" role="status"></span>
+                        <span id="coachStatusText">Cargando...</span>
+                    </span>
                 </div>
                 <div class="card-block">
                     <div id="coachCalendar"></div>
@@ -424,6 +427,12 @@
                     right: 'dayGridMonth,timeGridWeek,timeGridDay'
                 },
                 events: function(fetchInfo, successCallback, failureCallback) {
+                    const coachSpinnerEl = document.getElementById('coachSpinner');
+                    const coachStatusTextEl = document.getElementById('coachStatusText');
+
+                    if (coachSpinnerEl) coachSpinnerEl.classList.remove('d-none');
+                    if (coachStatusTextEl) coachStatusTextEl.textContent = 'Cargando...';
+
                     const params = new URLSearchParams({
                         start: fetchInfo.startStr,
                         end: fetchInfo.endStr,
@@ -443,11 +452,13 @@
                         return response.json();
                     })
                     .then(function(events) {
-                        statusEl.textContent = `${events.length} sesión(es) de clase`;
+                        if (coachSpinnerEl) coachSpinnerEl.classList.add('d-none');
+                        if (coachStatusTextEl) coachStatusTextEl.textContent = `${events.length} sesión(es) de clase`;
                         successCallback(events);
                     })
                     .catch(function(error) {
-                        statusEl.textContent = 'Error';
+                        if (coachSpinnerEl) coachSpinnerEl.classList.add('d-none');
+                        if (coachStatusTextEl) coachStatusTextEl.textContent = 'Error';
                         failureCallback(error);
                         Swal.fire({
                             icon: 'error',
