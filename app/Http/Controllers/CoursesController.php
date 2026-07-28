@@ -90,6 +90,7 @@ class CoursesController extends Controller
                     'parent_email' => $enrollment->parent->email ?? 'N/A',
                     'payment_status' => $enrollment->payment_status,
                     'is_free_trial' => (bool) $enrollment->is_free_trial,
+                    'image_consent' => (bool) $enrollment->image_consent_accepted,
                 ];
             })->values()->all() : [];
 

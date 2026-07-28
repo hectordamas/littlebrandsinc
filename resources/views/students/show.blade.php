@@ -46,8 +46,50 @@
             </div>
             <div class="card-block">
                 <div class="detail-section">
-                    <span class="detail-chip">Estudiante</span>
-                    <div class="detail-section-title">Información del Estudiante</div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <span class="detail-chip">Estudiante</span>
+                            <div class="detail-section-title mb-0">Información del Estudiante</div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editStudentModal">
+                            <i class="fas fa-edit me-1"></i> Editar Información
+                        </button>
+                    </div>
+
+                    <!-- Banner de Consentimiento de Imagen -->
+                    @php
+                        $hasImageConsent = $student->image_consent;
+                    @endphp
+                    @if ($hasImageConsent)
+                        <div class="p-3 mb-3 border-0 rounded-3 shadow-sm d-flex align-items-center justify-content-between" style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); color: #1b5e20;">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle bg-white d-flex align-items-center justify-content-center shadow-sm" style="width: 44px; height: 44px; min-width: 44px;">
+                                    <i class="fas fa-camera text-success fa-lg"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark mb-0" style="font-size: 0.95rem;">
+                                        Consentimiento de Uso de Imagen: <span class="badge bg-success ms-1 px-2.5 py-1">AUTORIZADO</span>
+                                    </div>
+                                    <small class="text-secondary">El representante ha otorgado autorización para la toma y difusión de fotografías/videos de las actividades.</small>
+                                </div>
+                            </div>
+                        </div>
+                    @else
+                        <div class="p-3 mb-3 border-0 rounded-3 shadow-sm d-flex align-items-center justify-content-between" style="background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); color: #b71c1c;">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle bg-white d-flex align-items-center justify-content-center shadow-sm" style="width: 44px; height: 44px; min-width: 44px;">
+                                    <i class="fas fa-ban text-danger fa-lg"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark mb-0" style="font-size: 0.95rem;">
+                                        Consentimiento de Uso de Imagen: <span class="badge bg-danger ms-1 px-2.5 py-1">NO AUTORIZADO</span>
+                                    </div>
+                                    <small class="text-danger fw-semibold">¡ATENCIÓN COACHES Y PERSONAL! No se permite fotografiar ni publicar fotos/videos de este estudiante.</small>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label text-muted">Nombre</label>
@@ -654,6 +696,64 @@
                         </table>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Información del Estudiante -->
+    <div class="modal fade" id="editStudentModal" tabindex="-1" aria-labelledby="editStudentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <form action="{{ route('students.update', $student->id) }}" method="POST">
+                    @csrf
+                    @method('PUT')
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold text-dark" id="editStudentModalLabel">
+                            <i class="fas fa-user-edit text-primary me-2"></i>Editar Información del Estudiante
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body text-start">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Nombre del Estudiante <span class="text-danger">*</span></label>
+                                <input type="text" name="name" class="form-control" value="{{ old('name', $student->name) }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Fecha de Nacimiento <span class="text-danger">*</span></label>
+                                <input type="date" name="birthdate" class="form-control" value="{{ old('birthdate', $student->birthdate ? \Carbon\Carbon::parse($student->birthdate)->format('Y-m-d') : '') }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Estatus del Estudiante <span class="text-danger">*</span></label>
+                                <select name="active" class="form-select" required>
+                                    <option value="1" @selected(old('active', $student->active) == 1)>Activo</option>
+                                    <option value="0" @selected(old('active', $student->active) == 0)>Inactivo</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Consentimiento de Imagen <span class="text-danger">*</span></label>
+                                <select name="image_consent_accepted" class="form-select" required>
+                                    <option value="1" @selected(old('image_consent_accepted', $student->image_consent) == 1)>Autorizado (Permite fotos y videos)</option>
+                                    <option value="0" @selected(old('image_consent_accepted', $student->image_consent) == 0)>NO Autorizado (NO permite fotos ni videos)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label small fw-bold text-dark">Notas Médicas (Alergias, condiciones, etc.)</label>
+                                <textarea name="medical_notes" class="form-control" rows="3" placeholder="Ej: Alergia al maní, asmático">{{ old('medical_notes', $student->medical_notes) }}</textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label small fw-bold text-dark">Comentarios u Observaciones Internas</label>
+                                <textarea name="comment" class="form-control" rows="2" placeholder="Observaciones adicionales sobre el alumno">{{ old('comment', $student->comment) }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Guardar Cambios
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

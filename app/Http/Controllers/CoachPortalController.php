@@ -63,6 +63,7 @@ class CoachPortalController extends Controller
                             'check_in' => $attendance->status ?? 'pending',
                             'notes' => $attendance->notes ?? null,
                             'is_free_trial' => (bool) $enrollment->is_free_trial,
+                            'image_consent' => (bool) $enrollment->image_consent_accepted,
                         ];
                     })
                     ->filter(fn ($row) => ! empty($row['student_id']))

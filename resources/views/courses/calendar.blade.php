@@ -554,10 +554,17 @@
                                 trialBadge = '<span class="badge bg-info text-white px-2 py-1 ms-1">Prueba</span>';
                             }
 
+                            let consentBadge = student.image_consent
+                                ? '<span class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="font-size:0.72rem;" title="Consentimiento de imagen otorgado"><i class="fas fa-check-circle me-1"></i> Autorizado</span>'
+                                : '<span class="badge bg-danger text-white ms-1" style="font-size:0.72rem;" title="¡ATENCIÓN! No se otorgó consentimiento de uso de imagen"><i class="fas fa-times-circle me-1"></i> No Autorizado</span>';
+
                             const row = `
                                 <tr>
                                     <td>
-                                        <div class="fw-bold text-dark">${student.student_name}</div>
+                                        <div class="fw-bold text-dark d-flex align-items-center flex-wrap gap-1">
+                                            ${student.student_name}
+                                            ${consentBadge}
+                                        </div>
                                         ${ageText}
                                     </td>
                                     <td>${student.parent_name}</td>

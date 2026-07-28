@@ -494,6 +494,22 @@
                             name.appendChild(trialBadge);
                         }
 
+                        if (student.image_consent) {
+                            const consentBadge = document.createElement('span');
+                            consentBadge.className = 'badge bg-success-subtle text-success border border-success ms-2';
+                            consentBadge.style.fontSize = '0.74rem';
+                            consentBadge.title = 'Consentimiento de uso de imagen otorgado';
+                            consentBadge.innerHTML = '<i class="fas fa-check-circle me-1"></i> Autorizado';
+                            name.appendChild(consentBadge);
+                        } else {
+                            const consentBadge = document.createElement('span');
+                            consentBadge.className = 'badge bg-danger text-white ms-2';
+                            consentBadge.style.fontSize = '0.74rem';
+                            consentBadge.title = '¡ATENCIÓN! No se otorgó consentimiento de uso de imagen';
+                            consentBadge.innerHTML = '<i class="fas fa-times-circle me-1"></i> No Autorizado';
+                            name.appendChild(consentBadge);
+                        }
+
                         const checkLabel = document.createElement('label');
                         checkLabel.className = 'attendance-check';
 

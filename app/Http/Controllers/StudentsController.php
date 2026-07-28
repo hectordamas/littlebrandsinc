@@ -167,6 +167,34 @@ class StudentsController extends Controller
         ]);
     }
 
+    public function update(Request $request, Student $student)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'birthdate' => 'required|date|before_or_equal:today',
+            'medical_notes' => 'nullable|string|max:2000',
+            'comment' => 'nullable|string|max:2000',
+            'level' => 'nullable|string|max:255',
+            'active' => 'required|boolean',
+            'image_consent_accepted' => 'required|boolean',
+        ]);
+
+        $student->update([
+            'name' => $validated['name'],
+            'birthdate' => $validated['birthdate'],
+            'medical_notes' => $validated['medical_notes'] ?? null,
+            'comment' => $validated['comment'] ?? null,
+            'level' => $validated['level'] ?? null,
+            'active' => (bool) $validated['active'],
+        ]);
+
+        $student->enrollments()->update([
+            'image_consent_accepted' => (bool) $validated['image_consent_accepted'],
+        ]);
+
+        return back()->with('success', 'Información del estudiante actualizada correctamente.');
+    }
+
     public function register(Request $request)
     {
         $request->validate([

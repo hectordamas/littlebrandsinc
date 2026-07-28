@@ -555,6 +555,7 @@
                                                     <tr>
                                                         <th>#</th>
                                                         <th>Estudiante</th>
+                                                        <th class="text-center">Consentimiento de Imagen</th>
                                                         <th>Representante</th>
                                                         <th>Teléfono / Correo</th>
                                                         <th class="text-center">Estado de Pago</th>
@@ -568,13 +569,22 @@
                                                             <td>
                                                                 <div>
                                                                     <a href="{{ route('students.show', $enrollment->student->id) }}" target="_blank" class="text-primary text-decoration-none fw-bold" title="Ver perfil del estudiante">
-                                                                        {{ $enrollment->student->name ?? 'N/A' }} <i class="fas fa-external-link-alt fa-xs text-muted"></i>
+                                                                        {{ $enrollment->student->name ?? 'N/A' }} <i class="feather icon-external-link text-primary ms-1" style="font-size: 0.8rem;"></i>
                                                                     </a>
                                                                 </div>
                                                                 @if($enrollment->student->birthdate)
-                                                                    <small class="text-muted d-block mt-1">
-                                                                        Edad: {{ \Carbon\Carbon::parse($enrollment->student->birthdate)->age }} años
-                                                                    </small>
+                                                                    <small class="text-muted d-block mt-1">Edad: {{ \Carbon\Carbon::parse($enrollment->student->birthdate)->age }} años</small>
+                                                                @endif
+                                                            </td>
+                                                            <td class="text-center">
+                                                                @if($enrollment->image_consent_accepted)
+                                                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1" style="font-size: 0.78rem;" title="Consentimiento de imagen otorgado">
+                                                                        <i class="fas fa-check-circle me-1"></i> Autorizado
+                                                                    </span>
+                                                                @else
+                                                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1" style="font-size: 0.78rem;" title="Sin consentimiento de uso de imagen">
+                                                                        <i class="fas fa-times-circle me-1"></i> No Autorizado
+                                                                    </span>
                                                                 @endif
                                                             </td>
                                                             <td>{{ $enrollment->parent->name ?? 'N/A' }}</td>
@@ -607,7 +617,7 @@
                                                         </tr>
                                                         @if($enrollment->payment_status !== 'paid')
                                                             <tr class="collapse" id="attach-payment-{{ $enrollment->id }}">
-                                                                <td colspan="6" class="bg-light p-0">
+                                                                <td colspan="7" class="bg-light p-0">
                                                                     <div class="p-3 border rounded m-2 bg-white shadow-sm">
                                                                         <form action="{{ route('enrollment.attach-payment', $enrollment->id) }}" method="POST" enctype="multipart/form-data">
                                                                             @csrf

@@ -58,6 +58,7 @@ Route::middleware(['auth', 'role:Administrador'])->group(function () {
     Route::get('students/import', [StudentsController::class, 'importForm'])->name('students.import.form');
     Route::post('students/import', [StudentsController::class, 'importStore'])->name('students.import.store');
     Route::get('students/{student}', [StudentsController::class, 'show'])->name('students.show');
+    Route::put('students/{student}', [StudentsController::class, 'update'])->name('students.update');
     Route::get('parents', [UsersController::class, 'parents'])->name('parents.index');
     Route::get('trainers', [UsersController::class, 'trainers'])->name('trainers.index');
 
