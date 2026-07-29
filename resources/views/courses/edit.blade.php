@@ -593,7 +593,9 @@
                                                                 <small class="text-muted">{{ $enrollment->parent->email ?? '' }}</small>
                                                             </td>
                                                             <td class="text-center">
-                                                                @if($enrollment->payment_status === 'paid')
+                                                                @if($enrollment->is_free_trial)
+                                                                    <span class="badge bg-info px-3 py-2 text-white">Clase de prueba gratis</span>
+                                                                @elseif($enrollment->payment_status === 'paid')
                                                                     <span class="badge bg-success px-3 py-2 text-white">Pagado</span>
                                                                 @else
                                                                     <div>

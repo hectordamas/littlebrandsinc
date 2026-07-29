@@ -225,6 +225,8 @@
                                             <td>
                                                 @if ($enrollment->status === 'cancelled')
                                                     <span class="badge bg-danger">Cancelado</span>
+                                                @elseif ($isFreeTrial)
+                                                    <span class="badge bg-info text-white">Clase de prueba gratis</span>
                                                 @elseif ($enrollment->payment_status === 'paid')
                                                     <span class="badge bg-success">Pagado</span>
                                                 @else
@@ -233,7 +235,7 @@
                                             </td>
                                             <td class="text-center">
                                                 <div class="d-flex justify-content-center align-items-center gap-2">
-                                                    @if ($enrollment->status !== 'cancelled' && $enrollment->payment_status !== 'paid')
+                                                    @if ($enrollment->status !== 'cancelled' && $enrollment->payment_status !== 'paid' && !$isFreeTrial)
                                                         <button class="btn btn-xs btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#register-payment-modal-{{ $enrollment->id }}" title="Registrar Pago">
                                                             <i class="fas fa-file-invoice-dollar me-1"></i> Pagar
                                                         </button>

@@ -149,12 +149,12 @@ class Enrollment extends Model
         }
 
         $receivable = $this->receivable;
+        $enrollmentFee = $this->getEnrollmentFee();
 
         // Calculate amount total
         if ($receivable && $receivable->is_custom_amount) {
             $amountTotal = (float) $receivable->amount_total;
         } else {
-            $enrollmentFee = $this->getEnrollmentFee();
             $amountTotal = $enrollmentFee;
             foreach ($courses as $course) {
                 $months = 1;

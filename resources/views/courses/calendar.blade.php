@@ -570,16 +570,15 @@
                             let ageText = student.student_age !== null ? ` <small class="text-muted">(${student.student_age} años)</small>` : '';
                             
                             let paymentBadge = '';
-                            if (student.payment_status === 'paid') {
+                            if (student.is_free_trial) {
+                                paymentBadge = '<span class="badge bg-info text-white px-2 py-1">Clase de prueba gratis</span>';
+                            } else if (student.payment_status === 'paid') {
                                 paymentBadge = '<span class="badge bg-success text-white px-2 py-1">Pagado</span>';
                             } else {
                                 paymentBadge = '<span class="badge bg-warning text-dark px-2 py-1">Pendiente</span>';
                             }
 
                             let trialBadge = '';
-                            if (student.is_free_trial) {
-                                trialBadge = '<span class="badge bg-info text-white px-2 py-1 ms-1">Prueba</span>';
-                            }
 
                             let consentBadge = student.image_consent
                                 ? '<span class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="font-size:0.72rem;" title="Consentimiento de imagen otorgado"><i class="fas fa-check-circle me-1"></i> Autorizado</span>'

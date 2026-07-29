@@ -621,7 +621,7 @@
                                     </td>
                                     <td class="enrollment-payment" data-payment-status="{{ $enrollment->payment_status }}">
                                         @if ($enrollment->is_free_trial)
-                                            <span class="badge bg-warning text-dark">Clase de prueba</span>
+                                            <span class="badge bg-info text-white">Clase de prueba gratis</span>
                                         @elseif ($enrollment->payment_status === 'paid')
                                             <span class="badge bg-success">Pagado</span>
                                         @else
