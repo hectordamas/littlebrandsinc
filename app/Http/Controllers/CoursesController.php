@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use App\Models\{Course, Branch, LBClass, Program, User, Student, Account};
+use App\Models\{Attendance, Course, Branch, LBClass, Program, User, Student, Account};
 use Illuminate\Support\Facades\DB;
 
 class CoursesController extends Controller
@@ -59,6 +59,7 @@ class CoursesController extends Controller
                 },
                 'branch',
                 'coach',
+                'attendances',
             ])
             ->when($branchId, function ($query) use ($branchId) {
                 $query->where(function ($q) use ($branchId) {
@@ -86,8 +87,31 @@ class CoursesController extends Controller
             $start = $date . 'T' . $class->start_time;
             $end = $date . 'T' . $class->end_time;
 
-            $enrolledStudents = optional($class->course)->enrollments ? optional($class->course)->enrollments->map(function ($enrollment) {
+            $attendancesMap = $class->attendances->keyBy('student_id');
+
+            $presentCount = 0;
+            $absentCount = 0;
+            $lateCount = 0;
+            $pendingCount = 0;
+
+            $enrolledStudents = optional($class->course)->enrollments ? optional($class->course)->enrollments->map(function ($enrollment) use ($attendancesMap, &$presentCount, &$absentCount, &$lateCount, &$pendingCount) {
+                $studentId = optional($enrollment->student)->id;
+                $attendance = $studentId ? $attendancesMap->get($studentId) : null;
+                $status = $attendance ? $attendance->status : 'pending';
+                $notes = $attendance ? $attendance->notes : null;
+
+                if ($status === 'present') {
+                    $presentCount++;
+                } elseif ($status === 'absent') {
+                    $absentCount++;
+                } elseif ($status === 'late') {
+                    $lateCount++;
+                } else {
+                    $pendingCount++;
+                }
+
                 return [
+                    'student_id' => $studentId,
                     'student_name' => $enrollment->student->name ?? 'N/A',
                     'student_age' => $enrollment->student->birthdate ? \Carbon\Carbon::parse($enrollment->student->birthdate)->age : null,
                     'parent_name' => $enrollment->parent->name ?? 'N/A',
@@ -96,8 +120,10 @@ class CoursesController extends Controller
                     'payment_status' => $enrollment->payment_status,
                     'is_free_trial' => (bool) $enrollment->is_free_trial,
                     'image_consent' => (bool) $enrollment->image_consent_accepted,
+                    'check_in' => $status,
+                    'attendance_notes' => $notes,
                 ];
-            })->values()->all() : [];
+            })->filter(fn ($row) => ! empty($row['student_id']))->values()->all() : [];
 
             return [
                 'id' => $class->id,
@@ -105,6 +131,7 @@ class CoursesController extends Controller
                 'start' => $start,
                 'end' => $end,
                 'extendedProps' => [
+                    'class_id' => $class->id,
                     'course_description' => optional($class->course)->description,
                     'course_start_date' => optional($class->course)->start_date,
                     'course_end_date' => optional($class->course)->end_date,
@@ -116,11 +143,53 @@ class CoursesController extends Controller
                     'coach' => $coachName,
                     'time' => substr((string) $class->start_time, 0, 5) . ' - ' . substr((string) $class->end_time, 0, 5),
                     'enrolled_students' => $enrolledStudents,
+                    'observations' => $class->observations,
+                    'attendance_summary' => [
+                        'present' => $presentCount,
+                        'absent' => $absentCount,
+                        'late' => $lateCount,
+                        'pending' => $pendingCount,
+                        'total' => count($enrolledStudents),
+                    ],
                 ],
             ];
         })->values();
 
         return response()->json($events);
+    }
+
+    public function markClassAttendance(Request $request, LBClass $class): JsonResponse
+    {
+        $validated = $request->validate([
+            'attendance' => 'nullable|array',
+            'attendance.*' => 'required|in:present,absent,late,pending',
+            'notes' => 'nullable|array',
+            'notes.*' => 'nullable|string|max:500',
+            'observations' => 'nullable|string|max:2000',
+        ]);
+
+        if (array_key_exists('observations', $validated)) {
+            $class->observations = $validated['observations'];
+            $class->save();
+        }
+
+        foreach (($validated['attendance'] ?? []) as $studentId => $status) {
+            Attendance::query()->updateOrCreate(
+                [
+                    'class_id' => $class->id,
+                    'student_id' => (int) $studentId,
+                ],
+                [
+                    'date' => $class->date,
+                    'status' => $status,
+                    'notes' => data_get($validated, 'notes.' . $studentId),
+                ]
+            );
+        }
+
+        return response()->json([
+            'message' => 'Asistencia y observaciones actualizadas correctamente.',
+        ]);
     }
 
     public function index()

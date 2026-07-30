@@ -122,6 +122,7 @@ Route::middleware(['auth', 'role:Administrador'])->group(function () {
 
     Route::get('calendar', [CoursesController::class, 'calendar'])->name('calendar.index');
     Route::get('calendar/events', [CoursesController::class, 'calendarEvents'])->name('calendar.events');
+    Route::post('classes/{class}/attendance', [CoursesController::class, 'markClassAttendance'])->name('courses.classes.attendance');
 
     Route::get('lista-de-espera', [WaitlistController::class, 'index'])->name('waitlists.index');
     Route::patch('lista-de-espera/{waitlist}/approve', [WaitlistController::class, 'approve'])->name('waitlists.approve');

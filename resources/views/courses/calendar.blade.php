@@ -268,7 +268,7 @@
     </div>
 
     <div class="modal fade" id="classDetailModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable" style="max-width: 1050px;">
             <div class="modal-content">
                 <div class="modal-header">
                     <div>
@@ -328,24 +328,39 @@
                     <div class="row mt-3">
                         <div class="col-md-6">
                             <span class="detail-label">Descripción de la Clase</span>
-                            <div class="class-detail-item" id="detailDescription" style="min-height: 80px; overflow-y: auto;">Sin descripcion registrada.</div>
+                            <div class="class-detail-item" id="detailDescription" style="min-height: 80px; overflow-y: auto;">Sin descripción registrada.</div>
                         </div>
                         <div class="col-md-6">
-                            <span class="detail-label">Observaciones de la Sesión (Coach)</span>
-                            <div class="class-detail-item text-primary" id="detailObservations" style="min-height: 80px; overflow-y: auto; font-style: italic;">Sin observaciones registradas.</div>
+                            <span class="detail-label">Observaciones Generales de la Sesión (Coach)</span>
+                            <div class="class-detail-item text-primary fw-semibold" id="detailObservationsText" style="min-height: 80px; overflow-y: auto; font-style: italic;">Sin observaciones registradas.</div>
                         </div>
                     </div>
 
-                    <div class="mt-4">
-                        <span class="detail-label">Estudiantes Inscritos</span>
-                        <div id="enrolledStudentsSection" class="table-responsive border rounded p-2 bg-white" style="max-height: 250px; overflow-y: auto;">
+                    <div class="mt-4 p-3 border rounded bg-white shadow-sm">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <span class="fw-bold text-dark"><i class="fas fa-clipboard-user me-2 text-primary"></i>Resumen de Asistencias</span>
+                            <div class="d-flex flex-wrap gap-2">
+                                <span class="badge bg-success px-2 py-1" id="badgePresentCount"><i class="fas fa-check-circle me-1"></i>Presentes: 0</span>
+                                <span class="badge bg-danger px-2 py-1" id="badgeAbsentCount"><i class="fas fa-times-circle me-1"></i>Ausentes: 0</span>
+                                <span class="badge bg-warning text-dark px-2 py-1" id="badgeLateCount"><i class="fas fa-clock me-1"></i>Tarde: 0</span>
+                                <span class="badge bg-secondary px-2 py-1" id="badgePendingCount"><i class="fas fa-hourglass-start me-1"></i>Pendientes: 0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <span class="detail-label mb-2 d-block">Estudiantes Inscritos</span>
+                        <div id="enrolledStudentsSection" class="table-responsive border rounded p-2 bg-white" style="max-height: 320px; overflow-y: auto;">
                             <table class="table table-sm table-hover align-middle mb-0" id="detailStudentsTable">
                                 <thead>
                                     <tr>
                                         <th>Estudiante</th>
+                                        <th class="text-center">Uso Imagen</th>
                                         <th>Representante</th>
                                         <th>Teléfono / Correo</th>
-                                        <th class="text-center">Detalles</th>
+                                        <th class="text-center">Estado Pago</th>
+                                        <th class="text-center">Asistencia</th>
+                                        <th class="text-center">Detalle</th>
                                     </tr>
                                 </thead>
                                 <tbody id="detailStudentsBody">
@@ -364,6 +379,61 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal Secundario: Detalle Completo de Asistencia del Estudiante -->
+    <div class="modal fade" id="studentAttendanceDetailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg border-0">
+                <div class="modal-header bg-primary text-white">
+                    <div>
+                        <h5 class="modal-title mb-0 text-white" id="studentDetailTitle"><i class="fas fa-user-graduate me-2"></i>Detalle de Asistencia</h5>
+                        <div class="small opacity-75" id="studentDetailSubtitle">Información completa del alumno y sesión</div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="p-3 bg-light rounded-3 mb-3 border">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <h6 class="fw-bold mb-0 text-dark" id="studentDetailName">Nombre Estudiante</h6>
+                            <span id="studentDetailConsent"></span>
+                        </div>
+                        <div class="small text-muted mb-1" id="studentDetailAge">Edad: N/A</div>
+                        <hr class="my-2">
+                        <div class="small text-dark fw-semibold" id="studentDetailParent">Representante: N/A</div>
+                        <div class="small text-muted" id="studentDetailContact">Contacto: N/A</div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <div class="p-2 border rounded text-center bg-white">
+                                <small class="text-muted d-block fw-bold mb-1">Estado de Pago</small>
+                                <div id="studentDetailPayment">N/A</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-2 border rounded text-center bg-white">
+                                <small class="text-muted d-block fw-bold mb-1">Estado Asistencia</small>
+                                <div id="studentDetailAttendance">N/A</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="fw-bold small text-dark mb-1"><i class="fas fa-sticky-note text-warning me-1"></i>Nota Individual de Asistencia (Coach)</label>
+                        <div class="p-2 border rounded bg-light small text-dark" id="studentDetailNotes" style="min-height: 50px;">Sin notas registradas.</div>
+                    </div>
+
+                    <div>
+                        <label class="fw-bold small text-dark mb-1"><i class="fas fa-clipboard-list text-primary me-1"></i>Observaciones Generales de la Clase</label>
+                        <div class="p-2 border rounded bg-light small text-dark" id="studentDetailClassObservations" style="min-height: 60px;">Sin observaciones registradas por el coach.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Volver al Calendario</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('scripts')
@@ -375,6 +445,11 @@
             const statusEl = document.getElementById('calendarStatus');
             const classDetailModalEl = document.getElementById('classDetailModal');
             const classDetailModal = new bootstrap.Modal(classDetailModalEl);
+            const studentDetailModalEl = document.getElementById('studentAttendanceDetailModal');
+            const studentDetailModal = new bootstrap.Modal(studentDetailModalEl);
+
+            let currentEventProps = null;
+            let currentStudentsList = [];
 
             function formatCurrency(value) {
                 const number = Number(value);
@@ -403,6 +478,18 @@
                     month: '2-digit',
                     year: 'numeric',
                 }).format(date);
+            }
+
+            function updateAttendanceBadges(summary) {
+                const presentEl = document.getElementById('badgePresentCount');
+                const absentEl = document.getElementById('badgeAbsentCount');
+                const lateEl = document.getElementById('badgeLateCount');
+                const pendingEl = document.getElementById('badgePendingCount');
+
+                if (presentEl) presentEl.innerHTML = `<i class="fas fa-check-circle me-1"></i>Presentes: ${summary.present || 0}`;
+                if (absentEl) absentEl.innerHTML = `<i class="fas fa-times-circle me-1"></i>Ausentes: ${summary.absent || 0}`;
+                if (lateEl) lateEl.innerHTML = `<i class="fas fa-clock me-1"></i>Tarde: ${summary.late || 0}`;
+                if (pendingEl) pendingEl.innerHTML = `<i class="fas fa-hourglass-start me-1"></i>Pendientes: ${summary.pending || 0}`;
             }
 
             function getOccupancyMeta(enrolledChildren, capacity) {
@@ -460,6 +547,10 @@
                 if (spinnerEl) spinnerEl.classList.add('d-none');
                 if (overlayEl) overlayEl.classList.add('d-none');
                 if (statusEl && message) statusEl.textContent = message;
+            }
+
+            function refetchCalendar() {
+                calendar.refetchEvents();
             }
 
             const calendar = new FullCalendar.Calendar(calendarEl, {
@@ -520,6 +611,7 @@
                 },
                 eventClick: function(info) {
                     const props = info.event.extendedProps || {};
+                    currentEventProps = props;
                     const enrolledChildren = Number(props.enrolled_children || 0);
                     const capacity = props.course_capacity !== null && props.course_capacity !== undefined
                         ? Number(props.course_capacity)
@@ -549,8 +641,12 @@
                     document.getElementById('detailMonthlyFee').textContent = formatCurrency(props.course_monthly_fee);
                     document.getElementById('detailStartDate').textContent = formatDate(props.course_start_date);
                     document.getElementById('detailEndDate').textContent = formatDate(props.course_end_date);
-                    document.getElementById('detailDescription').textContent = props.course_description || 'Sin descripcion registrada.';
-                    document.getElementById('detailObservations').textContent = props.observations || 'Sin observaciones registradas.';
+                    document.getElementById('detailDescription').textContent = props.course_description || 'Sin descripción registrada.';
+                    document.getElementById('detailObservationsText').textContent = props.observations || 'Sin observaciones registradas por el coach.';
+
+                    // Attendance summary badges
+                    const attSummary = props.attendance_summary || { present: 0, absent: 0, late: 0, pending: 0 };
+                    updateAttendanceBadges(attSummary);
 
                     // Populate students table
                     const studentsBody = document.getElementById('detailStudentsBody');
@@ -558,53 +654,102 @@
                     const studentsTable = document.getElementById('detailStudentsTable');
                     studentsBody.innerHTML = '';
 
-                    const students = props.enrolled_students || [];
-                    if (students.length === 0) {
+                    currentStudentsList = props.enrolled_students || [];
+                    if (currentStudentsList.length === 0) {
                         studentsTable.classList.add('d-none');
                         noStudentsMessage.classList.remove('d-none');
                     } else {
                         studentsTable.classList.remove('d-none');
                         noStudentsMessage.classList.add('d-none');
 
-                        students.forEach(function(student) {
+                        currentStudentsList.forEach(function(student, index) {
                             let ageText = student.student_age !== null ? ` <small class="text-muted">(${student.student_age} años)</small>` : '';
                             
                             let paymentBadge = '';
                             if (student.is_free_trial) {
-                                paymentBadge = '<span class="badge bg-info text-white px-2 py-1">Clase de prueba gratis</span>';
+                                paymentBadge = '<span class="badge bg-info text-white px-2 py-1">Prueba gratis</span>';
                             } else if (student.payment_status === 'paid') {
                                 paymentBadge = '<span class="badge bg-success text-white px-2 py-1">Pagado</span>';
                             } else {
                                 paymentBadge = '<span class="badge bg-warning text-dark px-2 py-1">Pendiente</span>';
                             }
 
-                            let trialBadge = '';
-
                             let consentBadge = student.image_consent
-                                ? '<span class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="font-size:0.72rem;" title="Consentimiento de imagen otorgado"><i class="fas fa-check-circle me-1"></i> Autorizado</span>'
-                                : '<span class="badge bg-danger text-white ms-1" style="font-size:0.72rem;" title="¡ATENCIÓN! No se otorgó consentimiento de uso de imagen"><i class="fas fa-times-circle me-1"></i> No Autorizado</span>';
+                                ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="fas fa-check-circle me-1"></i>Autorizado</span>'
+                                : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" title="No otorgó uso de imagen"><i class="fas fa-times-circle me-1"></i>No Autorizado</span>';
+
+                            const checkIn = student.check_in || 'pending';
+                            let attendanceBadge = '';
+                            if (checkIn === 'present') {
+                                attendanceBadge = '<span class="badge bg-success text-white px-2 py-1"><i class="fas fa-check-circle me-1"></i>Presente</span>';
+                            } else if (checkIn === 'absent') {
+                                attendanceBadge = '<span class="badge bg-danger text-white px-2 py-1"><i class="fas fa-times-circle me-1"></i>Ausente</span>';
+                            } else if (checkIn === 'late') {
+                                attendanceBadge = '<span class="badge bg-warning text-dark px-2 py-1"><i class="fas fa-clock me-1"></i>Tarde</span>';
+                            } else {
+                                attendanceBadge = '<span class="badge bg-secondary text-white px-2 py-1"><i class="fas fa-hourglass-start me-1"></i>Pendiente</span>';
+                            }
 
                             const row = `
                                 <tr>
                                     <td>
-                                        <div class="fw-bold text-dark d-flex align-items-center flex-wrap gap-1">
-                                            ${student.student_name}
-                                            ${consentBadge}
-                                        </div>
+                                        <div class="fw-bold text-dark">${student.student_name}</div>
                                         ${ageText}
                                     </td>
+                                    <td class="text-center">${consentBadge}</td>
                                     <td>${student.parent_name}</td>
                                     <td>
                                         <div>${student.parent_whatsapp}</div>
                                         <small class="text-muted">${student.parent_email}</small>
                                     </td>
+                                    <td class="text-center">${paymentBadge}</td>
+                                    <td class="text-center">${attendanceBadge}</td>
                                     <td class="text-center">
-                                        ${paymentBadge}
-                                        ${trialBadge}
+                                        <button type="button" class="btn btn-sm btn-outline-primary view-student-detail-btn" data-student-index="${index}">
+                                            <i class="fas fa-eye me-1"></i>Ver Detalle
+                                        </button>
                                     </td>
                                 </tr>
                             `;
                             studentsBody.insertAdjacentHTML('beforeend', row);
+                        });
+
+                        document.querySelectorAll('.view-student-detail-btn').forEach(btn => {
+                            btn.addEventListener('click', function(e) {
+                                e.stopPropagation();
+                                const idx = Number(this.dataset.studentIndex);
+                                const student = currentStudentsList[idx];
+                                if (!student) return;
+
+                                document.getElementById('studentDetailName').textContent = student.student_name;
+                                document.getElementById('studentDetailAge').textContent = student.student_age !== null ? `Edad: ${student.student_age} años` : 'Edad: No registrada';
+                                document.getElementById('studentDetailParent').textContent = `Representante: ${student.parent_name}`;
+                                document.getElementById('studentDetailContact').textContent = `Teléfono: ${student.parent_whatsapp} | Email: ${student.parent_email}`;
+
+                                const consentHtml = student.image_consent
+                                    ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="fas fa-check-circle me-1"></i>Autorizado</span>'
+                                    : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1"><i class="fas fa-times-circle me-1"></i>No Autorizado</span>';
+                                document.getElementById('studentDetailConsent').innerHTML = consentHtml;
+
+                                let payHtml = '';
+                                if (student.is_free_trial) payHtml = '<span class="badge bg-info text-white">Prueba gratis</span>';
+                                else if (student.payment_status === 'paid') payHtml = '<span class="badge bg-success text-white">Pagado</span>';
+                                else payHtml = '<span class="badge bg-warning text-dark">Pendiente</span>';
+                                document.getElementById('studentDetailPayment').innerHTML = payHtml;
+
+                                const checkIn = student.check_in || 'pending';
+                                let attHtml = '';
+                                if (checkIn === 'present') attHtml = '<span class="badge bg-success text-white"><i class="fas fa-check-circle me-1"></i>Presente</span>';
+                                else if (checkIn === 'absent') attHtml = '<span class="badge bg-danger text-white"><i class="fas fa-times-circle me-1"></i>Ausente</span>';
+                                else if (checkIn === 'late') attHtml = '<span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Tarde</span>';
+                                else attHtml = '<span class="badge bg-secondary text-white"><i class="fas fa-hourglass-start me-1"></i>Pendiente</span>';
+                                document.getElementById('studentDetailAttendance').innerHTML = attHtml;
+
+                                document.getElementById('studentDetailNotes').textContent = student.attendance_notes || 'Sin notas individuales de asistencia escritas por el coach.';
+                                document.getElementById('studentDetailClassObservations').textContent = (currentEventProps && currentEventProps.observations) ? currentEventProps.observations : 'Sin observaciones generales de la sesión registradas por el coach.';
+
+                                studentDetailModal.show();
+                            });
                         });
                     }
 
@@ -622,14 +767,32 @@
                     info.el.style.borderColor = occupancy.eventBorder;
                     info.el.style.color = occupancy.eventText;
                     info.el.style.borderLeft = '4px solid ' + occupancy.eventBorder;
+
+                    const attSummary = props.attendance_summary;
+                    if (attSummary && attSummary.total > 0) {
+                        const titleEl = info.el.querySelector('.fc-event-title') || info.el.querySelector('.fc-event-main') || info.el;
+                        if (titleEl && !info.el.querySelector('.attendance-badge-indicator')) {
+                            const badgeDiv = document.createElement('div');
+                            badgeDiv.className = 'attendance-badge-indicator mt-1 text-truncate';
+                            badgeDiv.style.fontSize = '0.70rem';
+                            
+                            const markedCount = attSummary.present + attSummary.late + attSummary.absent;
+                            if (attSummary.present + attSummary.late > 0) {
+                                badgeDiv.innerHTML = `<span class="badge bg-success text-white" style="font-size:0.65rem; padding: 2px 4px;"><i class="fas fa-user-check me-1"></i>${attSummary.present + attSummary.late}/${attSummary.total} Asistieron</span>`;
+                            } else if (attSummary.absent > 0 && attSummary.absent === attSummary.total) {
+                                badgeDiv.innerHTML = `<span class="badge bg-danger text-white" style="font-size:0.65rem; padding: 2px 4px;"><i class="fas fa-user-times me-1"></i>0/${attSummary.total} Ausentes</span>`;
+                            } else if (markedCount > 0) {
+                                badgeDiv.innerHTML = `<span class="badge bg-warning text-dark" style="font-size:0.65rem; padding: 2px 4px;"><i class="fas fa-user-clock me-1"></i>${markedCount}/${attSummary.total} Registradas</span>`;
+                            } else {
+                                badgeDiv.innerHTML = `<span class="badge bg-secondary text-white" style="font-size:0.65rem; padding: 2px 4px;"><i class="fas fa-clock me-1"></i>Asist. Pendiente</span>`;
+                            }
+                            titleEl.appendChild(badgeDiv);
+                        }
+                    }
                 }
             });
 
             calendar.render();
-
-            function refetchCalendar() {
-                calendar.refetchEvents();
-            }
 
             branchFilterEl.addEventListener('change', refetchCalendar);
 
