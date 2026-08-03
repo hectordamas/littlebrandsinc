@@ -5,15 +5,20 @@
 
 @section('content')
     <div class="col-md-12">
-        <div class="card mb-3">
+        <div class="card mb-3 shadow-sm">
             <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
                     <h5 class="mb-1">Cuenta por pagar #{{ $payable->id }}</h5>
                     <span class="text-muted">{{ $payable->title }}</span>
                 </div>
-                <a href="{{ route('finance.payables') }}" class="btn btn-inverse btn-sm">
-                    <i class="fas fa-arrow-left"></i> Volver a CxP
-                </a>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editPayableModal">
+                        <i class="fas fa-edit"></i> Editar Cuenta
+                    </button>
+                    <a href="{{ route('finance.payables') }}" class="btn btn-inverse btn-sm">
+                        <i class="fas fa-arrow-left"></i> Volver a CxP
+                    </a>
+                </div>
             </div>
             <div class="card-block">
                 <div class="row g-3">
@@ -28,7 +33,60 @@
             </div>
         </div>
 
-        <div class="card mb-3">
+        <!-- Modal Editar Cuenta por Pagar -->
+        <div class="modal fade" id="editPayableModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <form method="POST" action="{{ route('finance.payables.update', $payable) }}">
+                        @csrf
+                        @method('PATCH')
+                        <div class="modal-header">
+                            <h6 class="mb-0 fw-bold"><i class="fas fa-edit me-1 text-primary"></i> Editar Cuenta por Pagar #{{ $payable->id }}</h6>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body text-start">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Sede <span class="text-danger">*</span></label>
+                                    <select name="branch_id" class="form-control form-control-sm" required>
+                                        @foreach ($branches as $b)
+                                            <option value="{{ $b->id }}" @selected($payable->branch_id == $b->id)>{{ $b->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Proveedor <span class="text-danger">*</span></label>
+                                    <input type="text" name="vendor_name" class="form-control form-control-sm" value="{{ old('vendor_name', $payable->vendor_name) }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Concepto / Título <span class="text-danger">*</span></label>
+                                    <input type="text" name="title" class="form-control form-control-sm" value="{{ old('title', $payable->title) }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Monto total ($) <span class="text-danger">*</span></label>
+                                    <input type="number" step="0.01" name="amount_total" class="form-control form-control-sm" value="{{ old('amount_total', $payable->amount_total) }}" required min="0.01">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Fecha de Vencimiento</label>
+                                    <input type="date" name="due_date" class="form-control form-control-sm" value="{{ old('due_date', $payable->due_date ? $payable->due_date->format('Y-m-d') : '') }}">
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label small fw-bold">Notas</label>
+                                    <textarea name="notes" class="form-control form-control-sm" rows="3">{{ old('notes', $payable->notes) }}</textarea>
+                                </div>
+                            </div>
+                            <small class="text-muted d-block mt-3">💡 Al modificar el monto total, el saldo pendiente y estado se recalcularán automáticamente.</small>
+                        </div>
+                        <div class="modal-footer bg-light">
+                            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save me-1"></i> Guardar cambios</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3 shadow-sm">
             <div class="card-header">
                 <h6 class="mb-1">Registrar pago</h6>
             </div>
@@ -74,7 +132,7 @@
             </div>
         </div>
 
-        <div class="card">
+        <div class="card shadow-sm">
             <div class="card-header">
                 <h6 class="mb-1">Pagos registrados</h6>
             </div>
@@ -90,6 +148,7 @@
                                 <th>Referencia</th>
                                 <th>Comprobante</th>
                                 <th>Movimiento</th>
+                                <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -108,10 +167,77 @@
                                         @endif
                                     </td>
                                     <td>#{{ $payment->id }}</td>
+                                    <td class="text-center">
+                                        <div class="d-flex justify-content-center gap-1">
+                                            <button type="button" class="btn btn-xs btn-outline-warning" data-bs-toggle="modal" data-bs-target="#editPaymentModal{{ $payment->id }}" title="Editar Abono">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <form action="{{ route('finance.transactions.destroy', $payment->id) }}" method="POST" class="d-inline mb-0" onsubmit="return confirm('¿Seguro que deseas eliminar este pago? El saldo de la cuenta por pagar será recalculado automáticamente.');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-xs btn-outline-danger" title="Eliminar Abono">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
                                 </tr>
+
+                                <!-- Modal Editar Abono -->
+                                <div class="modal fade" id="editPaymentModal{{ $payment->id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <form action="{{ route('finance.transactions.update', $payment->id) }}" method="POST" enctype="multipart/form-data">
+                                                @csrf
+                                                @method('PUT')
+                                                <div class="modal-header">
+                                                    <h6 class="mb-0 fw-bold"><i class="fas fa-edit text-warning me-1"></i> Editar pago #{{ $payment->id }}</h6>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body text-start">
+                                                    <div class="mb-3">
+                                                        <label class="form-label small fw-bold">Monto del pago ($) <span class="text-danger">*</span></label>
+                                                        <input type="number" step="0.01" name="amount" class="form-control form-control-sm" value="{{ old('amount', $payment->amount) }}" required min="0.01">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label small fw-bold">Cuenta de pago <span class="text-danger">*</span></label>
+                                                        <select name="account_id" class="form-control form-control-sm" required>
+                                                            @foreach ($accounts as $acc)
+                                                                <option value="{{ $acc->id }}" @selected($payment->account_id == $acc->id)>{{ $acc->name }} ({{ strtoupper($acc->currency) }})</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label small fw-bold">Fecha del pago <span class="text-danger">*</span></label>
+                                                        <input type="date" name="payment_date" value="{{ old('payment_date', $payment->created_at ? $payment->created_at->format('Y-m-d') : now()->toDateString()) }}" class="form-control form-control-sm" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label small fw-bold">Referencia</label>
+                                                        <input type="text" name="reference" value="{{ old('reference', $payment->reference) }}" class="form-control form-control-sm">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label small fw-bold">Notas</label>
+                                                        <textarea name="description" class="form-control form-control-sm" rows="2">{{ old('description', $payment->description) }}</textarea>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label small fw-bold">Cambiar comprobante</label>
+                                                        <input type="file" name="payment_receipt" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.pdf">
+                                                        @if ($payment->payment_receipt_path)
+                                                            <small class="text-muted d-block mt-1">Actual: <a href="{{ asset($payment->payment_receipt_path) }}" target="_blank">Ver comprobante</a></small>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer bg-light">
+                                                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                    <button type="submit" class="btn btn-sm btn-warning"><i class="fas fa-save me-1"></i> Actualizar pago</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="text-center text-muted">No hay pagos registrados.</td>
+                                    <td colspan="8" class="text-center text-muted">No hay pagos registrados.</td>
                                 </tr>
                             @endforelse
                         </tbody>

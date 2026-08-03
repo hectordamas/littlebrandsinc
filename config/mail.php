@@ -115,7 +115,7 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
-    'to' => [
+    'admin_recipient' => [
         'address' => env('MAIL_TO_ADDRESS'),
         'name' => env('MAIL_TO_NAME', 'Little Brands Inc'),
     ],

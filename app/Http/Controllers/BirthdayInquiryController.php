@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\BirthdayInquiryAdminMailable;
+use App\Mail\BirthdayInquiryConfirmationMailable;
 use App\Models\BirthdayInquiry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class BirthdayInquiryController extends Controller
 {
@@ -27,7 +31,31 @@ class BirthdayInquiryController extends Controller
             'comments' => 'nullable|string|max:1000',
         ]);
 
+        // 1. Persist inquiry in database FIRST to guarantee application inbox delivery
         $inquiry = BirthdayInquiry::create($validated);
+
+        // 2. Queue emails to Admin and User in background with exception handling
+        try {
+            $recipientAddress = (string) config('mail.admin_recipient.address');
+            $recipientName = (string) config('mail.admin_recipient.name', 'Little Brands Inc');
+
+            // Send notification to Admin if MAIL_TO_ADDRESS is configured
+            if (!empty($recipientAddress)) {
+                Mail::to($recipientAddress, $recipientName)->queue(new BirthdayInquiryAdminMailable($validated));
+            } else {
+                Log::warning('Birthday inquiry email for admin skipped: MAIL_TO_ADDRESS is empty.');
+            }
+
+            // Send confirmation receipt to User
+            if (!empty($validated['email'])) {
+                Mail::to($validated['email'], $validated['representative_name'])->queue(new BirthdayInquiryConfirmationMailable($validated));
+            }
+        } catch (\Throwable $exception) {
+            Log::error('Birthday inquiry background email dispatch failed', [
+                'birthday_inquiry_id' => $inquiry->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
 
         if ($request->expectsJson()) {
             return response()->json([

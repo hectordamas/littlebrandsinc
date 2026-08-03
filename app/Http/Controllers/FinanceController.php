@@ -272,10 +272,52 @@ class FinanceController extends Controller
             ->orderBy('name')
             ->get();
 
+        $branches = Branch::query()
+            ->orderBy('name')
+            ->get();
+
         return view('finance.payable-show', [
             'payable' => $payable,
             'accounts' => $accounts,
+            'branches' => $branches,
         ]);
+    }
+
+    public function updatePayable(Request $request, AccountPayable $payable): RedirectResponse
+    {
+        $validated = $request->validate([
+            'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
+            'vendor_name' => ['nullable', 'string', 'max:255'],
+            'title' => ['nullable', 'string', 'max:255'],
+            'amount_total' => ['required', 'numeric', 'gt:0'],
+            'due_date' => ['nullable', 'date'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $updateData = [
+            'amount_total' => $validated['amount_total'],
+        ];
+
+        if (array_key_exists('branch_id', $validated) && $validated['branch_id']) {
+            $updateData['branch_id'] = (int) $validated['branch_id'];
+        }
+        if (array_key_exists('vendor_name', $validated) && !empty($validated['vendor_name'])) {
+            $updateData['vendor_name'] = $validated['vendor_name'];
+        }
+        if (array_key_exists('title', $validated) && !empty($validated['title'])) {
+            $updateData['title'] = $validated['title'];
+        }
+        if (array_key_exists('due_date', $validated)) {
+            $updateData['due_date'] = $validated['due_date'] ?? null;
+        }
+        if (array_key_exists('notes', $validated)) {
+            $updateData['notes'] = $validated['notes'] ?? null;
+        }
+
+        $payable->update($updateData);
+        $this->refreshPayableBalance($payable->fresh());
+
+        return redirect()->back()->with('success', 'Cuenta por pagar actualizada correctamente.');
     }
 
     public function storePayablePayment(Request $request, AccountPayable $payable): RedirectResponse

@@ -132,6 +132,109 @@
             z-index: 2;
         }
 
+        #attendanceModal {
+            z-index: 1050 !important;
+        }
+
+        #studentObservationModal {
+            z-index: 1070 !important;
+        }
+
+        .class-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .class-detail-item {
+            border: 1px solid #dbe3f1;
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            background: #ffffff;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+        }
+
+        .class-detail-item .detail-label {
+            display: block;
+            font-size: 0.73rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #475569;
+            margin-bottom: 0.25rem;
+            font-weight: 700;
+        }
+
+        .class-detail-item .detail-value {
+            font-weight: 600;
+            color: #0f172a;
+            word-break: break-word;
+        }
+
+        .class-detail-item.class-detail-item-highlight {
+            background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+            border-color: #bfdbfe;
+        }
+
+        .occupancy-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.25rem 0.55rem;
+            border-radius: 999px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            border: 1px solid transparent;
+        }
+
+        .occupancy-pill.occupancy-high {
+            color: #166534;
+            background: #dcfce7;
+            border-color: #bbf7d0;
+        }
+
+        .occupancy-pill.occupancy-medium {
+            color: #854d0e;
+            background: #fef9c3;
+            border-color: #fef08a;
+        }
+
+        .occupancy-pill.occupancy-full {
+            color: #991b1b;
+            background: #fee2e2;
+            border-color: #fca5a5;
+        }
+
+        .occupancy-pill.occupancy-none {
+            color: #475569;
+            background: #f1f5f9;
+            border-color: #e2e8f0;
+        }
+
+        .attendance-table-container {
+            border: 1px solid #dbe3f1;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            background: #ffffff;
+            margin-bottom: 1rem;
+        }
+
+        .attendance-table th {
+            background-color: #f8fafc;
+            color: #334155;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            padding: 0.75rem 0.6rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .attendance-table td {
+            vertical-align: middle;
+            padding: 0.65rem 0.6rem;
+            font-size: 0.88rem;
+        }
+
         .attendance-row {
             display: flex;
             justify-content: space-between;
@@ -202,6 +305,20 @@
             color: #b91c1c;
         }
 
+        #calendarStatus {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+            color: #ffffff !important;
+            font-weight: 700 !important;
+            font-size: 0.82rem;
+            padding: 0.45rem 0.85rem;
+            border-radius: 999px;
+            box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
+        }
+
+        #calendarStatus * {
+            color: #ffffff !important;
+        }
+
         @media (max-width: 768px) {
             .attendance-row {
                 flex-direction: column;
@@ -220,9 +337,9 @@
                         <h5 class="mb-1">Mi Programación de Sesiones de Clase</h5>
                         <span class="text-muted">Cada sesión de clase muestra inscritos, nombres de estudiantes y estado de check in.</span>
                     </div>
-                    <span class="badge bg-primary d-inline-flex align-items-center gap-1" id="calendarStatus">
+                    <span class="badge bg-primary text-white d-inline-flex align-items-center gap-1" id="calendarStatus">
                         <span class="spinner-border spinner-border-sm d-none" id="coachSpinner" style="width: 0.85rem; height: 0.85rem;" role="status"></span>
-                        <span id="coachStatusText">Cargando...</span>
+                        <span id="coachStatusText" class="text-white fw-bold">Cargando...</span>
                     </span>
                 </div>
                 <div class="card-block">
@@ -233,15 +350,87 @@
     </div>
 
     <div class="modal fade" id="attendanceModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <form id="attendanceForm" method="POST" class="modal-content">
                     @csrf
                     <div class="modal-header">
-                        <h5 class="modal-title" id="attendanceTitle">Asistencia</h5>
+                        <div>
+                            <h5 class="modal-title mb-0" id="attendanceTitle">Asistencia</h5>
+                            <div class="small opacity-75 mt-1" id="attendanceSubtitle">Información de la clase</div>
+                        </div>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
                     <div class="modal-body">
-                        <p class="text-muted mb-3" id="attendanceMeta"></p>
+                        <!-- Información Detallada de la Clase (Estilo Admin) -->
+                        <div class="mb-3">
+                            <div class="class-detail-grid">
+                                <div class="class-detail-item">
+                                    <span class="detail-label">Sede</span>
+                                    <span class="detail-value" id="detailBranch">N/A</span>
+                                </div>
+                                <div class="class-detail-item">
+                                    <span class="detail-label">Coach</span>
+                                    <span class="detail-value" id="detailCoach">N/A</span>
+                                </div>
+                                <div class="class-detail-item">
+                                    <span class="detail-label">Horario</span>
+                                    <span class="detail-value" id="detailTime">N/A</span>
+                                </div>
+                                <div class="class-detail-item class-detail-item-highlight">
+                                    <span class="detail-label">Inscritos</span>
+                                    <span class="detail-value" id="detailEnrolledChildren">0</span>
+                                </div>
+                                <div class="class-detail-item class-detail-item-highlight">
+                                    <span class="detail-label">Capacidad</span>
+                                    <span class="detail-value" id="detailCapacity">N/A</span>
+                                </div>
+                                <div class="class-detail-item class-detail-item-highlight">
+                                    <span class="detail-label">Cupos disponibles</span>
+                                    <span class="detail-value" id="detailAvailableSpots">N/A</span>
+                                </div>
+                                <div class="class-detail-item class-detail-item-highlight">
+                                    <span class="detail-label">Nivel de ocupación</span>
+                                    <span class="detail-value" id="detailOccupancy">N/A</span>
+                                </div>
+                                <div class="class-detail-item">
+                                    <span class="detail-label">Precio de Inscripción</span>
+                                    <span class="detail-value" id="detailPrice">N/A</span>
+                                </div>
+                                <div class="class-detail-item">
+                                    <span class="detail-label">Mensualidad</span>
+                                    <span class="detail-value" id="detailMonthlyFee">N/A</span>
+                                </div>
+                                <div class="class-detail-item">
+                                    <span class="detail-label">Inicio de la Clase</span>
+                                    <span class="detail-value" id="detailStartDate">N/A</span>
+                                </div>
+                                <div class="class-detail-item">
+                                    <span class="detail-label">Fin de la Clase</span>
+                                    <span class="detail-value" id="detailEndDate">N/A</span>
+                                </div>
+                            </div>
+
+                            <div class="row g-2 mt-2">
+                                <div class="col-md-6">
+                                    <div class="class-detail-item h-100">
+                                        <span class="detail-label"><i class="fas fa-align-left me-1 text-primary"></i>Descripción de la Clase</span>
+                                        <div class="detail-value small text-secondary mt-1" id="detailDescription" style="min-height: 45px; max-height: 90px; overflow-y: auto;">Sin descripción registrada.</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="class-detail-item h-100">
+                                        <span class="detail-label"><i class="fas fa-chart-pie me-1 text-success"></i>Resumen de Asistencias</span>
+                                        <div class="d-flex flex-wrap gap-1 mt-2">
+                                            <span class="badge bg-success px-2 py-1" id="badgePresentCount"><i class="fas fa-check-circle me-1"></i>Presentes: 0</span>
+                                            <span class="badge bg-danger px-2 py-1" id="badgeAbsentCount"><i class="fas fa-times-circle me-1"></i>Ausentes: 0</span>
+                                            <span class="badge bg-warning text-dark px-2 py-1" id="badgeLateCount"><i class="fas fa-clock me-1"></i>Tarde: 0</span>
+                                            <span class="badge bg-secondary px-2 py-1" id="badgePendingCount"><i class="fas fa-hourglass-start me-1"></i>Pendientes: 0</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="attendance-tools" id="attendanceTools">
                             <div class="form-check form-switch m-0">
                                 <input class="form-check-input" type="checkbox" id="toggleAllAttendance">
@@ -263,6 +452,31 @@
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
                     </div>
                 </form>
+        </div>
+    </div>
+
+    <!-- Modal secundario para editar Observaciones del Estudiante -->
+    <div class="modal fade" id="studentObservationModal" tabindex="-1" aria-hidden="true" data-bs-focus="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg border-0">
+                <div class="modal-header bg-dark text-white py-2.5">
+                    <h6 class="modal-title fw-bold" id="studentObservationModalTitle">
+                        <i class="fas fa-user-edit me-2 text-primary"></i>Observaciones del Estudiante
+                    </h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body p-3 bg-light">
+                    <div class="fw-bold text-dark mb-2" id="studentObservationModalStudentName"></div>
+                    <label for="studentObservationInput" class="form-label text-muted small fw-semibold">Observación / Nota de asistencia:</label>
+                    <textarea id="studentObservationInput" class="form-control" rows="4" placeholder="Escribe observaciones específicas sobre la asistencia o desarrollo del estudiante en esta sesión..."></textarea>
+                </div>
+                <div class="modal-footer py-2 bg-white">
+                    <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-sm btn-primary" id="saveStudentObservationBtn">
+                        <i class="fas fa-save me-1"></i>Guardar Observación
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 @endsection
@@ -416,6 +630,40 @@
                 }
             }
 
+            function formatCurrency(value) {
+                const number = Number(value);
+                if (Number.isNaN(number) || value === null || value === undefined) {
+                    return 'N/A';
+                }
+                return new Intl.NumberFormat('es-VE', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 2
+                }).format(number);
+            }
+
+            function formatDate(value) {
+                if (!value) return 'N/A';
+                const date = new Date(value);
+                if (Number.isNaN(date.getTime())) return value;
+                return new Intl.DateTimeFormat('es-VE', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                }).format(date);
+            }
+
+            function getOccupancyMeta(enrolled, capacity) {
+                if (capacity === null || capacity === undefined || Number.isNaN(capacity) || capacity <= 0) {
+                    return { label: 'Sin límite', pillClass: 'occupancy-none' };
+                }
+                const ratio = enrolled / capacity;
+                if (ratio >= 1) return { label: 'Lleno (100%)', pillClass: 'occupancy-full' };
+                if (ratio >= 0.75) return { label: `Alto (${Math.round(ratio * 100)}%)`, pillClass: 'occupancy-high' };
+                if (ratio >= 0.3) return { label: `Medio (${Math.round(ratio * 100)}%)`, pillClass: 'occupancy-medium' };
+                return { label: `Bajo (${Math.round(ratio * 100)}%)`, pillClass: 'occupancy-none' };
+            }
+
             const calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
                 locale: 'es',
@@ -467,13 +715,116 @@
                         });
                     });
                 },
+                eventDidMount: function(info) {
+                    const props = info.event.extendedProps || {};
+                    const enrolledChildren = Number(props.enrolled_children || props.enrolled_count || 0);
+                    const capacity = props.course_capacity !== null && props.course_capacity !== undefined && !Number.isNaN(Number(props.course_capacity))
+                        ? Number(props.course_capacity)
+                        : null;
+
+                    const occupancyText = capacity !== null && capacity > 0
+                        ? `${enrolledChildren}/${capacity} inscritos`
+                        : `${enrolledChildren} inscritos`;
+
+                    let attendanceText = 'Sin inscritos';
+                    const attSummary = props.attendance_summary;
+                    if (attSummary && attSummary.total > 0) {
+                        const attendedCount = (attSummary.present || 0) + (attSummary.late || 0);
+                        attendanceText = `${attendedCount}/${attSummary.total} asistieron`;
+                    } else if (enrolledChildren > 0) {
+                        attendanceText = `0/${enrolledChildren} asistieron`;
+                    }
+
+                    const titleText = `${info.event.title}\nSede: ${props.branch || 'N/A'} (${props.time || 'N/A'})\nOcupación: ${occupancyText}\nAsistencia: ${attendanceText}`;
+
+                    info.el.setAttribute('title', titleText);
+                    info.el.querySelectorAll('*').forEach(function(child) {
+                        child.setAttribute('title', titleText);
+                    });
+
+                    const htmlContent = `
+                        <div class="text-start p-1" style="font-size: 0.78rem; line-height: 1.35;">
+                            <div class="fw-bold mb-1 border-bottom pb-1" style="font-size: 0.82rem; color: #fff;">${info.event.title}</div>
+                            <div><strong>Sede:</strong> ${props.branch || 'N/A'}</div>
+                            <div><strong>Horario:</strong> ${props.time || 'N/A'}</div>
+                            <div><strong>Ocupación:</strong> ${occupancyText}</div>
+                            <div><strong>Asistencia:</strong> ${attendanceText}</div>
+                        </div>
+                    `;
+
+                    if (window.bootstrap && bootstrap.Tooltip) {
+                        try {
+                            const oldInst = bootstrap.Tooltip.getInstance(info.el);
+                            if (oldInst) oldInst.dispose();
+                            new bootstrap.Tooltip(info.el, {
+                                title: htmlContent,
+                                html: true,
+                                placement: 'top',
+                                container: 'body',
+                                trigger: 'hover'
+                            });
+                        } catch (e) {}
+                    } else if (window.jQuery && $.fn && $.fn.tooltip) {
+                        try {
+                            $(info.el).tooltip('dispose');
+                        } catch (e) {}
+                        try {
+                            $(info.el).tooltip({
+                                title: htmlContent,
+                                html: true,
+                                placement: 'top',
+                                container: 'body',
+                                trigger: 'hover'
+                            });
+                        } catch (e) {}
+                    }
+                },
                 eventClick: function(info) {
                     currentEvent = info.event;
                     const props = info.event.extendedProps || {};
                     const students = Array.isArray(props.students) ? props.students : [];
 
-                    attendanceTitleEl.textContent = info.event.title;
-                    attendanceMetaEl.textContent = `Sede: ${props.branch || 'N/A'} | Horario: ${props.time || 'N/A'} | Inscritos: ${props.enrolled_count || 0}`;
+                    const enrolledChildren = Number(props.enrolled_children || props.enrolled_count || 0);
+                    const capacity = props.course_capacity !== null && props.course_capacity !== undefined
+                        ? Number(props.course_capacity)
+                        : null;
+                    const availableSpots = capacity !== null && !Number.isNaN(capacity)
+                        ? Math.max(0, capacity - enrolledChildren)
+                        : null;
+                    const occupancy = getOccupancyMeta(enrolledChildren, capacity);
+                    const eventDate = info.event.start
+                        ? new Intl.DateTimeFormat('es-VE', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                        }).format(info.event.start)
+                        : 'Fecha no disponible';
+
+                    attendanceTitleEl.textContent = info.event.title || 'Detalle de clase';
+                    const subtitleEl = document.getElementById('attendanceSubtitle');
+                    if (subtitleEl) {
+                        subtitleEl.textContent = `${eventDate} | ${props.time || 'Horario no disponible'}`;
+                    }
+
+                    document.getElementById('detailBranch').textContent = props.branch || 'N/A';
+                    document.getElementById('detailCoach').textContent = props.coach || 'N/A';
+                    document.getElementById('detailTime').textContent = props.time || 'N/A';
+                    document.getElementById('detailEnrolledChildren').textContent = String(enrolledChildren);
+                    document.getElementById('detailCapacity').textContent = capacity === null || Number.isNaN(capacity) ? 'N/A' : String(capacity);
+                    document.getElementById('detailAvailableSpots').textContent = availableSpots === null ? 'N/A' : String(availableSpots);
+                    document.getElementById('detailOccupancy').innerHTML = `<span class="occupancy-pill ${occupancy.pillClass}">${occupancy.label}</span>`;
+                    document.getElementById('detailPrice').textContent = formatCurrency(props.course_price);
+                    document.getElementById('detailMonthlyFee').textContent = formatCurrency(props.course_monthly_fee);
+                    document.getElementById('detailStartDate').textContent = formatDate(props.course_start_date);
+                    document.getElementById('detailEndDate').textContent = formatDate(props.course_end_date);
+                    document.getElementById('detailDescription').textContent = props.course_description || 'Sin descripción registrada.';
+
+                    const attSummary = props.attendance_summary || { present: 0, absent: 0, late: 0, pending: 0 };
+                    document.getElementById('badgePresentCount').innerHTML = `<i class="fas fa-check-circle me-1"></i>Presentes: ${attSummary.present || 0}`;
+                    document.getElementById('badgeAbsentCount').innerHTML = `<i class="fas fa-times-circle me-1"></i>Ausentes: ${attSummary.absent || 0}`;
+                    document.getElementById('badgeLateCount').innerHTML = `<i class="fas fa-clock me-1"></i>Tarde: ${attSummary.late || 0}`;
+                    document.getElementById('badgePendingCount').innerHTML = `<i class="fas fa-hourglass-start me-1"></i>Pendientes: ${attSummary.pending || 0}`;
+
                     attendanceForm.action = `{{ url('coach/clases') }}/${info.event.id}/attendance`;
 
                     document.getElementById('generalObservations').value = props.observations || '';
@@ -487,72 +838,79 @@
                         attendanceToolsEl.classList.add('d-none');
                     } else {
                         attendanceToolsEl.classList.remove('d-none');
+
+                        const tableContainer = document.createElement('div');
+                        tableContainer.className = 'table-responsive attendance-table-container';
+
+                        let tableHtml = `
+                            <table class="table table-hover attendance-table align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Estudiante</th>
+                                        <th class="text-center">Uso de Imagen</th>
+                                        <th class="text-center">Estado de Pago</th>
+                                        <th class="text-center">Asistencia</th>
+                                        <th class="text-center">Observaciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                        `;
+
+                        students.forEach(function(student) {
+                            let trialBadge = '';
+                            if (student.is_free_trial) {
+                                trialBadge = '<span class="badge bg-info text-white ms-1" style="font-size:0.7rem;">Prueba gratis</span>';
+                            }
+
+                            let consentBadge = student.image_consent
+                                ? '<span class="badge bg-success-subtle text-success border border-success px-2 py-1"><i class="fas fa-check-circle me-1"></i>Autorizado</span>'
+                                : '<span class="badge bg-danger-subtle text-danger border border-danger px-2 py-1" title="No otorgó uso de imagen"><i class="fas fa-times-circle me-1"></i>No Autorizado</span>';
+
+                            let paymentBadge = '';
+                            if (student.is_free_trial) {
+                                paymentBadge = '<span class="badge bg-info text-white px-2 py-1">Prueba gratis</span>';
+                            } else if (student.payment_status === 'paid') {
+                                paymentBadge = '<span class="badge bg-success text-white px-2 py-1">Pagado</span>';
+                            } else {
+                                paymentBadge = '<span class="badge bg-warning text-dark px-2 py-1">Pendiente</span>';
+                            }
+
+                            const isChecked = (student.check_in === 'present' || student.check_in === 'late');
+                            const hasNote = student.notes && student.notes.trim().length > 0;
+
+                            tableHtml += `
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark">${student.student_name} ${trialBadge}</div>
+                                    </td>
+                                    <td class="text-center">${consentBadge}</td>
+                                    <td class="text-center">${paymentBadge}</td>
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-inline-flex align-items-center m-0">
+                                            <input class="form-check-input attendance-item-checkbox me-2" type="checkbox" 
+                                                data-student-id="${student.student_id}" ${isChecked ? 'checked' : ''} style="cursor: pointer;">
+                                            <label class="form-check-label text-dark fw-semibold small mb-0" style="cursor: pointer;">Presente</label>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <textarea data-note-student-id="${student.student_id}" style="display:none;">${student.notes || ''}</textarea>
+                                        <button type="button" class="btn btn-sm ${hasNote ? 'btn-primary' : 'btn-outline-secondary'} open-student-note-btn" 
+                                            data-student-id="${student.student_id}" data-student-name="${student.student_name}">
+                                            <i class="fas ${hasNote ? 'fa-comment-dots' : 'fa-comment'} me-1"></i>
+                                            <span class="note-btn-label">${hasNote ? 'Ver Nota' : 'Observación'}</span>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+
+                        tableHtml += `
+                                </tbody>
+                            </table>
+                        `;
+                        tableContainer.innerHTML = tableHtml;
+                        attendanceRowsEl.appendChild(tableContainer);
                     }
-
-                    students.forEach(function(student) {
-                        const row = document.createElement('div');
-                        row.className = 'attendance-row';
-
-                        const name = document.createElement('div');
-                        name.className = 'attendance-student';
-                        name.textContent = student.student_name;
-
-                        if (student.is_free_trial) {
-                            const trialBadge = document.createElement('span');
-                            trialBadge.className = 'badge bg-info ms-2';
-                            trialBadge.style.fontSize = '0.7rem';
-                            trialBadge.textContent = 'Clase de prueba';
-                            name.appendChild(trialBadge);
-                        }
-
-                        if (student.image_consent) {
-                            const consentBadge = document.createElement('span');
-                            consentBadge.className = 'badge bg-success-subtle text-success border border-success ms-2';
-                            consentBadge.style.fontSize = '0.74rem';
-                            consentBadge.title = 'Consentimiento de uso de imagen otorgado';
-                            consentBadge.innerHTML = '<i class="fas fa-check-circle me-1"></i> Autorizado';
-                            name.appendChild(consentBadge);
-                        } else {
-                            const consentBadge = document.createElement('span');
-                            consentBadge.className = 'badge bg-danger text-white ms-2';
-                            consentBadge.style.fontSize = '0.74rem';
-                            consentBadge.title = '¡ATENCIÓN! No se otorgó consentimiento de uso de imagen';
-                            consentBadge.innerHTML = '<i class="fas fa-times-circle me-1"></i> No Autorizado';
-                            name.appendChild(consentBadge);
-                        }
-
-                        const checkLabel = document.createElement('label');
-                        checkLabel.className = 'attendance-check';
-
-                        const check = document.createElement('input');
-                        check.type = 'checkbox';
-                        check.className = 'attendance-item-checkbox';
-                        check.dataset.studentId = String(student.student_id);
-                        check.checked = (student.check_in === 'present' || student.check_in === 'late');
-
-                        const checkText = document.createElement('span');
-                        checkText.textContent = 'Presente';
-
-                        checkLabel.appendChild(check);
-                        checkLabel.appendChild(checkText);
-
-                        const noteWrap = document.createElement('div');
-                        noteWrap.className = 'attendance-note w-100';
-
-                        const noteInput = document.createElement('textarea');
-                        noteInput.className = 'form-control form-control-sm';
-                        noteInput.rows = 2;
-                        noteInput.placeholder = 'Observaciones de asistencia';
-                        noteInput.dataset.noteStudentId = String(student.student_id);
-                        noteInput.value = student.notes || '';
-
-                        noteWrap.appendChild(noteInput);
-
-                        row.appendChild(name);
-                        row.appendChild(checkLabel);
-                        row.appendChild(noteWrap);
-                        attendanceRowsEl.appendChild(row);
-                    });
 
                     syncToggleAllState();
 
@@ -560,6 +918,97 @@
                 }
             });
             calendar.render();
+
+            const studentObservationModalEl = document.getElementById('studentObservationModal');
+            const studentObservationModal = new bootstrap.Modal(studentObservationModalEl, {
+                backdrop: 'static'
+            });
+            let activeStudentIdForNote = null;
+
+            // Prevent Bootstrap focus trapping from stealing focus away from stacked studentObservationModal
+            document.addEventListener('focusin', function(e) {
+                if (e.target && e.target.closest('#studentObservationModal')) {
+                    e.stopImmediatePropagation();
+                }
+            }, true);
+
+            if (window.jQuery && $.fn && $.fn.modal && $.fn.modal.Constructor) {
+                $.fn.modal.Constructor.prototype._enforceFocus = function() {};
+            }
+
+            studentObservationModalEl.addEventListener('show.bs.modal', function () {
+                setTimeout(function() {
+                    const backdrops = document.querySelectorAll('.modal-backdrop');
+                    if (backdrops.length > 1) {
+                        backdrops[backdrops.length - 1].style.zIndex = '1065';
+                    }
+                    studentObservationModalEl.style.zIndex = '1070';
+                }, 10);
+            });
+
+            studentObservationModalEl.addEventListener('shown.bs.modal', function () {
+                const noteInput = document.getElementById('studentObservationInput');
+                if (noteInput) {
+                    noteInput.focus();
+                }
+            });
+
+            studentObservationModalEl.addEventListener('hidden.bs.modal', function () {
+                if (document.getElementById('attendanceModal').classList.contains('show')) {
+                    document.body.classList.add('modal-open');
+                }
+            });
+
+            attendanceRowsEl.addEventListener('click', function(event) {
+                const btn = event.target.closest('.open-student-note-btn');
+                if (!btn) return;
+
+                activeStudentIdForNote = btn.dataset.studentId;
+                const studentName = btn.dataset.studentName;
+                document.getElementById('studentObservationModalStudentName').textContent = `Estudiante: ${studentName}`;
+
+                const hiddenTextarea = attendanceRowsEl.querySelector(`textarea[data-note-student-id="${activeStudentIdForNote}"]`);
+                document.getElementById('studentObservationInput').value = hiddenTextarea ? hiddenTextarea.value : '';
+
+                studentObservationModal.show();
+            });
+
+            document.getElementById('saveStudentObservationBtn').addEventListener('click', function() {
+                if (!activeStudentIdForNote) return;
+
+                const noteText = document.getElementById('studentObservationInput').value.trim();
+                const hiddenTextarea = attendanceRowsEl.querySelector(`textarea[data-note-student-id="${activeStudentIdForNote}"]`);
+                if (hiddenTextarea) {
+                    hiddenTextarea.value = noteText;
+                }
+
+                if (currentEvent && Array.isArray(currentEvent.extendedProps.students)) {
+                    const studentObj = currentEvent.extendedProps.students.find(s => String(s.student_id) === String(activeStudentIdForNote));
+                    if (studentObj) {
+                        studentObj.notes = noteText;
+                    }
+                }
+
+                const btn = attendanceRowsEl.querySelector(`.open-student-note-btn[data-student-id="${activeStudentIdForNote}"]`);
+                if (btn) {
+                    const icon = btn.querySelector('i');
+                    const label = btn.querySelector('.note-btn-label');
+                    const hasNote = noteText.length > 0;
+
+                    if (hasNote) {
+                        btn.className = 'btn btn-sm btn-primary open-student-note-btn';
+                        if (icon) icon.className = 'fas fa-comment-dots me-1';
+                        if (label) label.textContent = 'Ver Nota';
+                    } else {
+                        btn.className = 'btn btn-sm btn-outline-secondary open-student-note-btn';
+                        if (icon) icon.className = 'fas fa-comment me-1';
+                        if (label) label.textContent = 'Observación';
+                    }
+                }
+
+                studentObservationModal.hide();
+                saveAttendanceAjax();
+            });
 
             attendanceForm.addEventListener('submit', function(event) {
                 event.preventDefault();

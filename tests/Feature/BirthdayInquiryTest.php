@@ -1,7 +1,10 @@
 <?php
 
+use App\Mail\BirthdayInquiryAdminMailable;
+use App\Mail\BirthdayInquiryConfirmationMailable;
 use App\Models\BirthdayInquiry;
 use App\Models\User;
+use Illuminate\Support\Facades\Mail;
 
 beforeEach(function () {
     BirthdayInquiry::query()->delete();
@@ -11,7 +14,9 @@ beforeEach(function () {
     $this->parent = User::factory()->create(['role' => 'Padre']);
 });
 
-test('public user can submit a birthday inquiry and gets stored in database', function () {
+test('public user can submit a birthday inquiry and gets stored in database and queues dual emails', function () {
+    Mail::fake();
+
     $payload = [
         'representative_name' => 'John Doe',
         'phone' => '+58 412 9999999',
@@ -36,6 +41,14 @@ test('public user can submit a birthday inquiry and gets stored in database', fu
         'age_to_celebrate' => 5,
         'location_type' => 'sede_los_campitos',
     ]);
+
+    Mail::assertQueued(BirthdayInquiryAdminMailable::class, function ($mail) {
+        return $mail->payload['representative_name'] === 'John Doe';
+    });
+
+    Mail::assertQueued(BirthdayInquiryConfirmationMailable::class, function ($mail) {
+        return $mail->hasTo('johndoe@example.com');
+    });
 
     // Check JSON response for AJAX
     $jsonResponse = $this->postJson(route('birthdays.store'), $payload);

@@ -838,10 +838,17 @@
                             }
                         })
                         .then(response => {
-                            if (!response.ok) {
-                                throw new Error('Network response was not ok');
-                            }
-                            return response.json();
+                            return response.json().then(data => {
+                                if (!response.ok) {
+                                    let errorMsg = data.message || 'Por favor completa todos los campos requeridos del formulario.';
+                                    if (data.errors) {
+                                        const firstErr = Object.values(data.errors)[0];
+                                        if (firstErr && firstErr[0]) errorMsg = firstErr[0];
+                                    }
+                                    throw new Error(errorMsg);
+                                }
+                                return data;
+                            });
                         })
                         .then(data => {
                             submitBtn.textContent = originalText;
@@ -866,7 +873,7 @@
                             } else {
                                 Swal.fire({
                                     title: 'Error',
-                                    text: 'Ocurrió un error al enviar tu solicitud. Por favor intenta nuevamente.',
+                                    text: data.message || 'Ocurrió un error al enviar tu solicitud.',
                                     icon: 'error',
                                     confirmButtonText: 'Entendido',
                                     confirmButtonColor: '#dc3545'
@@ -879,11 +886,11 @@
                             console.error('Error:', error);
                             
                             Swal.fire({
-                                    title: 'Error de Red',
-                                    text: 'No se pudo conectar con el servidor. Verifica tu conexión e intenta nuevamente.',
-                                    icon: 'error',
-                                    confirmButtonText: 'Entendido',
-                                    confirmButtonColor: '#dc3545'
+                                title: 'Atención',
+                                text: error.message || 'No se pudo procesar tu solicitud. Revisa los datos e intenta nuevamente.',
+                                icon: 'error',
+                                confirmButtonText: 'Entendido',
+                                confirmButtonColor: '#dc3545'
                             });
                         });
                     });

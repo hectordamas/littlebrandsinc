@@ -768,26 +768,61 @@
                     info.el.style.color = occupancy.eventText;
                     info.el.style.borderLeft = '4px solid ' + occupancy.eventBorder;
 
+                    const occupancyText = capacity !== null && capacity > 0
+                        ? `${enrolledChildren}/${capacity} inscritos`
+                        : `${enrolledChildren} inscritos`;
+
+                    let attendanceText = 'Sin inscritos';
                     const attSummary = props.attendance_summary;
                     if (attSummary && attSummary.total > 0) {
-                        const titleEl = info.el.querySelector('.fc-event-title') || info.el.querySelector('.fc-event-main') || info.el;
-                        if (titleEl && !info.el.querySelector('.attendance-badge-indicator')) {
-                            const badgeDiv = document.createElement('div');
-                            badgeDiv.className = 'attendance-badge-indicator mt-1 text-truncate';
-                            badgeDiv.style.fontSize = '0.70rem';
-                            
-                            const markedCount = attSummary.present + attSummary.late + attSummary.absent;
-                            if (attSummary.present + attSummary.late > 0) {
-                                badgeDiv.innerHTML = `<span class="badge bg-success text-white" style="font-size:0.65rem; padding: 2px 4px;"><i class="fas fa-user-check me-1"></i>${attSummary.present + attSummary.late}/${attSummary.total} Asistieron</span>`;
-                            } else if (attSummary.absent > 0 && attSummary.absent === attSummary.total) {
-                                badgeDiv.innerHTML = `<span class="badge bg-danger text-white" style="font-size:0.65rem; padding: 2px 4px;"><i class="fas fa-user-times me-1"></i>0/${attSummary.total} Ausentes</span>`;
-                            } else if (markedCount > 0) {
-                                badgeDiv.innerHTML = `<span class="badge bg-warning text-dark" style="font-size:0.65rem; padding: 2px 4px;"><i class="fas fa-user-clock me-1"></i>${markedCount}/${attSummary.total} Registradas</span>`;
-                            } else {
-                                badgeDiv.innerHTML = `<span class="badge bg-secondary text-white" style="font-size:0.65rem; padding: 2px 4px;"><i class="fas fa-clock me-1"></i>Asist. Pendiente</span>`;
-                            }
-                            titleEl.appendChild(badgeDiv);
-                        }
+                        const attendedCount = (attSummary.present || 0) + (attSummary.late || 0);
+                        attendanceText = `${attendedCount}/${attSummary.total} asistieron`;
+                    } else if (enrolledChildren > 0) {
+                        attendanceText = `0/${enrolledChildren} asistieron`;
+                    }
+
+                    const titleText = `${info.event.title}\nSede: ${props.branch || 'N/A'} (${props.time || 'N/A'})\nOcupación: ${occupancyText}\nAsistencia: ${attendanceText}`;
+
+                    info.el.setAttribute('title', titleText);
+                    info.el.querySelectorAll('*').forEach(function(child) {
+                        child.setAttribute('title', titleText);
+                    });
+
+                    const htmlContent = `
+                        <div class="text-start p-1" style="font-size: 0.78rem; line-height: 1.35;">
+                            <div class="fw-bold mb-1 border-bottom pb-1" style="font-size: 0.82rem; color: #fff;">${info.event.title}</div>
+                            <div><strong>Sede:</strong> ${props.branch || 'N/A'}</div>
+                            <div><strong>Horario:</strong> ${props.time || 'N/A'}</div>
+                            <div><strong>Ocupación:</strong> ${occupancyText}</div>
+                            <div><strong>Asistencia:</strong> ${attendanceText}</div>
+                        </div>
+                    `;
+
+                    if (window.bootstrap && bootstrap.Tooltip) {
+                        try {
+                            const oldInst = bootstrap.Tooltip.getInstance(info.el);
+                            if (oldInst) oldInst.dispose();
+                            new bootstrap.Tooltip(info.el, {
+                                title: htmlContent,
+                                html: true,
+                                placement: 'top',
+                                container: 'body',
+                                trigger: 'hover'
+                            });
+                        } catch (e) {}
+                    } else if (window.jQuery && $.fn && $.fn.tooltip) {
+                        try {
+                            $(info.el).tooltip('dispose');
+                        } catch (e) {}
+                        try {
+                            $(info.el).tooltip({
+                                title: htmlContent,
+                                html: true,
+                                placement: 'top',
+                                container: 'body',
+                                trigger: 'hover'
+                            });
+                        } catch (e) {}
                     }
                 }
             });

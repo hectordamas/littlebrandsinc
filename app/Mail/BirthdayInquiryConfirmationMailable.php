@@ -5,12 +5,11 @@ namespace App\Mail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class LandingContactMailable extends Mailable implements ShouldQueue
+class BirthdayInquiryConfirmationMailable extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
@@ -21,17 +20,14 @@ class LandingContactMailable extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Nuevo contacto desde Little Brands Inc - ' . ($this->payload['representative_name'] ?? 'Cliente'),
-            replyTo: !empty($this->payload['email']) ? [
-                new Address($this->payload['email'], $this->payload['representative_name'] ?? 'Contacto'),
-            ] : [],
+            subject: '¡Hemos recibido tu solicitud de cumpleaños! - Little Brands Inc',
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            view: 'emails.landing-contact',
+            view: 'emails.birthday-user',
             with: [
                 'payload' => $this->payload,
             ],

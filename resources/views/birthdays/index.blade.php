@@ -697,25 +697,40 @@
             }
 
             function selectInquiry($item) {
+                const getAttr = (attr) => {
+                    const val = $item.attr('data-' + attr);
+                    return (val !== undefined && val !== null && val !== '') ? val : '';
+                };
+
+                let rawServices = getAttr('additional-services');
+                let parsedServices = [];
+                if (rawServices) {
+                    try {
+                        parsedServices = typeof rawServices === 'string' ? JSON.parse(rawServices) : rawServices;
+                    } catch (e) {
+                        parsedServices = [];
+                    }
+                }
+
                 const data = {
-                    id: Number($item.data('id')),
-                    is_read: $item.data('is-read') === 1 || $item.data('is-read') === '1',
-                    created_at: $item.data('created-at') || 'N/A',
-                    representative_name: $item.data('representative-name') || 'N/A',
-                    phone: $item.data('phone') || 'N/A',
-                    email: $item.data('email') || 'N/A',
-                    age_to_celebrate: $item.data('age-to-celebrate') || 'N/A',
-                    event_date: $item.data('event-date') || 'N/A',
-                    start_time: $item.data('start-time') || 'N/A',
-                    location_type: $item.data('location-type') || 'N/A',
-                    event_location: $item.data('event-location') || 'N/A',
-                    estimated_children: $item.data('estimated-children') || 'N/A',
-                    guest_age_range: $item.data('guest-age-range') || 'N/A',
-                    program_interest: $item.data('program-interest') || 'N/A',
-                    additional_services: $item.data('additional-services') || [],
-                    comments: $item.data('comments') || 'Sin comentarios adicionales',
-                    color: $item.data('color') || 'avatar-blue',
-                    initials: $item.data('initials') || '?',
+                    id: Number(getAttr('id')),
+                    is_read: getAttr('is-read') === '1',
+                    created_at: getAttr('created-at') || 'N/A',
+                    representative_name: getAttr('representative-name') || 'N/A',
+                    phone: getAttr('phone') || 'N/A',
+                    email: getAttr('email') || 'N/A',
+                    age_to_celebrate: getAttr('age-to-celebrate'),
+                    event_date: getAttr('event-date') || 'N/A',
+                    start_time: getAttr('start-time') || 'N/A',
+                    location_type: getAttr('location-type') || 'N/A',
+                    event_location: getAttr('event-location') || '',
+                    estimated_children: getAttr('estimated-children'),
+                    guest_age_range: getAttr('guest-age-range') || 'N/A',
+                    program_interest: getAttr('program-interest') || 'N/A',
+                    additional_services: parsedServices,
+                    comments: getAttr('comments') || 'Sin comentarios adicionales',
+                    color: getAttr('color') || 'avatar-blue',
+                    initials: getAttr('initials') || '?',
                 };
 
                 // Highlight active
@@ -740,7 +755,7 @@
 
                 // Header
                 $('#detailSenderName').text(data.representative_name);
-                const programName = data.program_interest === 'strikers' ? 'Little Strikers (Fútbol)' : 'Little Paddlers (Pádel)';
+                const programName = data.program_interest === 'strikers' ? 'Little Strikers (Fútbol)' : (data.program_interest === 'paddlers' ? 'Little Paddlers (Pádel)' : data.program_interest);
                 $('#detailSenderMeta').text(data.created_at + '  ·  ' + programName);
 
                 // Status badge
@@ -764,15 +779,15 @@
                 }
 
                 // Event Details
-                $('#detailAge').text(data.age_to_celebrate + ' años');
-                $('#detailDate').text(data.event_date);
-                $('#detailTime').text(data.start_time);
+                $('#detailAge').text(data.age_to_celebrate ? (data.age_to_celebrate + ' años') : 'N/A');
+                $('#detailDate').text(data.event_date || 'N/A');
+                $('#detailTime').text(data.start_time || 'N/A');
 
                 // Location / Guests
-                $('#detailLocationType').text(locationMapping[data.location_type] || data.location_type);
+                $('#detailLocationType').text(locationMapping[data.location_type] || data.location_type || 'N/A');
                 $('#detailLocation').text(data.event_location || 'No especificado (Sede seleccionada)');
-                $('#detailChildrenCount').text(data.estimated_children + ' niños');
-                $('#detailAgeRange').text(data.guest_age_range);
+                $('#detailChildrenCount').text(data.estimated_children ? (data.estimated_children + ' niños') : 'N/A');
+                $('#detailAgeRange').text(data.guest_age_range || 'N/A');
 
                 // Program
                 $('#detailProgram').text(programName);
@@ -886,10 +901,10 @@
                 let visibleCount = 0;
 
                 $('.inbox-msg-item').each(function() {
-                    const name = ($(this).data('representative-name') || '').toLowerCase();
-                    const email = ($(this).data('email') || '').toLowerCase();
-                    const comments = ($(this).data('comments') || '').toLowerCase();
-                    const location = ($(this).data('event-location') || '').toLowerCase();
+                    const name = ($(this).attr('data-representative-name') || '').toLowerCase();
+                    const email = ($(this).attr('data-email') || '').toLowerCase();
+                    const comments = ($(this).attr('data-comments') || '').toLowerCase();
+                    const location = ($(this).attr('data-event-location') || '').toLowerCase();
 
                     const matches = !query || name.includes(query) || email.includes(query) || comments.includes(query) || location.includes(query);
                     $(this).toggle(matches);

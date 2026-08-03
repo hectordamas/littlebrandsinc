@@ -3,10 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\LandingContactRequest;
-use App\Models\Course;
+use App\Mail\LandingContactConfirmationMailable;
 use App\Mail\LandingContactMailable;
 use App\Models\Branch;
 use App\Models\ContactMessage;
+use App\Models\Course;
 use App\Models\Program;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -218,40 +219,40 @@ class LandingController extends Controller
         $branch = Branch::query()->find($payload['branch_id']);
         $payload['program_name'] = optional($program)->name;
         $payload['branch_name'] = optional($branch)->name;
-        $recipientAddress = (string) config('mail.to.address');
-        $recipientName = (string) config('mail.to.name', 'Little Brands Inc');
 
-        if ($recipientAddress === '') {
-            return redirect()->to($contactRedirectUrl)
-                ->withInput()
-                ->withErrors([
-                    'contact' => 'No se ha configurado MAIL_TO_ADDRESS en el archivo .env.',
-                ]);
-        }
+        // 1. Persist message in database FIRST to guarantee application inbox delivery
+        $contactMessage = ContactMessage::create([
+            'representative_name' => $payload['representative_name'],
+            'child_name' => $payload['child_name'],
+            'child_age' => (int) $payload['child_age'],
+            'program_id' => (int) $payload['program_id'],
+            'branch_id' => (int) $payload['branch_id'],
+            'phone' => $payload['phone'],
+            'email' => $payload['email'],
+            'comment' => $payload['comment'],
+        ]);
 
+        // 2. Queue emails to Admin and User in background with exception handling
         try {
-            ContactMessage::create([
-                'representative_name' => $payload['representative_name'],
-                'child_name' => $payload['child_name'],
-                'child_age' => (int) $payload['child_age'],
-                'program_id' => (int) $payload['program_id'],
-                'branch_id' => (int) $payload['branch_id'],
-                'phone' => $payload['phone'],
-                'email' => $payload['email'],
-                'comment' => $payload['comment'],
-            ]);
+            $recipientAddress = (string) config('mail.admin_recipient.address');
+            $recipientName = (string) config('mail.admin_recipient.name', 'Little Brands Inc');
 
-            Mail::to($recipientAddress, $recipientName)->send(new LandingContactMailable($payload));
+            // Send notification to Admin if MAIL_TO_ADDRESS is configured
+            if (!empty($recipientAddress)) {
+                Mail::to($recipientAddress, $recipientName)->queue(new LandingContactMailable($payload));
+            } else {
+                Log::warning('Landing contact email for admin skipped: MAIL_TO_ADDRESS is empty.');
+            }
+
+            // Send confirmation receipt to User
+            if (!empty($payload['email'])) {
+                Mail::to($payload['email'], $payload['representative_name'])->queue(new LandingContactConfirmationMailable($payload));
+            }
         } catch (\Throwable $exception) {
-            Log::error('Landing contact email failed', [
+            Log::error('Landing contact background email dispatch failed', [
+                'contact_message_id' => $contactMessage->id,
                 'error' => $exception->getMessage(),
             ]);
-
-            return redirect()->to($contactRedirectUrl)
-                ->withInput()
-                ->withErrors([
-                    'contact' => 'No se pudo enviar tu mensaje en este momento. Intenta nuevamente en unos minutos.',
-                ]);
         }
 
         return redirect()->to($contactRedirectUrl)

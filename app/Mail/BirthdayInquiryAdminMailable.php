@@ -10,7 +10,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class LandingContactMailable extends Mailable implements ShouldQueue
+class BirthdayInquiryAdminMailable extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
@@ -21,7 +21,7 @@ class LandingContactMailable extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Nuevo contacto desde Little Brands Inc - ' . ($this->payload['representative_name'] ?? 'Cliente'),
+            subject: 'Nueva solicitud de cumpleaños - ' . ($this->payload['representative_name'] ?? 'Cliente'),
             replyTo: !empty($this->payload['email']) ? [
                 new Address($this->payload['email'], $this->payload['representative_name'] ?? 'Contacto'),
             ] : [],
@@ -31,7 +31,7 @@ class LandingContactMailable extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            view: 'emails.landing-contact',
+            view: 'emails.birthday-admin',
             with: [
                 'payload' => $this->payload,
             ],

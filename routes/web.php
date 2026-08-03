@@ -71,6 +71,7 @@ Route::middleware(['auth', 'role:Administrador'])->group(function () {
     Route::get('finanzas-y-facturacion/cuentas-por-pagar', [FinanceController::class, 'payables'])->name('finance.payables');
     Route::post('finanzas-y-facturacion/cuentas-por-pagar', [FinanceController::class, 'storePayable'])->name('finance.payables.store');
     Route::get('finanzas-y-facturacion/cuentas-por-pagar/{payable}', [FinanceController::class, 'showPayable'])->name('finance.payables.show');
+    Route::patch('finanzas-y-facturacion/cuentas-por-pagar/{payable}', [FinanceController::class, 'updatePayable'])->name('finance.payables.update');
     Route::post('finanzas-y-facturacion/cuentas-por-pagar/{payable}/abonos', [FinanceController::class, 'storePayablePayment'])->name('finance.payables.payments.store');
     Route::post('finanzas-y-facturacion/movimientos', [FinanceController::class, 'storeTransaction'])->name('finance.transactions.store');
     Route::put('finanzas-y-facturacion/movimientos/{transaction}', [FinanceController::class, 'updateTransaction'])->name('finance.transactions.update');
@@ -197,6 +198,56 @@ if (config('app.env') === 'local') {
             'comment' => "Hola, estoy interesado en inscribir a mi hijo en el horario de las tardes. ¿Tienen cupos disponibles?"
         ];
         return new \App\Mail\LandingContactMailable($payload);
+    });
+
+    Route::get('preview-mail/landing-contact-user', function () {
+        $payload = [
+            'representative_name' => 'Héctor Damas',
+            'child_name' => 'Pedrito Damas',
+            'child_age' => 4,
+            'program_name' => 'Little Strikers (Fútbol)',
+            'branch_name' => 'Sede San Luis',
+            'email' => 'hector@example.com',
+            'phone' => '+58 412 1234567',
+            'comment' => "Hola, estoy interesado en inscribir a mi hijo en el horario de las tardes."
+        ];
+        return new \App\Mail\LandingContactConfirmationMailable($payload);
+    });
+
+    Route::get('preview-mail/birthday-admin', function () {
+        $payload = [
+            'representative_name' => 'María Pérez',
+            'phone' => '+58 414 9876543',
+            'email' => 'maria@example.com',
+            'age_to_celebrate' => 5,
+            'event_date' => now()->addDays(15)->format('d/m/Y'),
+            'start_time' => '3:00 PM',
+            'location_type' => 'sede_los_campitos',
+            'estimated_children' => 20,
+            'guest_age_range' => '3 a 6 años',
+            'program_interest' => 'strikers',
+            'additional_services' => ['Torta tematica', 'Decoracion basica', 'Fotografia'],
+            'comments' => 'Queremos temática de campeones de fútbol.'
+        ];
+        return new \App\Mail\BirthdayInquiryAdminMailable($payload);
+    });
+
+    Route::get('preview-mail/birthday-user', function () {
+        $payload = [
+            'representative_name' => 'María Pérez',
+            'phone' => '+58 414 9876543',
+            'email' => 'maria@example.com',
+            'age_to_celebrate' => 5,
+            'event_date' => now()->addDays(15)->format('d/m/Y'),
+            'start_time' => '3:00 PM',
+            'location_type' => 'sede_los_campitos',
+            'estimated_children' => 20,
+            'guest_age_range' => '3 a 6 años',
+            'program_interest' => 'strikers',
+            'additional_services' => ['Torta tematica', 'Decoracion basica'],
+            'comments' => 'Queremos temática de campeones de fútbol.'
+        ];
+        return new \App\Mail\BirthdayInquiryConfirmationMailable($payload);
     });
 
     Route::get('preview-mail/reminder', function () {
