@@ -849,6 +849,7 @@
                                         <th>Estudiante</th>
                                         <th class="text-center">Uso de Imagen</th>
                                         <th class="text-center">Estado de Inscripción</th>
+                                        <th class="text-center">Cuenta por Cobrar</th>
                                         <th class="text-center">Asistencia</th>
                                         <th class="text-center">Observaciones</th>
                                     </tr>
@@ -875,6 +876,15 @@
                                 paymentBadge = '<span class="badge bg-warning text-dark px-2 py-1">Pendiente</span>';
                             }
 
+                            let cxcBadge = '';
+                            if (student.is_free_trial) {
+                                cxcBadge = '<span class="text-muted small">-</span>';
+                            } else if (Number(student.cxc_balance_due) > 0) {
+                                cxcBadge = `<span class="badge bg-warning text-dark px-2 py-1" title="Cuenta por cobrar pendiente">Pendiente</span> <div class="fw-bold text-danger small mt-1">$${Number(student.cxc_balance_due).toFixed(2)}</div>`;
+                            } else {
+                                cxcBadge = `<span class="badge bg-success text-white px-2 py-1" title="Cuenta por cobrar al día">Pagado</span> <div class="text-muted small mt-1">$0.00</div>`;
+                            }
+
                             const isChecked = (student.check_in === 'present' || student.check_in === 'late');
                             const hasNote = student.notes && student.notes.trim().length > 0;
 
@@ -885,6 +895,7 @@
                                     </td>
                                     <td class="text-center">${consentBadge}</td>
                                     <td class="text-center">${paymentBadge}</td>
+                                    <td class="text-center">${cxcBadge}</td>
                                     <td class="text-center">
                                         <div class="form-check form-switch d-inline-flex align-items-center m-0">
                                             <input class="form-check-input attendance-item-checkbox me-2" type="checkbox" 

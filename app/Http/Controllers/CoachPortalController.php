@@ -28,6 +28,7 @@ class CoachPortalController extends Controller
         $classes = LBClass::query()
             ->with([
                 'course.enrollments.student',
+                'course.enrollments.receivable',
                 'course.coaches',
                 'branch',
                 'attendances',
@@ -57,6 +58,15 @@ class CoachPortalController extends Controller
                         $student = $enrollment->student;
                         $attendance = $class->attendances->firstWhere('student_id', optional($student)->id);
 
+                        $cxcBalanceDue = 0.00;
+                        if (! $enrollment->is_free_trial) {
+                            if ($enrollment->receivable) {
+                                $cxcBalanceDue = (float) $enrollment->receivable->balance_due;
+                            } else {
+                                $cxcBalanceDue = (float) $enrollment->getInitialChargeAmount();
+                            }
+                        }
+
                         return [
                             'student_id' => optional($student)->id,
                             'student_name' => optional($student)->name ?? 'Sin nombre',
@@ -65,6 +75,7 @@ class CoachPortalController extends Controller
                             'payment_status' => $enrollment->payment_status,
                             'is_free_trial' => (bool) $enrollment->is_free_trial,
                             'image_consent' => (bool) $enrollment->image_consent_accepted,
+                            'cxc_balance_due' => $cxcBalanceDue,
                         ];
                     })
                     ->filter(fn ($row) => ! empty($row['student_id']))

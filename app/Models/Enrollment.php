@@ -108,14 +108,16 @@ class Enrollment extends Model
 
     public function syncReceivable(): ?\App\Models\AccountReceivable
     {
-        $this->loadMissing(['program', 'courses', 'receivable', 'installments']);
+        $this->loadMissing(['program', 'courses', 'installments']);
+
+        $receivable = $this->receivable ?: \App\Models\AccountReceivable::where('enrollment_id', $this->id)->first();
 
         if ($this->status === 'cancelled') {
-            $receivable = $this->receivable;
             if ($receivable) {
                 $paidAmount = (float) $receivable->transactions()->where('status', 'completed')->sum('amount');
                 if ($paidAmount <= 0) {
                     $receivable->delete();
+                    $this->setRelation('receivable', null);
                     return null;
                 } else {
                     $receivable->update([
@@ -123,16 +125,19 @@ class Enrollment extends Model
                         'balance_due' => 0.0,
                         'status' => 'paid',
                     ]);
+                    $this->setRelation('receivable', $receivable);
                     return $receivable;
                 }
             }
             $this->installments()->where('status', 'pending')->delete();
+            $this->setRelation('receivable', null);
             return null;
         }
 
         if ($this->is_free_trial) {
-            if ($this->receivable) {
-                $this->receivable->delete();
+            if ($receivable) {
+                $receivable->delete();
+                $this->setRelation('receivable', null);
             }
             return null;
         }
@@ -148,7 +153,6 @@ class Enrollment extends Model
             return null;
         }
 
-        $receivable = $this->receivable;
         $enrollmentFee = $this->getEnrollmentFee();
 
         // Calculate amount total
@@ -274,6 +278,7 @@ class Enrollment extends Model
             }
         }
 
+        $this->setRelation('receivable', $receivable);
         return $receivable;
     }
 }

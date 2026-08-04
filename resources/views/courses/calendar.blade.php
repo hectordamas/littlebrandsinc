@@ -359,6 +359,7 @@
                                         <th>Representante</th>
                                         <th>Teléfono / Correo</th>
                                         <th class="text-center">Estado de Inscripción</th>
+                                        <th class="text-center">Cuenta por Cobrar</th>
                                         <th class="text-center">Asistencia</th>
                                         <th class="text-center">Detalle</th>
                                     </tr>
@@ -404,15 +405,21 @@
                     </div>
 
                     <div class="row g-2 mb-3">
-                        <div class="col-6">
+                        <div class="col-4">
                             <div class="p-2 border rounded text-center bg-white">
-                                <small class="text-muted d-block fw-bold mb-1">Estado de Inscripción</small>
+                                <small class="text-muted d-block fw-bold mb-1">Inscripción</small>
                                 <div id="studentDetailPayment">N/A</div>
                             </div>
                         </div>
-                        <div class="col-6">
+                        <div class="col-4">
                             <div class="p-2 border rounded text-center bg-white">
-                                <small class="text-muted d-block fw-bold mb-1">Estado Asistencia</small>
+                                <small class="text-muted d-block fw-bold mb-1">Cuenta por Cobrar</small>
+                                <div id="studentDetailCxc">N/A</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 border rounded text-center bg-white">
+                                <small class="text-muted d-block fw-bold mb-1">Asistencia</small>
                                 <div id="studentDetailAttendance">N/A</div>
                             </div>
                         </div>
@@ -690,6 +697,15 @@
                                 attendanceBadge = '<span class="badge bg-secondary text-white px-2 py-1"><i class="fas fa-hourglass-start me-1"></i>Pendiente</span>';
                             }
 
+                            let cxcBadge = '';
+                            if (student.is_free_trial) {
+                                cxcBadge = '<span class="text-muted small">-</span>';
+                            } else if (Number(student.cxc_balance_due) > 0) {
+                                cxcBadge = `<span class="badge bg-warning text-dark px-2 py-1" title="Cuenta por cobrar pendiente">Pendiente</span> <div class="fw-bold text-danger small mt-1">$${Number(student.cxc_balance_due).toFixed(2)}</div>`;
+                            } else {
+                                cxcBadge = `<span class="badge bg-success text-white px-2 py-1" title="Cuenta por cobrar al día">Pagado</span> <div class="text-muted small mt-1">$0.00</div>`;
+                            }
+
                             const row = `
                                 <tr>
                                     <td>
@@ -703,6 +719,7 @@
                                         <small class="text-muted">${student.parent_email}</small>
                                     </td>
                                     <td class="text-center">${paymentBadge}</td>
+                                    <td class="text-center">${cxcBadge}</td>
                                     <td class="text-center">${attendanceBadge}</td>
                                     <td class="text-center">
                                         <button type="button" class="btn btn-sm btn-outline-primary view-student-detail-btn" data-student-index="${index}">
@@ -736,6 +753,16 @@
                                 else if (student.payment_status === 'paid') payHtml = '<span class="badge bg-success text-white">Pagado</span>';
                                 else payHtml = '<span class="badge bg-warning text-dark">Pendiente</span>';
                                 document.getElementById('studentDetailPayment').innerHTML = payHtml;
+
+                                let detailCxcHtml = '';
+                                if (student.is_free_trial) {
+                                    detailCxcHtml = '<span class="text-muted small">-</span>';
+                                } else if (Number(student.cxc_balance_due) > 0) {
+                                    detailCxcHtml = `<span class="badge bg-warning text-dark me-1">Pendiente</span> <span class="fw-bold text-danger">$${Number(student.cxc_balance_due).toFixed(2)}</span>`;
+                                } else {
+                                    detailCxcHtml = `<span class="badge bg-success text-white me-1">Pagado</span> <span class="text-muted small">$0.00</span>`;
+                                }
+                                document.getElementById('studentDetailCxc').innerHTML = detailCxcHtml;
 
                                 const checkIn = student.check_in || 'pending';
                                 let attHtml = '';

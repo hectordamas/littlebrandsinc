@@ -572,10 +572,7 @@
                                                                 if ($enrollment->receivable) {
                                                                     $cxcBalanceDue = (float) $enrollment->receivable->balance_due;
                                                                 } else {
-                                                                    $cxcBalanceDue = $enrollment->getInitialChargeAmount();
-                                                                    if ($enrollment->payment_status === 'paid') {
-                                                                        $cxcBalanceDue = 0.00;
-                                                                    }
+                                                                    $cxcBalanceDue = (float) $enrollment->getInitialChargeAmount();
                                                                 }
                                                             }
                                                         @endphp

@@ -54,7 +54,7 @@ class CoursesController extends Controller
                             $enrollmentsQuery->where('status', '!=', 'cancelled');
                         },
                     ])->with(['enrollments' => function ($eq) {
-                        $eq->where('status', '!=', 'cancelled')->with(['student', 'parent']);
+                        $eq->where('status', '!=', 'cancelled')->with(['student', 'parent', 'receivable']);
                     }, 'program', 'coaches']);
                 },
                 'branch',
@@ -110,6 +110,15 @@ class CoursesController extends Controller
                     $pendingCount++;
                 }
 
+                $cxcBalanceDue = 0.00;
+                if (! $enrollment->is_free_trial) {
+                    if ($enrollment->receivable) {
+                        $cxcBalanceDue = (float) $enrollment->receivable->balance_due;
+                    } else {
+                        $cxcBalanceDue = (float) $enrollment->getInitialChargeAmount();
+                    }
+                }
+
                 return [
                     'student_id' => $studentId,
                     'student_name' => $enrollment->student->name ?? 'N/A',
@@ -120,6 +129,7 @@ class CoursesController extends Controller
                     'payment_status' => $enrollment->payment_status,
                     'is_free_trial' => (bool) $enrollment->is_free_trial,
                     'image_consent' => (bool) $enrollment->image_consent_accepted,
+                    'cxc_balance_due' => $cxcBalanceDue,
                     'check_in' => $status,
                     'attendance_notes' => $notes,
                 ];
@@ -301,6 +311,10 @@ class CoursesController extends Controller
         $course = Course::with(['enrollments' => function ($q) {
             $q->where('status', '!=', 'cancelled')->with(['student', 'parent', 'program', 'courses', 'receivable']);
         }])->findOrFail($id);
+
+        foreach ($course->enrollments as $enrollment) {
+            $enrollment->syncReceivable();
+        }
         $branches = Branch::orderBy('id', 'desc')->get();
         $coaches = User::where('role', 'Coach')->get();
         $classes = LBClass::where('course_id', $course->id)->get();
