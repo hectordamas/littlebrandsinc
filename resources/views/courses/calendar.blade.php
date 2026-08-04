@@ -358,7 +358,7 @@
                                         <th class="text-center">Uso Imagen</th>
                                         <th>Representante</th>
                                         <th>Teléfono / Correo</th>
-                                        <th class="text-center">Estado Pago</th>
+                                        <th class="text-center">Estado de Inscripción</th>
                                         <th class="text-center">Asistencia</th>
                                         <th class="text-center">Detalle</th>
                                     </tr>
@@ -406,7 +406,7 @@
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <div class="p-2 border rounded text-center bg-white">
-                                <small class="text-muted d-block fw-bold mb-1">Estado de Pago</small>
+                                <small class="text-muted d-block fw-bold mb-1">Estado de Inscripción</small>
                                 <div id="studentDetailPayment">N/A</div>
                             </div>
                         </div>

@@ -447,7 +447,7 @@
 
                                             <!-- Opciones adicionales -->
                                             <div class="col-md-6">
-                                                <label class="form-label fw-bold">Estado de pago</label>
+                                                <label class="form-label fw-bold">Estado de Inscripción <small class="text-muted fw-normal">(Pago de la Inscripción)</small></label>
                                                 <select name="payment_status" id="modalPaymentStatusSelect" class="form-control">
                                                     <option value="pending">Pendiente</option>
                                                     <option value="paid">Pagado</option>
@@ -539,7 +539,7 @@
 
                     <!-- Modal Estudiantes Inscritos -->
                     <div class="modal fade" id="enrolledStudentsModal" tabindex="-1" aria-labelledby="enrolledStudentsModalLabel" aria-hidden="true">
-                        <div class="modal-dialog modal-xl">
+                        <div class="modal-dialog modal-xl" style="max-width: 1320px; width: 94%;">
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h5 class="modal-title" id="enrolledStudentsModalLabel">Estudiantes Inscritos en {{ $course->title }}</h5>
@@ -555,15 +555,30 @@
                                                     <tr>
                                                         <th>#</th>
                                                         <th>Estudiante</th>
-                                                        <th class="text-center">Consentimiento de Imagen</th>
+                                                        <th class="text-center text-nowrap">Consentimiento de Imagen</th>
                                                         <th>Representante</th>
                                                         <th>Teléfono / Correo</th>
-                                                        <th class="text-center">Estado de Pago</th>
-                                                        <th class="text-center">Acciones</th>
+                                                        <th class="text-center text-nowrap">Estado de Inscripción</th>
+                                                        <th class="text-center text-nowrap">Cuenta por Cobrar</th>
+                                                        <th class="text-center text-nowrap">Acciones</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
                                                     @foreach($course->enrollments as $index => $enrollment)
+                                                        @php
+                                                            $cxcBalanceDue = 0.00;
+                                                            $cxcIsTrial = (bool) $enrollment->is_free_trial;
+                                                            if (!$cxcIsTrial) {
+                                                                if ($enrollment->receivable) {
+                                                                    $cxcBalanceDue = (float) $enrollment->receivable->balance_due;
+                                                                } else {
+                                                                    $cxcBalanceDue = $enrollment->getInitialChargeAmount();
+                                                                    if ($enrollment->payment_status === 'paid') {
+                                                                        $cxcBalanceDue = 0.00;
+                                                                    }
+                                                                }
+                                                            }
+                                                        @endphp
                                                         <tr>
                                                             <td>{{ $index + 1 }}</td>
                                                             <td>
@@ -607,6 +622,21 @@
                                                                 @endif
                                                             </td>
                                                             <td class="text-center">
+                                                                @if($cxcIsTrial)
+                                                                    <span class="text-muted small">-</span>
+                                                                @elseif($cxcBalanceDue > 0)
+                                                                    <div>
+                                                                        <span class="badge bg-warning text-dark px-2.5 py-1" title="Cuenta por cobrar pendiente">Pendiente</span>
+                                                                        <div class="fw-bold text-danger mt-1">${{ number_format($cxcBalanceDue, 2) }}</div>
+                                                                    </div>
+                                                                @else
+                                                                    <div>
+                                                                        <span class="badge bg-success text-white px-2.5 py-1" title="Cuenta por cobrar al día">Pagado</span>
+                                                                        <div class="text-muted small mt-1">$0.00</div>
+                                                                    </div>
+                                                                @endif
+                                                            </td>
+                                                            <td class="text-center">
                                                                 <form action="{{ route('enrollment.status', $enrollment->id) }}" method="POST" class="d-inline">
                                                                     @csrf
                                                                     @method('PATCH')
@@ -619,7 +649,7 @@
                                                         </tr>
                                                         @if($enrollment->payment_status !== 'paid')
                                                             <tr class="collapse" id="attach-payment-{{ $enrollment->id }}">
-                                                                <td colspan="7" class="bg-light p-0">
+                                                                <td colspan="8" class="bg-light p-0">
                                                                     <div class="p-3 border rounded m-2 bg-white shadow-sm">
                                                                         <form action="{{ route('enrollment.attach-payment', $enrollment->id) }}" method="POST" enctype="multipart/form-data">
                                                                             @csrf

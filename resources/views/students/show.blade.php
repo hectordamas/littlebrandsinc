@@ -140,10 +140,12 @@
                             <thead>
                                 <tr>
                                     <th>Clase / Sede</th>
+                                    <th class="text-center">
+                                        Estado de Inscripción
+                                    </th>
                                     <th>Monto Cuenta</th>
                                     <th>Abonado</th>
-                                    <th>Por Cobrar</th>
-                                    <th>Estado</th>
+                                    <th>Cuenta por Cobrar</th>
                                     <th class="text-center">Acciones</th>
                                 </tr>
                             </thead>
@@ -187,6 +189,17 @@
                                                     <span><i class="fas fa-map-marker-alt text-secondary me-1"></i>{{ optional($course->branch)->name ?? 'N/A' }}</span>
                                                 </div>
                                             </td>
+                                            <td class="text-center">
+                                                @if ($enrollment->status === 'cancelled')
+                                                    <span class="badge bg-danger" title="Inscripción cancelada">Cancelado</span>
+                                                @elseif ($isFreeTrial)
+                                                    <span class="badge bg-info text-white" title="Prueba Gratis">Prueba Gratis</span>
+                                                @elseif ($enrollment->payment_status === 'paid')
+                                                    <span class="badge bg-success" title="Pago de inscripción completado">Pagado</span>
+                                                @else
+                                                    <span class="badge bg-warning text-dark" title="Pago de inscripción pendiente (no es la CxC)">Pendiente</span>
+                                                @endif
+                                            </td>
                                             <td>
                                                 @if ($isFreeTrial)
                                                     <span class="text-muted small">Prueba Gratis</span>
@@ -218,19 +231,16 @@
                                             <td>
                                                 @if ($isFreeTrial)
                                                     <span class="text-muted small">-</span>
+                                                @elseif ($balanceDue > 0)
+                                                    <div class="d-flex align-items-center gap-1">
+                                                        <span class="badge bg-warning text-dark px-2 py-1" style="font-size: 0.75rem;" title="Cuenta por cobrar pendiente">Pendiente</span>
+                                                        <span class="fw-bold text-danger">${{ number_format($balanceDue, 2) }}</span>
+                                                    </div>
                                                 @else
-                                                    <span class="fw-bold text-danger">${{ number_format($balanceDue, 2) }}</span>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                @if ($enrollment->status === 'cancelled')
-                                                    <span class="badge bg-danger">Cancelado</span>
-                                                @elseif ($isFreeTrial)
-                                                    <span class="badge bg-info text-white">Clase de prueba gratis</span>
-                                                @elseif ($enrollment->payment_status === 'paid')
-                                                    <span class="badge bg-success">Pagado</span>
-                                                @else
-                                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                                    <div class="d-flex align-items-center gap-1">
+                                                        <span class="badge bg-success text-white px-2 py-1" style="font-size: 0.75rem;" title="Cuenta por cobrar al día">Pagado</span>
+                                                        <span class="text-muted small">$0.00</span>
+                                                    </div>
                                                 @endif
                                             </td>
                                             <td class="text-center">

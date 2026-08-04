@@ -366,7 +366,7 @@
                             </div>
 
                             <div class="col-md-4 mt-3">
-                                <label class="form-label">Estado de pago</label>
+                                <label class="form-label">Estado de Inscripción</label>
                                 <select name="payment_status" id="paymentStatusSelect" class="form-control">
                                     <option value="pending">Pendiente</option>
                                     <option value="paid">Pagado</option>
@@ -599,7 +599,7 @@
                                 <th>Representante</th>
                                 <th>Programa</th>
                                 <th>Clases</th>
-                                <th>Pago</th>
+                                <th>Estado de Inscripción</th>
                                 <th class="text-end">Acciones</th>
                             </tr>
                         </thead>
@@ -688,7 +688,7 @@
 
                         <div class="row g-3 align-items-end">
                             <div class="col-md-6">
-                                <label class="form-label">Estado de pago</label>
+                                <label class="form-label">Estado de Inscripción <small class="text-muted fw-normal">(Pago Inscripción)</small></label>
                                 <select name="payment_status" id="detailPaymentStatus" class="form-control">
                                     <option value="pending">Pendiente</option>
                                     <option value="paid">Pagado</option>

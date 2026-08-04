@@ -848,7 +848,7 @@
                                     <tr>
                                         <th>Estudiante</th>
                                         <th class="text-center">Uso de Imagen</th>
-                                        <th class="text-center">Estado de Pago</th>
+                                        <th class="text-center">Estado de Inscripción</th>
                                         <th class="text-center">Asistencia</th>
                                         <th class="text-center">Observaciones</th>
                                     </tr>

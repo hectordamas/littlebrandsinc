@@ -194,7 +194,7 @@
                     @csrf
                     @method('PATCH')
                     <span class="detail-chip">Gestión</span>
-                    <div class="detail-section-title">Actualizar Estado de Pago</div>
+                    <div class="detail-section-title">Actualizar Estado de Inscripción</div>
 
                     <div class="row g-3">
                         <div class="col-md-4">
@@ -211,7 +211,7 @@
                         </div>
 
                         <div class="col-md-4">
-                            <label class="form-label">Estado de pago</label>
+                            <label class="form-label">Estado de Inscripción <small class="text-muted fw-normal">(Pago Inscripción)</small></label>
                             <select name="payment_status" class="form-control">
                                 <option value="pending" @selected($enrollment->payment_status === 'pending')>Pendiente</option>
                                 <option value="paid" @selected($enrollment->payment_status === 'paid')>Pagado</option>
