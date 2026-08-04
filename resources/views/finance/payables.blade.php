@@ -45,13 +45,17 @@
                 <form method="POST" action="{{ route('finance.payables.store') }}">
                     @csrf
                     <div class="modal-header">
-                        <h6 class="mb-0">Nueva cuenta por pagar</h6>
+                        <h6 class="mb-0 fw-bold"><i class="fas fa-plus-circle me-1 text-primary"></i> Nueva cuenta por pagar</h6>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label">Sede</label>
+                                <label class="form-label fw-semibold">Proveedor <span class="text-danger">*</span></label>
+                                <input type="text" name="vendor_name" class="form-control" value="{{ old('vendor_name') }}" placeholder="Nombre del proveedor o empresa" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Sede</label>
                                 <select name="branch_id" class="form-control">
                                     <option value="">Gastos Generales</option>
                                     @foreach ($branches as $branch)
@@ -60,31 +64,27 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Proveedor</label>
-                                <input type="text" name="vendor_name" class="form-control" value="{{ old('vendor_name') }}" required>
+                                <label class="form-label fw-semibold">Concepto / Título <span class="text-danger">*</span></label>
+                                <input type="text" name="title" class="form-control" value="{{ old('title') }}" placeholder="Ej. Servicio de luz, compra de insumos..." required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Concepto</label>
-                                <input type="text" name="title" class="form-control" value="{{ old('title') }}" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Monto total</label>
-                                <input type="number" step="any" name="amount_total" class="form-control" value="{{ old('amount_total') }}" data-money-format required>
+                                <label class="form-label fw-semibold">Monto total ($) <span class="text-danger">*</span></label>
+                                <input type="number" step="any" name="amount_total" class="form-control" value="{{ old('amount_total') }}" data-money-format required placeholder="0.00">
                                 <strong class="money-preview" data-money-preview></strong>
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Vencimiento</label>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Fecha de Vencimiento</label>
                                 <input type="date" name="due_date" class="form-control" value="{{ old('due_date') }}">
                             </div>
                             <div class="col-md-12">
-                                <label class="form-label">Notas</label>
-                                <textarea name="notes" rows="3" class="form-control">{{ old('notes') }}</textarea>
+                                <label class="form-label fw-semibold">Notas / Observaciones</label>
+                                <textarea name="notes" rows="3" class="form-control" placeholder="Detalles adicionales sobre esta obligación...">{{ old('notes') }}</textarea>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Guardar cuenta por pagar</button>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-plus me-1"></i> Guardar cuenta por pagar</button>
                     </div>
                 </form>
             </div>

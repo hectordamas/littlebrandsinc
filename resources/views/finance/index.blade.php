@@ -124,29 +124,34 @@
                     <input type="hidden" name="return_branch_id" id="transactionReturnBranchId" value="{{ $selectedBranchId }}">
 
                     <div class="modal-header">
-                        <h6 class="mb-0">Registrar movimiento manual</h6>
+                        <h6 class="mb-0 fw-bold"><i class="fas fa-plus-circle me-1 text-primary"></i> Registrar movimiento manual</h6>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
 
                     <div class="modal-body">
                         <div class="row g-3">
-                            <div class="col-md-3">
-                                <label class="form-label">Tipo</label>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Tipo <span class="text-danger">*</span></label>
                                 <select name="type" class="form-control" required>
                                     <option value="income" @selected(old('type') === 'income')>Ingreso</option>
                                     <option value="expense" @selected(old('type') === 'expense')>Gasto</option>
                                 </select>
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Cuenta</label>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Monto ($) <span class="text-danger">*</span></label>
+                                <input type="number" step="any" name="amount" value="{{ old('amount') }}" class="form-control" data-money-format required placeholder="0.00">
+                                <strong class="money-preview" data-money-preview></strong>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Cuenta / Método de Pago <span class="text-danger">*</span></label>
                                 <select name="account_id" class="form-control" required>
                                     @foreach ($accounts as $account)
                                         <option value="{{ $account->id }}" @selected((int) old('account_id') === $account->id)>{{ $account->name }} ({{ strtoupper($account->currency) }})</option>
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Sede</label>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Sede</label>
                                 <select name="branch_id" id="transactionBranchSelect" class="form-control">
                                     <option value="" id="modalGeneralBranchOption">Ingresos Generales</option>
                                     @foreach ($branches as $branch)
@@ -154,31 +159,30 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Monto</label>
-                                <input type="number" step="any" name="amount" value="{{ old('amount') }}" class="form-control" data-money-format required>
-                                <strong class="money-preview" data-money-preview></strong>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Estado</label>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Estado <span class="text-danger">*</span></label>
                                 <select name="status" class="form-control" required>
                                     <option value="completed" @selected(old('status', 'completed') === 'completed')>Completado</option>
                                     <option value="pending" @selected(old('status') === 'pending')>Pendiente</option>
                                     <option value="failed" @selected(old('status') === 'failed')>Fallido</option>
                                 </select>
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Referencia</label>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Fecha del Movimiento</label>
+                                <input type="date" name="payment_date" value="{{ old('payment_date', now()->toDateString()) }}" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Referencia</label>
                                 <input type="text" name="reference" value="{{ old('reference') }}" class="form-control" placeholder="Factura, recibo, transferencia...">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Comprobante de pago</label>
+                                <label class="form-label fw-semibold">Comprobante de Pago</label>
                                 <input type="file" name="payment_receipt" class="form-control" accept=".jpg,.jpeg,.png,.pdf">
-                                <small class="text-muted">Formatos permitidos: JPG, JPEG, PNG, PDF. Tamaño máximo: 2 MB.</small>
+                                <small class="text-muted d-block mt-1">Formatos: JPG, PNG, PDF. Máx 2 MB.</small>
                             </div>
                             <div class="col-md-12">
-                                <label class="form-label">Descripcion</label>
-                                <textarea name="description" rows="3" class="form-control" placeholder="Detalle del movimiento">{{ old('description') }}</textarea>
+                                <label class="form-label fw-semibold">Descripción / Detalle</label>
+                                <textarea name="description" rows="3" class="form-control" placeholder="Detalle adicional del movimiento...">{{ old('description') }}</textarea>
                             </div>
                         </div>
                     </div>
@@ -186,13 +190,100 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-plus"></i> Registrar movimiento
+                            <i class="fas fa-plus me-1"></i> Registrar movimiento
                         </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="editTransactionModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <form id="editTransactionForm" method="POST" action="" enctype="multipart/form-data">
+                    @csrf
+                    @method('PUT')
+
+                    <div class="modal-header">
+                        <h6 class="mb-0 fw-bold"><i class="fas fa-edit me-1 text-primary"></i> Editar movimiento financiero</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Tipo <span class="text-danger">*</span></label>
+                                <select name="type" id="editTransactionType" class="form-control" required>
+                                    <option value="income">Ingreso</option>
+                                    <option value="expense">Gasto</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Monto ($) <span class="text-danger">*</span></label>
+                                <input type="number" step="any" name="amount" id="editTransactionAmount" class="form-control" data-money-format required placeholder="0.00">
+                                <strong class="money-preview" data-money-preview></strong>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Cuenta / Método de Pago <span class="text-danger">*</span></label>
+                                <select name="account_id" id="editTransactionAccountId" class="form-control" required>
+                                    @foreach ($accounts as $account)
+                                        <option value="{{ $account->id }}">{{ $account->name }} ({{ strtoupper($account->currency) }})</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Sede</label>
+                                <select name="branch_id" id="editTransactionBranchId" class="form-control">
+                                    <option value="" id="editModalGeneralBranchOption">Ingresos Generales</option>
+                                    @foreach ($branches as $branch)
+                                        <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Estado <span class="text-danger">*</span></label>
+                                <select name="status" id="editTransactionStatus" class="form-control" required>
+                                    <option value="completed">Completado</option>
+                                    <option value="pending">Pendiente</option>
+                                    <option value="failed">Fallido</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Fecha del Movimiento</label>
+                                <input type="date" name="payment_date" id="editTransactionPaymentDate" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Referencia</label>
+                                <input type="text" name="reference" id="editTransactionReference" class="form-control" placeholder="Factura, recibo, transferencia...">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Comprobante de Pago</label>
+                                <input type="file" name="payment_receipt" class="form-control" accept=".jpg,.jpeg,.png,.pdf">
+                                <small class="text-muted d-block mt-1">Dejar vacío para conservar el comprobante actual.</small>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label fw-semibold">Descripción / Detalle</label>
+                                <textarea name="description" id="editTransactionDescription" rows="3" class="form-control" placeholder="Detalle adicional del movimiento..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> Guardar cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <form id="deleteTransactionForm" method="POST" action="" style="display: none;">
+        @csrf
+        @method('DELETE')
+    </form>
 
     <div class="modal fade" id="transactionDetailModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -522,6 +613,8 @@
                                 <button type="button" class="btn btn-sm btn-outline-info js-open-details" data-transaction-id="${transaction.id}" title="Ver Detalle"><i class="fas fa-eye"></i></button>
                                 ${renderPaymentProofButton(transaction)}
                                 ${renderReceiptButton(transaction)}
+                                <button type="button" class="btn btn-sm btn-outline-warning js-open-edit" data-transaction-id="${transaction.id}" title="Editar Movimiento"><i class="fas fa-edit"></i></button>
+                                <button type="button" class="btn btn-sm btn-outline-danger js-delete-transaction" data-destroy-url="${escapeHtml(transaction.destroy_url)}" data-transaction-id="${transaction.id}" title="Eliminar Movimiento"><i class="fas fa-trash"></i></button>
                             </div>
                         </td>
                     </tr>
@@ -654,6 +747,57 @@
                 $('#paymentProofContainer').html(html);
                 const modal = new bootstrap.Modal(document.getElementById('paymentProofModal'));
                 modal.show();
+            });
+
+            $(document).on('click', '.js-open-edit', function() {
+                const transactionId = $(this).data('transaction-id');
+                const transaction = currentTransactionsList.find(t => t.id == transactionId);
+                if (!transaction) return;
+
+                $('#editTransactionForm').attr('action', transaction.update_url);
+                $('#editTransactionType').val(transaction.type);
+                $('#editTransactionAccountId').val(transaction.account_id);
+                $('#editTransactionBranchId').val(transaction.branch_id ?? '');
+                $('#editTransactionAmount').val(transaction.amount);
+                $('#editTransactionStatus').val(transaction.status);
+                $('#editTransactionPaymentDate').val(transaction.created_at_raw || '');
+                $('#editTransactionReference').val(transaction.reference || '');
+                $('#editTransactionDescription').val(transaction.description || '');
+
+                function updateEditModalGeneralBranchOption() {
+                    const type = $('#editTransactionType').val();
+                    if (type === 'expense') {
+                        $('#editModalGeneralBranchOption').text('Gastos Generales');
+                    } else {
+                        $('#editModalGeneralBranchOption').text('Ingresos Generales');
+                    }
+                }
+                $('#editTransactionType').off('change.editModal').on('change.editModal', updateEditModalGeneralBranchOption);
+                updateEditModalGeneralBranchOption();
+
+                const modal = new bootstrap.Modal(document.getElementById('editTransactionModal'));
+                modal.show();
+            });
+
+            $(document).on('click', '.js-delete-transaction', function() {
+                const destroyUrl = $(this).data('destroy-url');
+                const transactionId = $(this).data('transaction-id');
+                if (!destroyUrl) return;
+
+                Swal.fire({
+                    title: '¿Eliminar movimiento?',
+                    text: `¿Estás seguro de eliminar el movimiento #${transactionId}? Esta acción no se puede deshacer.`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Sí, eliminar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#deleteTransactionForm').attr('action', destroyUrl).submit();
+                    }
+                });
             });
 
             @if ($errors->any())

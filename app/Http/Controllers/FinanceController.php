@@ -425,9 +425,12 @@ class FinanceController extends Controller
     public function updateTransaction(Request $request, Transaction $transaction): RedirectResponse
     {
         $validated = $request->validate([
-            'amount' => ['required', 'numeric', 'gt:0'],
+            'type' => ['nullable', Rule::in(['income', 'expense'])],
+            'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
             'account_id' => ['required', 'integer', 'exists:accounts,id'],
-            'payment_date' => ['required', 'date'],
+            'amount' => ['required', 'numeric', 'gt:0'],
+            'status' => ['nullable', Rule::in(['pending', 'completed', 'failed'])],
+            'payment_date' => ['nullable', 'date'],
             'reference' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'payment_receipt' => ['bail', 'nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:6144'],
@@ -447,7 +450,7 @@ class FinanceController extends Controller
             $receiptOriginalName = $file->getClientOriginalName();
         }
 
-        $transaction->update([
+        $updateData = [
             'amount' => $validated['amount'],
             'account_id' => $account->id,
             'payment_method' => $account->name,
@@ -456,9 +459,26 @@ class FinanceController extends Controller
             'description' => $validated['description'] ?? null,
             'payment_receipt_path' => $receiptPath,
             'payment_receipt_original_name' => $receiptOriginalName,
-            'created_at' => $validated['payment_date'],
-            'updated_at' => $validated['payment_date'],
-        ]);
+        ];
+
+        if (array_key_exists('type', $validated) && $validated['type']) {
+            $updateData['type'] = $validated['type'];
+        }
+
+        if (array_key_exists('branch_id', $validated)) {
+            $updateData['branch_id'] = !empty($validated['branch_id']) ? (int) $validated['branch_id'] : null;
+        }
+
+        if (array_key_exists('status', $validated) && $validated['status']) {
+            $updateData['status'] = $validated['status'];
+        }
+
+        if (!empty($validated['payment_date'])) {
+            $updateData['created_at'] = $validated['payment_date'];
+            $updateData['updated_at'] = $validated['payment_date'];
+        }
+
+        $transaction->update($updateData);
 
         if ($transaction->account_receivable_id) {
             $receivable = AccountReceivable::find($transaction->account_receivable_id);
@@ -474,7 +494,7 @@ class FinanceController extends Controller
             }
         }
 
-        return redirect()->back()->with('success', 'Abono actualizado correctamente.');
+        return redirect()->back()->with('success', 'Movimiento actualizado correctamente.');
     }
 
     public function destroyTransaction(Transaction $transaction): RedirectResponse
@@ -600,19 +620,24 @@ class FinanceController extends Controller
             return [
                 'id' => $transaction->id,
                 'created_at' => $transaction->created_at ? $transaction->created_at->format('d/m/Y h:i A') : 'N/A',
+                'created_at_raw' => $transaction->created_at ? $transaction->created_at->format('Y-m-d') : '',
                 'type' => $transaction->type,
                 'amount' => (float) $transaction->amount,
                 'status' => $transaction->status,
+                'account_id' => $transaction->account_id,
                 'account' => optional($transaction->account)->name ?? 'N/A',
+                'branch_id' => $transaction->branch_id,
                 'branch' => $transaction->branch_id ? (optional($transaction->branch)->name ?? 'N/A') : ($transaction->type === 'income' ? 'Ingresos Generales' : 'Gastos Generales'),
-                'reference' => $transaction->reference ?? 'N/A',
-                'description' => $transaction->description ?? 'Sin descripción',
+                'reference' => $transaction->reference ?? '',
+                'description' => $transaction->description ?? '',
                 'student_name' => optional($transaction->student)->name ?? 'N/A',
                 'course_title' => optional($transaction->course)->title ?? 'N/A',
                 'payment_method' => $transaction->payment_method ?? 'N/A',
                 'receipt_url' => route('finance.transactions.receipt', $transaction),
                 'payment_receipt_url' => $this->resolvePaymentReceiptUrl($receiptPath),
                 'payment_receipt_name' => $receiptName,
+                'update_url' => route('finance.transactions.update', $transaction),
+                'destroy_url' => route('finance.transactions.destroy', $transaction),
             ];
         })->all();
     }

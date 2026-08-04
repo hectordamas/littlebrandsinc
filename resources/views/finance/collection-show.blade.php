@@ -12,6 +12,9 @@
                     <span class="text-muted">{{ $receivable->title }}</span>
                 </div>
                 <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#registerPaymentModal">
+                        <i class="fas fa-plus"></i> Registrar Abono
+                    </button>
                     <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editReceivableModal">
                         <i class="fas fa-edit"></i> Editar Cuenta
                     </button>
@@ -63,55 +66,65 @@
             </div>
         </div>
 
-        <div class="card mb-3 shadow-sm">
-            <div class="card-header">
-                <h6 class="mb-1">Registrar abono</h6>
-            </div>
-            <div class="card-block">
-                <form method="POST" action="{{ route('finance.collections.payments.store', $receivable) }}" enctype="multipart/form-data">
-                    @csrf
-                    <div class="row g-3">
-                        <div class="col-md-3">
-                            <label class="form-label">Cuenta</label>
-                            <select name="account_id" class="form-control" required>
-                                @foreach ($accounts as $account)
-                                    <option value="{{ $account->id }}" @selected((int) old('account_id') === $account->id)>{{ $account->name }} ({{ strtoupper($account->currency) }})</option>
-                                @endforeach
-                            </select>
+        <!-- Modal Registrar Abono -->
+        <div class="modal fade" id="registerPaymentModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <form method="POST" action="{{ route('finance.collections.payments.store', $receivable) }}" enctype="multipart/form-data">
+                        @csrf
+                        <div class="modal-header">
+                            <h6 class="mb-0 fw-bold"><i class="fas fa-plus-circle me-1 text-primary"></i> Registrar abono a CxC #{{ $receivable->id }}</h6>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Monto</label>
-                            <input type="number" step="any" name="amount" value="{{ old('amount') }}" class="form-control" data-money-format required>
-                            <strong class="money-preview" data-money-preview></strong>
+                        <div class="modal-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Cuenta / Método de Pago <span class="text-danger">*</span></label>
+                                    <select name="account_id" class="form-control" required>
+                                        @foreach ($accounts as $account)
+                                            <option value="{{ $account->id }}" @selected((int) old('account_id') === $account->id)>{{ $account->name }} ({{ strtoupper($account->currency) }})</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Monto ($) <span class="text-danger">*</span></label>
+                                    <input type="number" step="any" name="amount" value="{{ old('amount') }}" class="form-control" data-money-format required placeholder="0.00">
+                                    <strong class="money-preview" data-money-preview></strong>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Fecha del Abono <span class="text-danger">*</span></label>
+                                    <input type="date" name="payment_date" value="{{ old('payment_date', now()->toDateString()) }}" class="form-control" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Referencia</label>
+                                    <input type="text" name="reference" value="{{ old('reference') }}" class="form-control" placeholder="N° Transferencia, depósito...">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Comprobante de pago</label>
+                                    <input type="file" name="payment_receipt" class="form-control" accept=".jpg,.jpeg,.png,.pdf">
+                                    <small class="text-muted">Formatos: JPG, PNG, PDF.</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Notas / Detalle</label>
+                                    <textarea name="notes" rows="2" class="form-control" placeholder="Detalle adicional del abono...">{{ old('notes') }}</textarea>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Fecha</label>
-                            <input type="date" name="payment_date" value="{{ old('payment_date', now()->toDateString()) }}" class="form-control" required>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-plus me-1"></i> Registrar abono</button>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Referencia</label>
-                            <input type="text" name="reference" value="{{ old('reference') }}" class="form-control">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Notas</label>
-                            <textarea name="notes" rows="2" class="form-control">{{ old('notes') }}</textarea>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Comprobante de pago</label>
-                            <input type="file" name="payment_receipt" class="form-control" accept=".jpg,.jpeg,.png,.pdf">
-                            <small class="text-muted">Formatos permitidos: JPG, JPEG, PNG, PDF.</small>
-                        </div>
-                        <div class="col-md-12 text-end">
-                            <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Registrar abono</button>
-                        </div>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-1">Abonos registrados</h6>
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h6 class="mb-0 fw-bold">Abonos registrados</h6>
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#registerPaymentModal">
+                    <i class="fas fa-plus me-1"></i> Registrar Abono
+                </button>
             </div>
             <div class="card-block">
                 <div class="table-responsive">
@@ -245,7 +258,10 @@
                         next: 'Siguiente'
                     }
                 }
-            });
+            @if ($errors->any())
+                const registerPaymentModal = new bootstrap.Modal(document.getElementById('registerPaymentModal'));
+                registerPaymentModal.show();
+            @endif
         });
     </script>
 @endsection

@@ -99,3 +99,39 @@ test('se puede registrar un movimiento manual sin sede y se suma en el resumen g
     expect(count($dataGeneral['transactions']))->toBe(1);
     expect($dataGeneral['transactions'][0]['branch'])->toBe('Ingresos Generales');
 });
+
+test('se puede editar y eliminar un movimiento financiero', function () {
+    $this->actingAs($this->admin);
+
+    $transaction = Transaction::create([
+        'branch_id' => $this->branch->id,
+        'account_id' => $this->account->id,
+        'amount' => 150.00,
+        'currency' => 'USD',
+        'type' => 'income',
+        'status' => 'completed',
+        'description' => 'Pago inicial',
+    ]);
+
+    // Editar el movimiento
+    $responseUpdate = $this->put(route('finance.transactions.update', $transaction), [
+        'amount' => 250.00,
+        'account_id' => $this->account->id,
+        'type' => 'expense',
+        'status' => 'completed',
+        'description' => 'Pago corregido a gasto',
+    ]);
+
+    $responseUpdate->assertRedirect();
+
+    $transaction->refresh();
+    expect((float) $transaction->amount)->toBe(250.00);
+    expect($transaction->type)->toBe('expense');
+    expect($transaction->description)->toBe('Pago corregido a gasto');
+
+    // Eliminar el movimiento
+    $responseDestroy = $this->delete(route('finance.transactions.destroy', $transaction));
+    $responseDestroy->assertRedirect();
+
+    expect(Transaction::find($transaction->id))->toBeNull();
+});
