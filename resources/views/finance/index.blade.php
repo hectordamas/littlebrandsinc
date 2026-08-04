@@ -147,7 +147,8 @@
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Sede</label>
-                                <select name="branch_id" class="form-control" required>
+                                <select name="branch_id" id="transactionBranchSelect" class="form-control">
+                                    <option value="" id="modalGeneralBranchOption">Ingresos Generales</option>
                                     @foreach ($branches as $branch)
                                         <option value="{{ $branch->id }}" @selected((int) old('branch_id') === $branch->id)>{{ $branch->name }}</option>
                                     @endforeach
@@ -263,8 +264,9 @@
                 <label for="financeBranchFilter" class="form-label">Filtrar por sede</label>
                 <select id="financeBranchFilter" class="form-control">
                     <option value="">Todas las sedes</option>
+                    <option value="general" @selected($selectedBranchId === 'general')>Gastos e Ingresos Generales</option>
                     @foreach ($branches as $branch)
-                        <option value="{{ $branch->id }}" @selected($selectedBranchId === $branch->id)>{{ $branch->name }}</option>
+                        <option value="{{ $branch->id }}" @selected((string) $selectedBranchId === (string) $branch->id)>{{ $branch->name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -598,6 +600,17 @@
         }
 
         $(document).ready(function() {
+            function updateModalGeneralBranchOption() {
+                const type = $('select[name="type"]').val();
+                if (type === 'expense') {
+                    $('#modalGeneralBranchOption').text('Gastos Generales');
+                } else {
+                    $('#modalGeneralBranchOption').text('Ingresos Generales');
+                }
+            }
+            $('select[name="type"]').on('change', updateModalGeneralBranchOption);
+            updateModalGeneralBranchOption();
+
             loadFinanceData($('#financeBranchFilter').val());
 
             $('#financeBranchFilter').on('change', function() {

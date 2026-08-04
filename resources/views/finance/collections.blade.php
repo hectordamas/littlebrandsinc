@@ -54,7 +54,8 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label">Sede</label>
-                                <select name="branch_id" class="form-control" required>
+                                <select name="branch_id" class="form-control">
+                                    <option value="">Ingresos Generales</option>
                                     @foreach ($branches as $branch)
                                         <option value="{{ $branch->id }}" @selected((int) old('branch_id') === $branch->id)>{{ $branch->name }}</option>
                                     @endforeach
@@ -148,7 +149,7 @@
                                             <span class="text-muted">N/A</span>
                                         @endif
                                     </td>
-                                    <td>{{ optional($receivable->branch)->name ?? 'N/A' }}</td>
+                                    <td>{{ $receivable->branch_id ? (optional($receivable->branch)->name ?? 'N/A') : 'Ingresos Generales' }}</td>
                                     <td>${{ number_format((float) $receivable->amount_total, 2) }}</td>
                                     <td>${{ number_format((float) $receivable->balance_due, 2) }}</td>
                                     <td>

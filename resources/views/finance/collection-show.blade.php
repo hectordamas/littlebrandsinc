@@ -22,7 +22,7 @@
             </div>
             <div class="card-block">
                 <div class="row g-3">
-                    <div class="col-md-3"><strong>Sede:</strong> {{ optional($receivable->branch)->name ?? 'N/A' }}</div>
+                    <div class="col-md-3"><strong>Sede:</strong> {{ $receivable->branch_id ? (optional($receivable->branch)->name ?? 'N/A') : 'Ingresos Generales' }}</div>
                     <div class="col-md-3"><strong>Estudiante:</strong> {{ optional(optional($receivable->enrollment)->student)->name ?? 'N/A' }}</div>
                     <div class="col-md-3"><strong>Inscripción:</strong> {{ $receivable->enrollment_id ? '#'.$receivable->enrollment_id : 'Manual' }}</div>
                     <div class="col-md-3"><strong>Vencimiento:</strong> {{ $receivable->due_date ? $receivable->due_date->format('d/m/Y') : 'N/A' }}</div>

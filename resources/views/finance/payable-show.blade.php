@@ -22,7 +22,7 @@
             </div>
             <div class="card-block">
                 <div class="row g-3">
-                    <div class="col-md-3"><strong>Sede:</strong> {{ optional($payable->branch)->name ?? 'N/A' }}</div>
+                    <div class="col-md-3"><strong>Sede:</strong> {{ $payable->branch_id ? (optional($payable->branch)->name ?? 'N/A') : 'Gastos Generales' }}</div>
                     <div class="col-md-3"><strong>Proveedor:</strong> {{ $payable->vendor_name }}</div>
                     <div class="col-md-3"><strong>Vencimiento:</strong> {{ $payable->due_date ? $payable->due_date->format('d/m/Y') : 'N/A' }}</div>
                     <div class="col-md-3"><strong>Estado:</strong> {{ ucfirst($payable->status) }}</div>
@@ -47,8 +47,9 @@
                         <div class="modal-body text-start">
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Sede <span class="text-danger">*</span></label>
-                                    <select name="branch_id" class="form-control form-control-sm" required>
+                                    <label class="form-label small fw-bold">Sede</label>
+                                    <select name="branch_id" class="form-control form-control-sm">
+                                        <option value="" @selected(empty($payable->branch_id))>Gastos Generales</option>
                                         @foreach ($branches as $b)
                                             <option value="{{ $b->id }}" @selected($payable->branch_id == $b->id)>{{ $b->name }}</option>
                                         @endforeach

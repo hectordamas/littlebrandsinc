@@ -52,7 +52,8 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label">Sede</label>
-                                <select name="branch_id" class="form-control" required>
+                                <select name="branch_id" class="form-control">
+                                    <option value="">Gastos Generales</option>
                                     @foreach ($branches as $branch)
                                         <option value="{{ $branch->id }}" @selected((int) old('branch_id') === $branch->id)>{{ $branch->name }}</option>
                                     @endforeach
@@ -134,7 +135,7 @@
                                     <td>{{ $payable->id }}</td>
                                     <td>{{ $payable->vendor_name }}</td>
                                     <td>{{ $payable->title }}</td>
-                                    <td>{{ optional($payable->branch)->name ?? 'N/A' }}</td>
+                                    <td>{{ $payable->branch_id ? (optional($payable->branch)->name ?? 'N/A') : 'Gastos Generales' }}</td>
                                     <td>${{ number_format((float) $payable->amount_total, 2) }}</td>
                                     <td>${{ number_format((float) $payable->balance_due, 2) }}</td>
                                     <td>

@@ -16,10 +16,10 @@ class FinanceController extends Controller
     public function index(Request $request)
     {
         $validated = Validator::make($request->all(), [
-            'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
+            'branch_id' => ['nullable', 'string'],
         ])->validate();
 
-        $branchId = isset($validated['branch_id']) ? (int) $validated['branch_id'] : null;
+        $branchId = isset($validated['branch_id']) && $validated['branch_id'] !== '' ? $validated['branch_id'] : null;
 
         $accounts = Account::query()
             ->withCount('transactions')
@@ -85,7 +85,7 @@ class FinanceController extends Controller
     public function storeCollection(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'branch_id' => ['required', 'integer', 'exists:branches,id'],
+            'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
             'title' => ['required', 'string', 'max:255'],
             'amount_total' => ['required', 'numeric', 'gt:0'],
             'due_date' => ['nullable', 'date'],
@@ -93,7 +93,7 @@ class FinanceController extends Controller
         ]);
 
         AccountReceivable::create([
-            'branch_id' => (int) $validated['branch_id'],
+            'branch_id' => !empty($validated['branch_id']) ? (int) $validated['branch_id'] : null,
             'enrollment_id' => null,
             'title' => $validated['title'],
             'amount_total' => $validated['amount_total'],
@@ -237,7 +237,7 @@ class FinanceController extends Controller
     public function storePayable(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'branch_id' => ['required', 'integer', 'exists:branches,id'],
+            'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
             'vendor_name' => ['required', 'string', 'max:255'],
             'title' => ['required', 'string', 'max:255'],
             'amount_total' => ['required', 'numeric', 'gt:0'],
@@ -246,7 +246,7 @@ class FinanceController extends Controller
         ]);
 
         AccountPayable::create([
-            'branch_id' => (int) $validated['branch_id'],
+            'branch_id' => !empty($validated['branch_id']) ? (int) $validated['branch_id'] : null,
             'vendor_name' => $validated['vendor_name'],
             'title' => $validated['title'],
             'amount_total' => $validated['amount_total'],
@@ -298,8 +298,8 @@ class FinanceController extends Controller
             'amount_total' => $validated['amount_total'],
         ];
 
-        if (array_key_exists('branch_id', $validated) && $validated['branch_id']) {
-            $updateData['branch_id'] = (int) $validated['branch_id'];
+        if (array_key_exists('branch_id', $validated)) {
+            $updateData['branch_id'] = !empty($validated['branch_id']) ? (int) $validated['branch_id'] : null;
         }
         if (array_key_exists('vendor_name', $validated) && !empty($validated['vendor_name'])) {
             $updateData['vendor_name'] = $validated['vendor_name'];
@@ -378,9 +378,9 @@ class FinanceController extends Controller
     public function storeTransaction(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'branch_id' => ['required', 'integer', 'exists:branches,id'],
+            'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
             'account_id' => ['required', 'integer', 'exists:accounts,id'],
-            'return_branch_id' => ['nullable', 'integer', 'exists:branches,id'],
+            'return_branch_id' => ['nullable', 'string'],
             'amount' => ['required', 'numeric', 'gt:0'],
             'type' => ['required', Rule::in(['income', 'expense'])],
             'status' => ['required', Rule::in(['pending', 'completed', 'failed'])],
@@ -402,7 +402,7 @@ class FinanceController extends Controller
         }
 
         Transaction::create([
-            'branch_id' => (int) $validated['branch_id'],
+            'branch_id' => !empty($validated['branch_id']) ? (int) $validated['branch_id'] : null,
             'account_id' => (int) $validated['account_id'],
             'amount' => $validated['amount'],
             'currency' => strtoupper($account->currency),
@@ -517,43 +517,59 @@ class FinanceController extends Controller
         return $pdf->download('comprobante-movimiento-'.$transaction->id.'.pdf');
     }
 
-    protected function transactionsQuery(?int $branchId = null)
+    protected function transactionsQuery($branchId = null)
     {
         $query = Transaction::with(['account', 'branch', 'enrollment', 'student', 'course'])
             ->orderBy('created_at', 'desc');
 
-        if ($branchId) {
-            $query->where('branch_id', $branchId);
+        if ($branchId !== null && $branchId !== '') {
+            if ($branchId === 'general') {
+                $query->whereNull('branch_id');
+            } else {
+                $query->where('branch_id', (int) $branchId);
+            }
         }
 
         return $query;
     }
 
-    protected function pendingCollectionsByBranchQuery(?int $branchId = null)
+    protected function pendingCollectionsByBranchQuery($branchId = null)
     {
         $query = AccountReceivable::query()
             ->whereIn('status', ['pending', 'partial']);
 
-        if ($branchId) {
-            $query->where('branch_id', $branchId);
+        if ($branchId !== null && $branchId !== '') {
+            if ($branchId === 'general') {
+                $query->whereNull('branch_id');
+            } else {
+                $query->where('branch_id', (int) $branchId);
+            }
         }
 
         return $query;
     }
 
-    protected function buildSummary(?int $branchId = null): array
+    protected function buildSummary($branchId = null): array
     {
         $completedIncome = (float) Transaction::query()
-            ->when($branchId, function ($query) use ($branchId) {
-                $query->where('branch_id', $branchId);
+            ->when($branchId !== null && $branchId !== '', function ($query) use ($branchId) {
+                if ($branchId === 'general') {
+                    $query->whereNull('branch_id');
+                } else {
+                    $query->where('branch_id', (int) $branchId);
+                }
             })
             ->where('type', 'income')
             ->where('status', 'completed')
             ->sum('amount');
 
         $completedExpenses = (float) Transaction::query()
-            ->when($branchId, function ($query) use ($branchId) {
-                $query->where('branch_id', $branchId);
+            ->when($branchId !== null && $branchId !== '', function ($query) use ($branchId) {
+                if ($branchId === 'general') {
+                    $query->whereNull('branch_id');
+                } else {
+                    $query->where('branch_id', (int) $branchId);
+                }
             })
             ->where('type', 'expense')
             ->where('status', 'completed')
@@ -588,7 +604,7 @@ class FinanceController extends Controller
                 'amount' => (float) $transaction->amount,
                 'status' => $transaction->status,
                 'account' => optional($transaction->account)->name ?? 'N/A',
-                'branch' => optional($transaction->branch)->name ?? 'N/A',
+                'branch' => $transaction->branch_id ? (optional($transaction->branch)->name ?? 'N/A') : ($transaction->type === 'income' ? 'Ingresos Generales' : 'Gastos Generales'),
                 'reference' => $transaction->reference ?? 'N/A',
                 'description' => $transaction->description ?? 'Sin descripción',
                 'student_name' => optional($transaction->student)->name ?? 'N/A',
