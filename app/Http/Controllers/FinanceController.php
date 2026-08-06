@@ -686,10 +686,12 @@ class FinanceController extends Controller
         if ($receivable->enrollment) {
             $enrollment = $receivable->enrollment;
             if ($enrollment->status !== 'cancelled') {
-                $enrollment->update([
-                    'payment_status' => ($status === 'paid') ? 'paid' : 'pending',
-                    'status' => ($status === 'paid') ? 'completed' : 'pending',
-                ]);
+                if ($status === 'paid' || $paidAmount > 0 || $enrollment->payment_status === 'paid') {
+                    $enrollment->update([
+                        'payment_status' => 'paid',
+                        'status' => 'completed',
+                    ]);
+                }
             }
         }
 

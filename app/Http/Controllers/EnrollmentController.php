@@ -411,14 +411,6 @@ class EnrollmentController extends Controller
             $enrollment->payment_receipt_original_name = $receiptOriginalName;
             $enrollment->is_free_trial = false;
 
-            if ($amountOption === 'custom') {
-                $monthlyFeesSum = 0.0;
-                foreach ($enrollment->courses as $course) {
-                    $monthlyFeesSum += (float) ($course->monthly_fee ?? 0);
-                }
-                $enrollment->custom_enrollment_fee = max(0.0, $paymentAmount - $monthlyFeesSum);
-            }
-
             $this->applyEnrollmentState($enrollment, 'completed', 'paid', $paymentAmount, $reference, (int) $account->id);
         });
 
@@ -535,14 +527,19 @@ class EnrollmentController extends Controller
             'payment_receipt_original_name' => $enrollment->payment_receipt_original_name,
         ];
 
-        if ($incomeTransaction) {
+        $existingCompletedCount = Transaction::where('enrollment_id', $enrollment->id)
+            ->where('type', 'income')
+            ->where('status', 'completed')
+            ->count();
+
+        if ($incomeTransaction && ($existingCompletedCount === 0 || $paymentAmount === null)) {
             $incomeTransaction->update($payload);
         } else {
             Transaction::create($payload);
         }
 
         if ($receivable) {
-            $paidAmount = (float) $receivable->transactions()->sum('amount');
+            $paidAmount = (float) $receivable->transactions()->where('status', 'completed')->sum('amount');
             $balance = max(0, (float) $receivable->amount_total - $paidAmount);
 
             $status = 'pending';
@@ -607,11 +604,15 @@ class EnrollmentController extends Controller
             return;
         }
 
-        $amountTotal = $this->calculateEnrollmentReceivableTotal($enrollment->program, $enrollment->courses, $enrollment);
-
         $receivable = AccountReceivable::query()
             ->where('enrollment_id', $enrollment->id)
             ->first();
+
+        if ($receivable && $receivable->is_custom_amount) {
+            $amountTotal = (float) $receivable->amount_total;
+        } else {
+            $amountTotal = $this->calculateEnrollmentReceivableTotal($enrollment->program, $enrollment->courses, $enrollment);
+        }
 
         $courseTitles = $enrollment->courses->pluck('title')->join(', ');
         $programName = $enrollment->program->name;
@@ -629,14 +630,18 @@ class EnrollmentController extends Controller
                     'status' => 'pending',
                 ]);
             } else {
-                $receivable->update([
+                $updateData = [
                     'branch_id' => $firstCourse->branch_id,
-                    'title' => $title,
-                    'amount_total' => $amountTotal,
-                    'balance_due' => $amountTotal,
                     'currency' => 'USD',
-                    'status' => 'pending',
-                ]);
+                    'status' => in_array($receivable->status, ['partial', 'paid'], true)
+                        ? $receivable->status
+                        : 'pending',
+                ];
+                if (! $receivable->is_custom_amount) {
+                    $updateData['title'] = $title;
+                    $updateData['amount_total'] = $amountTotal;
+                }
+                $receivable->update($updateData);
             }
 
             $this->syncInstallmentsPaymentStatus($receivable);
@@ -647,7 +652,7 @@ class EnrollmentController extends Controller
             return;
         }
 
-        $paidAmount = (float) $receivable->transactions()->sum('amount');
+        $paidAmount = (float) $receivable->transactions()->where('status', 'completed')->sum('amount');
         $balance = max(0, (float) $amountTotal - $paidAmount);
 
         $status = 'pending';
@@ -657,11 +662,15 @@ class EnrollmentController extends Controller
             $status = 'partial';
         }
 
-        $receivable->update([
-            'amount_total' => $amountTotal,
+        $updateData = [
             'balance_due' => $balance,
             'status' => $status,
-        ]);
+        ];
+        if (! $receivable->is_custom_amount) {
+            $updateData['amount_total'] = $amountTotal;
+        }
+
+        $receivable->update($updateData);
 
         $this->syncInstallmentsPaymentStatus($receivable);
     }
