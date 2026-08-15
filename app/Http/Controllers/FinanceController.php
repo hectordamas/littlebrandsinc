@@ -771,7 +771,16 @@ class FinanceController extends Controller
                     ->first();
 
                 if ($receivable) {
+                    Transaction::query()
+                        ->where('enrollment_id', $enrollment->id)
+                        ->where('type', 'income')
+                        ->whereNull('account_receivable_id')
+                        ->update(['account_receivable_id' => $receivable->id]);
+
                     $paidAmount = (float) $receivable->transactions()->where('status', 'completed')->sum('amount');
+                    if ($paidAmount <= 0) {
+                        $paidAmount = (float) $enrollment->transactions()->where('status', 'completed')->where('type', 'income')->sum('amount');
+                    }
                     if ($paidAmount <= 0) {
                         $receivable->delete();
                     } else {

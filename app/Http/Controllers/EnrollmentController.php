@@ -417,6 +417,23 @@ class EnrollmentController extends Controller
         return redirect()->back()->with('success', 'Pago registrado e inscripción confirmada exitosamente.');
     }
 
+    public function updateCourseAmount(Request $request, Enrollment $enrollment, Course $course): RedirectResponse
+    {
+        $validated = $request->validate([
+            'amount_total' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        DB::transaction(function () use ($enrollment, $course, $validated): void {
+            $enrollment->courses()->updateExistingPivot($course->id, [
+                'custom_amount' => (float) $validated['amount_total'],
+            ]);
+
+            $enrollment->syncReceivable();
+        });
+
+        return redirect()->back()->with('success', 'Monto de la cuenta por cobrar del curso actualizado correctamente.');
+    }
+
     protected function applyEnrollmentState(
         Enrollment $enrollment,
         ?string $status,
@@ -498,6 +515,7 @@ class EnrollmentController extends Controller
         // If not, but the transaction already exists, preserve its current amount.
         // Otherwise, calculate the default initial charge amount.
         $amount = $paymentAmount;
+
         if ($amount === null) {
             if ($incomeTransaction) {
                 $amount = (float) $incomeTransaction->amount;
@@ -569,7 +587,16 @@ class EnrollmentController extends Controller
                 ->first();
 
             if ($receivable) {
+                Transaction::query()
+                    ->where('enrollment_id', $enrollment->id)
+                    ->where('type', 'income')
+                    ->whereNull('account_receivable_id')
+                    ->update(['account_receivable_id' => $receivable->id]);
+
                 $paidAmount = (float) $receivable->transactions()->where('status', 'completed')->sum('amount');
+                if ($paidAmount <= 0) {
+                    $paidAmount = (float) $enrollment->transactions()->where('status', 'completed')->where('type', 'income')->sum('amount');
+                }
                 if ($paidAmount <= 0) {
                     $receivable->delete();
                 } else {

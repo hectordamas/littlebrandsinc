@@ -41,6 +41,7 @@ class Enrollment extends Model
     public function courses()
     {
         return $this->belongsToMany(Course::class, 'enrollment_course')
+            ->withPivot('custom_amount')
             ->withTimestamps();
     }
 
@@ -91,16 +92,35 @@ class Enrollment extends Model
         return (float) (optional($this->program)->enrollment_fee ?? 50.00);
     }
 
+    public function getCourseAmount($course, int $courseIndex = 0): float
+    {
+        if ($course->pivot && $course->pivot->custom_amount !== null) {
+            return (float) $course->pivot->custom_amount;
+        }
+
+        $months = 1;
+        if ($course->start_date && $course->end_date) {
+            $start = \Carbon\Carbon::parse($course->start_date)->startOfMonth();
+            $end = \Carbon\Carbon::parse($course->end_date)->startOfMonth();
+            $months = max(1, $start->diffInMonths($end) + 1);
+        }
+
+        $amount = (float) ($course->monthly_fee ?? 0) * $months;
+
+        if ($courseIndex === 0) {
+            $amount += $this->getEnrollmentFee();
+        }
+
+        return $amount;
+    }
+
     public function getInitialChargeAmount(): float
     {
         $this->loadMissing(['program', 'courses']);
 
-        $enrollmentFee = $this->getEnrollmentFee();
-
-        $total = $enrollmentFee;
-
-        foreach ($this->courses as $course) {
-            $total += (float) ($course->monthly_fee ?? 0);
+        $total = 0.0;
+        foreach ($this->courses as $index => $course) {
+            $total += $this->getCourseAmount($course, $index);
         }
 
         return $total;
@@ -112,9 +132,20 @@ class Enrollment extends Model
 
         $receivable = $this->receivable ?: \App\Models\AccountReceivable::where('enrollment_id', $this->id)->first();
 
+        if ($receivable) {
+            \App\Models\Transaction::query()
+                ->where('enrollment_id', $this->id)
+                ->where('type', 'income')
+                ->whereNull('account_receivable_id')
+                ->update(['account_receivable_id' => $receivable->id]);
+        }
+
         if ($this->status === 'cancelled') {
             if ($receivable) {
                 $paidAmount = (float) $receivable->transactions()->where('status', 'completed')->sum('amount');
+                if ($paidAmount <= 0) {
+                    $paidAmount = (float) $this->transactions()->where('status', 'completed')->where('type', 'income')->sum('amount');
+                }
                 if ($paidAmount <= 0) {
                     $receivable->delete();
                     $this->setRelation('receivable', null);
@@ -155,19 +186,13 @@ class Enrollment extends Model
 
         $enrollmentFee = $this->getEnrollmentFee();
 
-        // Calculate amount total
+        // Calculate amount total as sum of course amounts
         if ($receivable && $receivable->is_custom_amount) {
             $amountTotal = (float) $receivable->amount_total;
         } else {
-            $amountTotal = $enrollmentFee;
-            foreach ($courses as $course) {
-                $months = 1;
-                if ($course->start_date && $course->end_date) {
-                    $start = \Carbon\Carbon::parse($course->start_date)->startOfMonth();
-                    $end = \Carbon\Carbon::parse($course->end_date)->startOfMonth();
-                    $months = max(1, $start->diffInMonths($end) + 1);
-                }
-                $amountTotal += (float) ($course->monthly_fee ?? 0) * $months;
+            $amountTotal = 0.0;
+            foreach ($courses as $index => $course) {
+                $amountTotal += $this->getCourseAmount($course, $index);
             }
         }
 

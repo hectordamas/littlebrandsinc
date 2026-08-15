@@ -151,27 +151,31 @@
                             </thead>
                             <tbody>
                                 @forelse ($student->enrollments as $enrollment)
-                                    @foreach ($enrollment->courses as $course)
+                                    @php
+                                        $totalPaidIncome = (float) $enrollment->transactions
+                                            ->where('status', 'completed')
+                                            ->where('type', 'income')
+                                            ->sum('amount');
+                                        $allocatedPaid = $totalPaidIncome;
+                                    @endphp
+                                    @foreach ($enrollment->courses as $index => $course)
                                         @php
                                             $isFreeTrial = (bool) $enrollment->is_free_trial;
-                                            $amountTotal = 0.00;
-                                            $amountPaid = 0.00;
-                                            $balanceDue = 0.00;
+                                            $courseAmount = 0.00;
+                                            $coursePaid = 0.00;
+                                            $courseBalance = 0.00;
 
                                             if (!$isFreeTrial) {
-                                                if ($enrollment->receivable) {
-                                                    $amountTotal = (float) $enrollment->receivable->amount_total;
-                                                    $balanceDue = (float) $enrollment->receivable->balance_due;
-                                                    $amountPaid = $amountTotal - $balanceDue;
+                                                $courseAmount = $enrollment->getCourseAmount($course, $index);
+
+                                                if ($enrollment->status === 'cancelled') {
+                                                    $coursePaid = min($courseAmount, max(0.00, $allocatedPaid));
+                                                    $allocatedPaid = max(0.00, $allocatedPaid - $coursePaid);
+                                                    $courseBalance = 0.00;
                                                 } else {
-                                                    $amountTotal = $enrollment->getInitialChargeAmount();
-                                                    if ($enrollment->payment_status === 'paid') {
-                                                        $amountPaid = $amountTotal;
-                                                        $balanceDue = 0.00;
-                                                    } else {
-                                                        $amountPaid = 0.00;
-                                                        $balanceDue = $amountTotal;
-                                                    }
+                                                    $coursePaid = min($courseAmount, max(0.00, $allocatedPaid));
+                                                    $allocatedPaid = max(0.00, $allocatedPaid - $coursePaid);
+                                                    $courseBalance = max(0.00, $courseAmount - $coursePaid);
                                                 }
                                             }
                                         @endphp
@@ -205,12 +209,10 @@
                                                     <span class="text-muted small">Prueba Gratis</span>
                                                 @else
                                                     <div class="d-flex align-items-center">
-                                                        <span class="fw-semibold text-dark">${{ number_format($amountTotal, 2) }}</span>
-                                                        @if ($enrollment->receivable)
-                                                            <button class="btn btn-link btn-xs p-0 ms-2 text-primary" type="button" data-bs-toggle="modal" data-bs-target="#edit-receivable-modal-{{ $enrollment->receivable->id }}" title="Editar Monto Cuenta">
-                                                                <i class="fas fa-pencil-alt"></i>
-                                                            </button>
-                                                        @endif
+                                                        <span class="fw-semibold text-dark">${{ number_format($courseAmount, 2) }}</span>
+                                                        <button class="btn btn-link btn-xs p-0 ms-2 text-primary" type="button" data-bs-toggle="modal" data-bs-target="#edit-course-amount-modal-{{ $enrollment->id }}-{{ $course->id }}" title="Editar Monto Cuenta del Curso">
+                                                            <i class="fas fa-pencil-alt"></i>
+                                                        </button>
                                                     </div>
                                                 @endif
                                             </td>
@@ -219,9 +221,14 @@
                                                     <span class="text-muted small">-</span>
                                                 @else
                                                     <div class="d-flex align-items-center">
-                                                        <span class="fw-semibold text-dark">${{ number_format($amountPaid, 2) }}</span>
-                                                        @if ($enrollment->transactions->isNotEmpty())
-                                                            <button class="btn btn-link btn-xs p-0 ms-2 text-info" type="button" data-bs-toggle="modal" data-bs-target="#payments-modal-{{ $enrollment->id }}" title="Ver historial de abonos">
+                                                        <span class="fw-semibold text-dark">${{ number_format($coursePaid, 2) }}</span>
+                                                        @php
+                                                            $courseTransactions = $enrollment->transactions->filter(function($t) use ($course, $index) {
+                                                                return $t->course_id == $course->id || ($t->course_id === null && $index === 0);
+                                                            });
+                                                        @endphp
+                                                        @if ($coursePaid > 0 && $courseTransactions->isNotEmpty())
+                                                            <button class="btn btn-link btn-xs p-0 ms-2 text-info" type="button" data-bs-toggle="modal" data-bs-target="#payments-modal-{{ $enrollment->id }}-{{ $course->id }}" title="Ver historial de abonos de esta clase">
                                                                 <i class="fas fa-history"></i>
                                                             </button>
                                                         @endif
@@ -231,10 +238,10 @@
                                             <td>
                                                 @if ($isFreeTrial)
                                                     <span class="text-muted small">-</span>
-                                                @elseif ($balanceDue > 0)
+                                                @elseif ($courseBalance > 0)
                                                     <div class="d-flex align-items-center gap-1">
                                                         <span class="badge bg-warning text-dark px-2 py-1" style="font-size: 0.75rem;" title="Cuenta por cobrar pendiente">Pendiente</span>
-                                                        <span class="fw-bold text-danger">${{ number_format($balanceDue, 2) }}</span>
+                                                        <span class="fw-bold text-danger">${{ number_format($courseBalance, 2) }}</span>
                                                     </div>
                                                 @else
                                                     <div class="d-flex align-items-center gap-1">
@@ -314,86 +321,95 @@
                             }
                         @endphp
 
-                        <!-- Modal Historial de Abonos -->
-                        @if ($enrollment->transactions->isNotEmpty())
-                            <div class="modal fade" id="payments-modal-{{ $enrollment->id }}" tabindex="-1" aria-labelledby="payments-modal-label-{{ $enrollment->id }}" aria-hidden="true">
-                                <div class="modal-dialog modal-lg modal-dialog-centered">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title fw-bold text-dark" id="payments-modal-label-{{ $enrollment->id }}">
-                                                <i class="fas fa-history text-primary me-2"></i>Historial de Abonos
-                                            </h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body text-start">
-                                            <div class="p-2 bg-light rounded border mb-3">
-                                                <div class="d-flex justify-content-between small mb-1">
-                                                    <span class="text-muted">Programa:</span>
-                                                    <span class="fw-semibold text-dark">{{ optional($enrollment->program)->name ?? 'N/A' }}</span>
-                                                </div>
-                                                <div class="d-flex justify-content-between small">
-                                                    <span class="text-muted">Monto Cuenta:</span>
-                                                    <span class="fw-bold text-primary">${{ number_format($amountTotal, 2) }}</span>
-                                                </div>
+                                   <!-- Modal Historial de Abonos por Curso -->
+                        @foreach ($enrollment->courses as $index => $course)
+                            @php
+                                $courseTransactions = $enrollment->transactions->filter(function($t) use ($course, $index) {
+                                    return $t->course_id == $course->id || ($t->course_id === null && $index === 0);
+                                });
+                                $courseAmount = $enrollment->getCourseAmount($course, $index);
+                            @endphp
+                            @if ($courseTransactions->isNotEmpty())
+                                <div class="modal fade" id="payments-modal-{{ $enrollment->id }}-{{ $course->id }}" tabindex="-1" aria-labelledby="payments-modal-label-{{ $enrollment->id }}-{{ $course->id }}" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title fw-bold text-dark" id="payments-modal-label-{{ $enrollment->id }}-{{ $course->id }}">
+                                                    <i class="fas fa-history text-primary me-2"></i>Historial de Abonos - {{ $course->title }}
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                             </div>
-                                            <div class="table-responsive">
-                                                <table class="table table-sm table-bordered mb-0 small">
-                                                    <thead>
-                                                        <tr class="table-secondary text-muted">
-                                                            <th>Fecha</th>
-                                                            <th>Monto</th>
-                                                            <th>Cuenta</th>
-                                                            <th>Método</th>
-                                                            <th>Referencia</th>
-                                                            <th>Comprobante</th>
-                                                            <th class="text-center">Acciones</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        @foreach ($enrollment->transactions as $transaction)
-                                                            <tr>
-                                                                <td>{{ $transaction->created_at ? \Carbon\Carbon::parse($transaction->created_at)->format('d/m/Y H:i') : 'N/A' }}</td>
-                                                                <td class="fw-semibold text-success">${{ number_format($transaction->amount, 2) }}</td>
-                                                                <td>{{ optional($transaction->account)->name ?? 'N/A' }}</td>
-                                                                <td>{{ $transaction->payment_method }}</td>
-                                                                <td>{{ $transaction->reference ?? 'N/A' }}</td>
-                                                                <td>
-                                                                    @if ($transaction->payment_receipt_path)
-                                                                        <a href="{{ asset($transaction->payment_receipt_path) }}" target="_blank" class="btn btn-xs btn-outline-info">
-                                                                            <i class="fas fa-file-download me-1"></i> Ver
-                                                                        </a>
-                                                                    @else
-                                                                        <span class="text-muted">-</span>
-                                                                    @endif
-                                                                </td>
-                                                                <td class="text-center">
-                                                                    <div class="d-flex justify-content-center gap-1">
-                                                                        <button type="button" class="btn btn-xs btn-outline-warning" data-bs-toggle="modal" data-bs-target="#edit-transaction-modal-{{ $transaction->id }}" title="Editar Abono">
-                                                                            <i class="fas fa-edit"></i>
-                                                                        </button>
-                                                                        <form action="{{ route('finance.transactions.destroy', $transaction->id) }}" method="POST" class="d-inline mb-0" onsubmit="return confirm('¿Seguro que deseas eliminar este abono? El saldo de la cuenta será recalculado automáticamente.');">
-                                                                            @csrf
-                                                                            @method('DELETE')
-                                                                            <button type="submit" class="btn btn-xs btn-outline-danger" title="Eliminar Abono">
-                                                                                <i class="fas fa-trash"></i>
-                                                                            </button>
-                                                                        </form>
-                                                                    </div>
-                                                                </td>
+                                            <div class="modal-body text-start">
+                                                <div class="p-2 bg-light rounded border mb-3">
+                                                    <div class="d-flex justify-content-between small mb-1">
+                                                        <span class="text-muted">Clase:</span>
+                                                        <span class="fw-semibold text-dark">{{ $course->title }}</span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between small">
+                                                        <span class="text-muted">Monto Cuenta Clase:</span>
+                                                        <span class="fw-bold text-primary">${{ number_format($courseAmount, 2) }}</span>
+                                                    </div>
+                                                </div>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-bordered mb-0 small">
+                                                        <thead>
+                                                            <tr class="table-secondary text-muted">
+                                                                <th>Fecha</th>
+                                                                <th>Monto</th>
+                                                                <th>Cuenta</th>
+                                                                <th>Método</th>
+                                                                <th>Referencia</th>
+                                                                <th>Comprobante</th>
+                                                                <th class="text-center">Acciones</th>
                                                             </tr>
-                                                        @endforeach
-                                                    </tbody>
-                                                </table>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach ($courseTransactions as $transaction)
+                                                                <tr>
+                                                                    <td>{{ $transaction->created_at ? \Carbon\Carbon::parse($transaction->created_at)->format('d/m/Y H:i') : 'N/A' }}</td>
+                                                                    <td class="fw-semibold text-success">${{ number_format($transaction->amount, 2) }}</td>
+                                                                    <td>{{ optional($transaction->account)->name ?? 'N/A' }}</td>
+                                                                    <td>{{ $transaction->payment_method }}</td>
+                                                                    <td>{{ $transaction->reference ?? 'N/A' }}</td>
+                                                                    <td>
+                                                                        @if ($transaction->payment_receipt_path)
+                                                                            <a href="{{ asset($transaction->payment_receipt_path) }}" target="_blank" class="btn btn-xs btn-outline-info">
+                                                                                <i class="fas fa-file-download me-1"></i> Ver
+                                                                            </a>
+                                                                        @else
+                                                                            <span class="text-muted">-</span>
+                                                                        @endif
+                                                                    </td>
+                                                                    <td class="text-center">
+                                                                        <div class="d-flex justify-content-center gap-1">
+                                                                            <button type="button" class="btn btn-xs btn-outline-warning" data-bs-toggle="modal" data-bs-target="#edit-transaction-modal-{{ $transaction->id }}" title="Editar Abono">
+                                                                                <i class="fas fa-edit"></i>
+                                                                            </button>
+                                                                            <form action="{{ route('finance.transactions.destroy', $transaction->id) }}" method="POST" class="d-inline mb-0" onsubmit="return confirm('¿Seguro que deseas eliminar este abono? El saldo de la cuenta será recalculado automáticamente.');">
+                                                                                @csrf
+                                                                                @method('DELETE')
+                                                                                <button type="submit" class="btn btn-xs btn-outline-danger" title="Eliminar Abono">
+                                                                                    <i class="fas fa-trash"></i>
+                                                                                </button>
+                                                                            </form>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            @endforeach
+                                                        </tbody>
+                                                    </table>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="modal-footer bg-light">
-                                            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                            <div class="modal-footer bg-light">
+                                                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            @endif
+                        @endforeach
 
-                            @foreach ($enrollment->transactions as $transaction)
+                        @foreach ($enrollment->transactions as $transaction)
                                 <!-- Modal Editar Abono -->
                                 <div class="modal fade" id="edit-transaction-modal-{{ $transaction->id }}" tabindex="-1" aria-hidden="true">
                                     <div class="modal-dialog modal-dialog-centered">
@@ -451,27 +467,29 @@
                                     </div>
                                 </div>
                             @endforeach
-                        @endif
 
-                        <!-- Modal Editar Cuenta por Cobrar -->
-                        @if ($enrollment->receivable)
-                            <div class="modal fade" id="edit-receivable-modal-{{ $enrollment->receivable->id }}" tabindex="-1" aria-hidden="true">
+                        <!-- Modales Editar Monto por Curso -->
+                        @foreach ($enrollment->courses as $index => $course)
+                            @php
+                                $courseAmount = $enrollment->getCourseAmount($course, $index);
+                            @endphp
+                            <div class="modal fade" id="edit-course-amount-modal-{{ $enrollment->id }}-{{ $course->id }}" tabindex="-1" aria-hidden="true">
                                 <div class="modal-dialog modal-dialog-centered">
                                     <div class="modal-content">
-                                        <form action="{{ route('finance.collections.update', $enrollment->receivable->id) }}" method="POST">
+                                        <form action="{{ route('enrollment.course.update-amount', [$enrollment->id, $course->id]) }}" method="POST">
                                             @csrf
                                             @method('PATCH')
                                             <div class="modal-header">
                                                 <h5 class="modal-title fw-bold text-dark">
-                                                    <i class="fas fa-pencil-alt text-primary me-2"></i>Editar Monto de la Cuenta (#{{ $enrollment->receivable->id }})
+                                                    <i class="fas fa-pencil-alt text-primary me-2"></i>Editar Monto de la Cuenta - {{ $course->title }}
                                                 </h5>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                             </div>
                                             <div class="modal-body text-start">
                                                 <div class="mb-2">
-                                                    <label class="form-label small fw-bold">Monto Total de la Cuenta ($) <span class="text-danger">*</span></label>
-                                                    <input type="number" step="0.01" name="amount_total" class="form-control form-control-sm" value="{{ old('amount_total', $enrollment->receivable->amount_total) }}" required min="0.01">
-                                                    <small class="text-muted d-block mt-2">💡 Al modificar este monto, el saldo pendiente "Por Cobrar" se actualizará automáticamente.</small>
+                                                    <label class="form-label small fw-bold">Monto Total de la Clase ($) <span class="text-danger">*</span></label>
+                                                    <input type="number" step="0.01" name="amount_total" class="form-control form-control-sm" value="{{ old('amount_total', number_format($courseAmount, 2, '.', '')) }}" required min="0.00">
+                                                    <small class="text-muted d-block mt-2">💡 Al modificar este monto, solo se actualizará la cuenta correspondiente a la clase <strong>{{ $course->title }}</strong>.</small>
                                                 </div>
                                             </div>
                                             <div class="modal-footer bg-light">
@@ -484,7 +502,7 @@
                                     </div>
                                 </div>
                             </div>
-                        @endif
+                        @endforeach
 
                         <!-- Modal Registrar Pago -->
                         @if ($enrollment->payment_status !== 'paid' && $enrollment->status !== 'cancelled')
