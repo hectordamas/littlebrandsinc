@@ -18,7 +18,7 @@
                     <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editReceivableModal">
                         <i class="fas fa-edit"></i> Editar Cuenta
                     </button>
-                    <a href="{{ route('finance.collections') }}" class="btn btn-inverse btn-sm">
+                    <a href="{{ route('finance.collections', array_filter(['branch_id' => $receivable->branch_id])) }}" class="btn btn-inverse btn-sm">
                         <i class="fas fa-arrow-left"></i> Volver a CxC
                     </a>
                 </div>

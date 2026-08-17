@@ -18,7 +18,7 @@
                     <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editPayableModal">
                         <i class="fas fa-edit"></i> Editar Cuenta
                     </button>
-                    <a href="{{ route('finance.payables') }}" class="btn btn-inverse btn-sm">
+                    <a href="{{ route('finance.payables', array_filter(['branch_id' => $payable->branch_id])) }}" class="btn btn-inverse btn-sm">
                         <i class="fas fa-arrow-left"></i> Volver a CxP
                     </a>
                 </div>

@@ -369,31 +369,42 @@
 
         </div>
 
-        <div class="row g-3 mb-3" id="finance-dashboard">
-            <div class="col-md-3">
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-5 g-3 mb-3" id="finance-dashboard">
+            <div class="col">
                 <div class="finance-card shadow-sm">
                     <div class="finance-card-label">Ingresos completados</div>
                     <div class="finance-card-value" data-summary-field="completedIncome">${{ number_format($completedIncome, 2) }}</div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col">
                 <div class="finance-card shadow-sm">
                     <div class="finance-card-label">Egresos completados</div>
                     <div class="finance-card-value" data-summary-field="completedExpenses">${{ number_format($completedExpenses, 2) }}</div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col">
                 <div class="finance-card shadow-sm">
                     <div class="finance-card-label">Cobranza pendiente</div>
                     <div class="finance-card-value" data-summary-field="pendingCollectionAmount">${{ number_format($pendingCollectionAmount, 2) }}</div>
                     <div class="mt-2">
-                        <a href="{{ route('finance.collections') }}" class="btn btn-sm btn-inverse">
+                        <a href="{{ route('finance.collections', array_filter(['branch_id' => $selectedBranchId])) }}" id="btnVerCobranzas" class="btn btn-sm btn-inverse">
                             <i class="fas fa-money-check-dollar"></i> Ver cobranzas
                         </a>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col">
+                <div class="finance-card shadow-sm">
+                    <div class="finance-card-label">Por pagar pendiente</div>
+                    <div class="finance-card-value" data-summary-field="pendingPayableAmount">${{ number_format($pendingPayableAmount, 2) }}</div>
+                    <div class="mt-2">
+                        <a href="{{ route('finance.payables', array_filter(['branch_id' => $selectedBranchId])) }}" id="btnVerPayables" class="btn btn-sm btn-inverse">
+                            <i class="fas fa-file-invoice"></i> Ver cuentas por pagar
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
                 <div class="finance-card shadow-sm">
                     <div class="finance-card-label">Balance neto</div>
                     <div class="finance-card-value" data-summary-field="netBalance">${{ number_format($netBalance, 2) }}</div>
@@ -548,6 +559,7 @@
             $('[data-summary-field="completedIncome"]').text(formatCurrency(summary.completedIncome));
             $('[data-summary-field="completedExpenses"]').text(formatCurrency(summary.completedExpenses));
             $('[data-summary-field="pendingCollectionAmount"]').text(formatCurrency(summary.pendingCollectionAmount));
+            $('[data-summary-field="pendingPayableAmount"]').text(formatCurrency(summary.pendingPayableAmount));
             $('[data-summary-field="netBalance"]').text(formatCurrency(summary.netBalance));
             $('[data-summary-field="pendingCollectionsCount"]').text(`${summary.pendingCollectionsCount} Inscripciones pendientes de cobro`);
         }
@@ -693,6 +705,19 @@
         }
 
         $(document).ready(function() {
+            function updateFinanceNavigationLinks(branchId) {
+                const collectionsBaseUrl = "{{ route('finance.collections') }}";
+                const payablesBaseUrl = "{{ route('finance.payables') }}";
+
+                if (branchId) {
+                    $('#btnVerCobranzas').attr('href', collectionsBaseUrl + '?branch_id=' + encodeURIComponent(branchId));
+                    $('#btnVerPayables').attr('href', payablesBaseUrl + '?branch_id=' + encodeURIComponent(branchId));
+                } else {
+                    $('#btnVerCobranzas').attr('href', collectionsBaseUrl);
+                    $('#btnVerPayables').attr('href', payablesBaseUrl);
+                }
+            }
+
             function updateModalGeneralBranchOption() {
                 const type = $('select[name="type"]').val();
                 if (type === 'expense') {
@@ -704,11 +729,14 @@
             $('select[name="type"]').on('change', updateModalGeneralBranchOption);
             updateModalGeneralBranchOption();
 
+            updateFinanceNavigationLinks($('#financeBranchFilter').val());
             loadFinanceData($('#financeBranchFilter').val());
 
             $('#financeBranchFilter').on('change', function() {
-                $('#transactionReturnBranchId').val($(this).val());
-                loadFinanceData($(this).val());
+                const selectedVal = $(this).val();
+                $('#transactionReturnBranchId').val(selectedVal);
+                updateFinanceNavigationLinks(selectedVal);
+                loadFinanceData(selectedVal);
             });
 
             $(document).on('click', '.js-open-details', function() {

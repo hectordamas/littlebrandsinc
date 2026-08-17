@@ -201,7 +201,7 @@
                                                 @elseif ($enrollment->payment_status === 'paid')
                                                     <span class="badge bg-success" title="Pago de inscripción completado">Pagado</span>
                                                 @else
-                                                    <span class="badge bg-warning text-dark" title="Pago de inscripción pendiente (no es la CxC)">Pendiente</span>
+                                                    <span class="badge bg-warning text-dark" title="Pago de inscripción pendiente">Pendiente</span>
                                                 @endif
                                             </td>
                                             <td>
@@ -252,15 +252,9 @@
                                             </td>
                                             <td class="text-center">
                                                 <div class="d-flex justify-content-center align-items-center gap-2">
-                                                    @if ($enrollment->status !== 'cancelled' && $enrollment->payment_status !== 'paid' && !$isFreeTrial)
-                                                        <button class="btn btn-xs btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#register-payment-modal-{{ $enrollment->id }}" title="Registrar Pago">
-                                                            <i class="fas fa-file-invoice-dollar me-1"></i> Pagar
-                                                        </button>
-                                                    @endif
-
-                                                    @if ($enrollment->status !== 'cancelled' && $enrollment->payment_status === 'paid' && $enrollment->receivable && $enrollment->receivable->balance_due > 0)
-                                                        <button class="btn btn-xs btn-outline-success" type="button" data-bs-toggle="modal" data-bs-target="#register-abono-modal-{{ $enrollment->id }}" title="Registrar Abono">
-                                                            <i class="fas fa-plus-circle me-1"></i> Abonar
+                                                    @if ($enrollment->status !== 'cancelled' && !$isFreeTrial)
+                                                        <button class="btn btn-xs btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#register-course-payment-modal-{{ $enrollment->id }}-{{ $course->id }}" title="Registrar Pago de esta clase">
+                                                            <i class="fas fa-file-invoice-dollar me-1"></i> Registrar Pago
                                                         </button>
                                                     @endif
 
@@ -502,10 +496,103 @@
                                     </div>
                                 </div>
                             </div>
+                            <!-- Modal Registrar Pago por Curso -->
+                            @php
+                                $totalPaidIncome = (float) $enrollment->transactions
+                                    ->where('status', 'completed')
+                                    ->where('type', 'income')
+                                    ->sum('amount');
+                                $allocatedPaidTemp = $totalPaidIncome;
+                                $coursePaidInModal = 0.0;
+                                foreach ($enrollment->courses as $idx => $c) {
+                                    $cAmount = $enrollment->getCourseAmount($c, $idx);
+                                    $p = min($cAmount, max(0.00, $allocatedPaidTemp));
+                                    $allocatedPaidTemp = max(0.00, $allocatedPaidTemp - $p);
+                                    if ($idx === $index) {
+                                        $coursePaidInModal = $p;
+                                        break;
+                                    }
+                                }
+                                $coursePendingInModal = max(0.00, $courseAmount - $coursePaidInModal);
+                            @endphp
+                            <div class="modal fade" id="register-course-payment-modal-{{ $enrollment->id }}-{{ $course->id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <form action="{{ route('enrollment.course.payment', [$enrollment->id, $course->id]) }}" method="POST" enctype="multipart/form-data">
+                                            @csrf
+                                            <div class="modal-header">
+                                                <h5 class="modal-title fw-bold text-dark">
+                                                    <i class="fas fa-file-invoice-dollar text-primary me-2"></i>Registrar Pago - {{ $course->title }}
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body text-start">
+                                                <!-- Detalle de la Cuenta de la Clase -->
+                                                <div class="p-3 border rounded bg-light mb-3" style="border-left: 4px solid #0d6efd !important;">
+                                                    <h6 class="fw-bold mb-2 small text-dark"><i class="fas fa-info-circle text-primary me-1"></i> Estado de la Cuenta de esta Clase</h6>
+                                                    <div class="d-flex justify-content-between small mb-1">
+                                                        <span class="text-muted">Monto Total Clase:</span>
+                                                        <span class="fw-semibold">${{ number_format($courseAmount, 2) }}</span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between small mb-1">
+                                                        <span class="text-muted">Ya Abonado:</span>
+                                                        <span class="fw-semibold text-success">${{ number_format($coursePaidInModal, 2) }}</span>
+                                                    </div>
+                                                    <hr class="my-2">
+                                                    <div class="d-flex justify-content-between small fw-bold text-danger">
+                                                        <span>Saldo Pendiente por Cobrar:</span>
+                                                        <span>${{ number_format($coursePendingInModal, 2) }}</span>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Monto del Pago -->
+                                                <div class="mb-3">
+                                                    <label class="form-label small fw-bold">Monto a Pagar ($) <span class="text-danger">*</span></label>
+                                                    <input type="number" step="0.01" min="0.01" name="amount" class="form-control form-control-sm" value="{{ number_format($coursePendingInModal > 0 ? $coursePendingInModal : $courseAmount, 2, '.', '') }}" required>
+                                                </div>
+
+                                                <!-- Cuenta de Pago -->
+                                                <div class="mb-3">
+                                                    <label class="form-label small fw-bold">Cuenta de Pago <span class="text-danger">*</span></label>
+                                                    <select name="account_id" class="form-control form-control-sm" required>
+                                                        @foreach ($accounts ?? [] as $account)
+                                                            <option value="{{ $account->id }}">{{ $account->name }} ({{ strtoupper($account->currency) }})</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+
+                                                <!-- Fecha del Pago -->
+                                                <div class="mb-3">
+                                                    <label class="form-label small fw-bold">Fecha del Pago <span class="text-danger">*</span></label>
+                                                    <input type="date" name="payment_date" value="{{ now()->toDateString() }}" class="form-control form-control-sm" required>
+                                                </div>
+
+                                                <!-- Referencia / Observación -->
+                                                <div class="mb-3">
+                                                    <label class="form-label small fw-bold">Referencia / Observación</label>
+                                                    <input type="text" name="reference" class="form-control form-control-sm" placeholder="Ej. Transacción 1234">
+                                                </div>
+
+                                                <!-- Comprobante de Pago -->
+                                                <div class="mb-3">
+                                                    <label class="form-label small fw-bold">Comprobante de Pago</label>
+                                                    <input type="file" name="payment_receipt" class="form-control form-control-sm" accept="image/*,.pdf">
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer bg-light">
+                                                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                <button type="submit" class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-check me-1"></i>Guardar Pago
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
                         @endforeach
 
                         <!-- Modal Registrar Pago -->
-                        @if ($enrollment->payment_status !== 'paid' && $enrollment->status !== 'cancelled')
+                        @if ($enrollment->status !== 'cancelled')
                             <div class="modal fade" id="register-payment-modal-{{ $enrollment->id }}" tabindex="-1" aria-labelledby="register-payment-modal-label-{{ $enrollment->id }}" aria-hidden="true">
                                 <div class="modal-dialog modal-dialog-centered">
                                     <div class="modal-content">
@@ -608,7 +695,7 @@
                         @endif
 
                         <!-- Modal Registrar Abono (Mensualidad / Saldo) -->
-                        @if ($enrollment->status !== 'cancelled' && $enrollment->receivable && $enrollment->receivable->balance_due > 0)
+                        @if ($enrollment->status !== 'cancelled' && $enrollment->receivable)
                             <div class="modal fade" id="register-abono-modal-{{ $enrollment->id }}" tabindex="-1" aria-labelledby="register-abono-modal-label-{{ $enrollment->id }}" aria-hidden="true">
                                 <div class="modal-dialog modal-dialog-centered">
                                     <div class="modal-content">

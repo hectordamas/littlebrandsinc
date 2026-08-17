@@ -59,7 +59,7 @@
                                 <select name="branch_id" class="form-control">
                                     <option value="">Gastos Generales</option>
                                     @foreach ($branches as $branch)
-                                        <option value="{{ $branch->id }}" @selected((int) old('branch_id') === $branch->id)>{{ $branch->name }}</option>
+                                        <option value="{{ $branch->id }}" @selected((string) old('branch_id', $selectedBranchId && $selectedBranchId !== 'general' ? $selectedBranchId : '') === (string) $branch->id)>{{ $branch->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -92,6 +92,26 @@
     </div>
 
     <div class="col-md-12">
+        <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
+            <div class="form-group mb-0" style="min-width: 260px;">
+                <label for="payablesBranchFilter" class="form-label fw-semibold">Filtrar por sede</label>
+                <form id="payablesBranchFilterForm" method="GET" action="{{ route('finance.payables') }}">
+                    <select id="payablesBranchFilter" name="branch_id" class="form-control" onchange="this.form.submit()">
+                        <option value="">Todas las sedes</option>
+                        <option value="general" @selected($selectedBranchId === 'general')>Gastos Generales</option>
+                        @foreach ($branches as $branch)
+                            <option value="{{ $branch->id }}" @selected((string) $selectedBranchId === (string) $branch->id)>{{ $branch->name }}</option>
+                        @endforeach
+                    </select>
+                </form>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ route('finance.collections', array_filter(['branch_id' => $selectedBranchId])) }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-money-check-dollar me-1"></i> Ir a Cuentas por Cobrar
+                </a>
+            </div>
+        </div>
+
         <div class="summary-card shadow-sm">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
@@ -102,7 +122,7 @@
                     <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createPayableModal">
                         <i class="fas fa-plus"></i> Nueva CxP
                     </button>
-                    <a href="{{ route('finance.index') }}#finance-transactions" class="btn btn-inverse btn-sm">
+                    <a href="{{ route('finance.index', array_filter(['branch_id' => $selectedBranchId])) }}#finance-transactions" class="btn btn-inverse btn-sm">
                         <i class="fas fa-arrow-left"></i> Volver a movimientos
                     </a>
                 </div>

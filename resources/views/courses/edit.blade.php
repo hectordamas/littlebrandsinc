@@ -563,16 +563,43 @@
                                                         <th class="text-center text-nowrap">Acciones</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody>
-                                                    @foreach($course->enrollments as $index => $enrollment)
+                                                                               @foreach($course->enrollments as $index => $enrollment)
                                                         @php
-                                                            $cxcBalanceDue = 0.00;
                                                             $cxcIsTrial = (bool) $enrollment->is_free_trial;
+                                                            $cxcAmount = 0.00;
+                                                            $cxcPaid = 0.00;
+                                                            $cxcBalanceDue = 0.00;
+
                                                             if (!$cxcIsTrial) {
-                                                                if ($enrollment->receivable) {
-                                                                    $cxcBalanceDue = (float) $enrollment->receivable->balance_due;
+                                                                $courseIdx = 0;
+                                                                foreach ($enrollment->courses as $idx => $c) {
+                                                                    if ($c->id == $course->id) {
+                                                                        $courseIdx = $idx;
+                                                                        break;
+                                                                    }
+                                                                }
+                                                                $cxcAmount = $enrollment->getCourseAmount($course, $courseIdx);
+
+                                                                $totalPaidIncome = (float) $enrollment->transactions
+                                                                    ->where('status', 'completed')
+                                                                    ->where('type', 'income')
+                                                                    ->sum('amount');
+                                                                
+                                                                $allocatedPaidTemp = $totalPaidIncome;
+                                                                foreach ($enrollment->courses as $idx => $c) {
+                                                                    $cAmount = $enrollment->getCourseAmount($c, $idx);
+                                                                    $p = min($cAmount, max(0.00, $allocatedPaidTemp));
+                                                                    $allocatedPaidTemp = max(0.00, $allocatedPaidTemp - $p);
+                                                                    if ($idx === $courseIdx) {
+                                                                        $cxcPaid = $p;
+                                                                        break;
+                                                                    }
+                                                                }
+
+                                                                if ($enrollment->status === 'cancelled') {
+                                                                    $cxcBalanceDue = 0.00;
                                                                 } else {
-                                                                    $cxcBalanceDue = (float) $enrollment->getInitialChargeAmount();
+                                                                    $cxcBalanceDue = max(0.00, $cxcAmount - $cxcPaid);
                                                                 }
                                                             }
                                                         @endphp
@@ -608,16 +635,21 @@
                                                                 @if($enrollment->is_free_trial)
                                                                     <span class="badge bg-info px-3 py-2 text-white">Clase de prueba gratis</span>
                                                                 @elseif($enrollment->payment_status === 'paid')
-                                                                    <span class="badge bg-success px-3 py-2 text-white">Pagado</span>
+                                                                    <div>
+                                                                        <span class="badge bg-success px-3 py-2 text-white d-inline-block mb-1">Pagado</span>
+                                                                        <button class="btn btn-xs btn-outline-primary d-block mx-auto mt-1" type="button" data-bs-toggle="collapse" data-bs-target="#attach-payment-{{ $enrollment->id }}" aria-expanded="false" aria-controls="attach-payment-{{ $enrollment->id }}">
+                                                                            <i class="fas fa-file-invoice-dollar me-1"></i> Registrar Pago
+                                                                        </button>
+                                                                    </div>
                                                                 @else
                                                                     <div>
-                                                                        <span class="badge bg-warning text-dark px-3 py-2">Pendiente</span>
-                                                                        <button class="btn btn-sm btn-outline-primary d-block mx-auto mt-2" type="button" data-bs-toggle="collapse" data-bs-target="#attach-payment-{{ $enrollment->id }}" aria-expanded="false" aria-controls="attach-payment-{{ $enrollment->id }}">
-                                                                            <i class="fas fa-file-invoice-dollar"></i> Registrar Pago
+                                                                        <span class="badge bg-warning text-dark px-3 py-2 d-inline-block mb-1">Pendiente</span>
+                                                                        <button class="btn btn-xs btn-outline-primary d-block mx-auto mt-1" type="button" data-bs-toggle="collapse" data-bs-target="#attach-payment-{{ $enrollment->id }}" aria-expanded="false" aria-controls="attach-payment-{{ $enrollment->id }}">
+                                                                            <i class="fas fa-file-invoice-dollar me-1"></i> Registrar Pago
                                                                         </button>
                                                                     </div>
                                                                 @endif
-                                                            </td>
+                                                            </td>                          </td>
                                                             <td class="text-center">
                                                                 @if($cxcIsTrial)
                                                                     <span class="text-muted small">-</span>
@@ -644,7 +676,7 @@
                                                                 </form>
                                                             </td>
                                                         </tr>
-                                                        @if($enrollment->payment_status !== 'paid')
+                                                        @if($enrollment->status !== 'cancelled')
                                                             <tr class="collapse" id="attach-payment-{{ $enrollment->id }}">
                                                                 <td colspan="8" class="bg-light p-0">
                                                                     <div class="p-3 border rounded m-2 bg-white shadow-sm">

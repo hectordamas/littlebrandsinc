@@ -434,6 +434,61 @@ class EnrollmentController extends Controller
         return redirect()->back()->with('success', 'Monto de la cuenta por cobrar del curso actualizado correctamente.');
     }
 
+    public function storeCoursePayment(Request $request, Enrollment $enrollment, Course $course): RedirectResponse
+    {
+        $validated = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'account_id' => ['required', 'integer', 'exists:accounts,id'],
+            'payment_date' => ['required', 'date'],
+            'reference' => ['nullable', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'payment_receipt' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
+        ]);
+
+        $account = Account::findOrFail($validated['account_id']);
+
+        $receiptPath = null;
+        $receiptOriginalName = null;
+        if ($request->hasFile('payment_receipt')) {
+            $file = $request->file('payment_receipt');
+            $receiptPath = $file->store('receipts', 'public');
+            $receiptOriginalName = $file->getClientOriginalName();
+        }
+
+        DB::transaction(function () use ($enrollment, $course, $account, $validated, $receiptPath, $receiptOriginalName): void {
+            $receivable = $enrollment->receivable;
+            if (!$receivable) {
+                $enrollment->syncReceivable();
+                $receivable = $enrollment->fresh()->receivable;
+            }
+
+            Transaction::create([
+                'branch_id' => $receivable ? $receivable->branch_id : null,
+                'user_id' => $enrollment->student ? $enrollment->student->user_id : null,
+                'student_id' => $enrollment->student_id,
+                'course_id' => $course->id,
+                'enrollment_id' => $enrollment->id,
+                'account_id' => $account->id,
+                'account_receivable_id' => $receivable ? $receivable->id : null,
+                'amount' => (float) $validated['amount'],
+                'currency' => strtoupper($account->currency ?? 'USD'),
+                'type' => 'income',
+                'status' => 'completed',
+                'payment_method' => $account->name,
+                'reference' => $validated['reference'] ?? null,
+                'description' => $validated['description'] ?? ('Pago registrado para la clase ' . $course->title),
+                'payment_receipt_path' => $receiptPath,
+                'payment_receipt_original_name' => $receiptOriginalName,
+                'created_at' => $validated['payment_date'],
+                'updated_at' => $validated['payment_date'],
+            ]);
+
+            $enrollment->syncReceivable();
+        });
+
+        return redirect()->back()->with('success', 'Pago registrado correctamente para la clase ' . $course->title . '.');
+    }
+
     protected function applyEnrollmentState(
         Enrollment $enrollment,
         ?string $status,

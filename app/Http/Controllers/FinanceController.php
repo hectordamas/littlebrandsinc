@@ -52,20 +52,35 @@ class FinanceController extends Controller
             'completedIncome' => $summary['completedIncome'],
             'completedExpenses' => $summary['completedExpenses'],
             'pendingCollectionAmount' => $summary['pendingCollectionAmount'],
+            'pendingPayableAmount' => $summary['pendingPayableAmount'],
+            'pendingPayablesCount' => $summary['pendingPayablesCount'],
             'netBalance' => $summary['netBalance'],
             'pendingCollectionsCount' => $summary['pendingCollectionsCount'],
         ]);
     }
 
-    public function collections()
+    public function collections(Request $request)
     {
         $this->syncEnrollmentReceivables();
 
-        $receivables = AccountReceivable::query()
+        $branchId = $request->input('branch_id');
+        if ($branchId === '') {
+            $branchId = null;
+        }
+
+        $query = AccountReceivable::query()
             ->with(['branch', 'enrollment.courses', 'enrollment.student', 'enrollment.program'])
-            ->whereIn('status', ['pending', 'partial'])
-            ->orderByDesc('id')
-            ->get();
+            ->whereIn('status', ['pending', 'partial']);
+
+        if ($branchId !== null) {
+            if ($branchId === 'general') {
+                $query->whereNull('branch_id');
+            } else {
+                $query->where('branch_id', (int) $branchId);
+            }
+        }
+
+        $receivables = $query->orderByDesc('id')->get();
 
         $branches = Branch::query()->orderBy('name')->get();
 
@@ -78,6 +93,7 @@ class FinanceController extends Controller
             'receivables' => $receivables,
             'branches' => $branches,
             'accounts' => $accounts,
+            'selectedBranchId' => $branchId,
             'pendingCollectionAmount' => (float) $receivables->sum('balance_due'),
         ]);
     }
@@ -104,7 +120,11 @@ class FinanceController extends Controller
             'notes' => $validated['notes'] ?? null,
         ]);
 
-        return redirect()->route('finance.collections')->with('success', 'Cuenta por cobrar creada correctamente.');
+        return redirect()
+            ->route('finance.collections', array_filter([
+                'branch_id' => $validated['branch_id'] ?? null,
+            ]))
+            ->with('success', 'Cuenta por cobrar creada correctamente.');
     }
 
     public function updateCollection(Request $request, AccountReceivable $receivable): RedirectResponse
@@ -218,18 +238,32 @@ class FinanceController extends Controller
         return redirect()->back()->with('success', 'Abono registrado correctamente.');
     }
 
-    public function payables()
+    public function payables(Request $request)
     {
-        $payables = AccountPayable::query()
-            ->with(['branch'])
-            ->orderByDesc('id')
-            ->get();
+        $branchId = $request->input('branch_id');
+        if ($branchId === '') {
+            $branchId = null;
+        }
+
+        $query = AccountPayable::query()
+            ->with(['branch']);
+
+        if ($branchId !== null) {
+            if ($branchId === 'general') {
+                $query->whereNull('branch_id');
+            } else {
+                $query->where('branch_id', (int) $branchId);
+            }
+        }
+
+        $payables = $query->orderByDesc('id')->get();
 
         $branches = Branch::query()->orderBy('name')->get();
 
         return view('finance.payables', [
             'payables' => $payables,
             'branches' => $branches,
+            'selectedBranchId' => $branchId,
             'pendingPayableAmount' => (float) $payables->whereIn('status', ['pending', 'partial'])->sum('balance_due'),
         ]);
     }
@@ -257,7 +291,11 @@ class FinanceController extends Controller
             'notes' => $validated['notes'] ?? null,
         ]);
 
-        return redirect()->route('finance.payables')->with('success', 'Cuenta por pagar creada correctamente.');
+        return redirect()
+            ->route('finance.payables', array_filter([
+                'branch_id' => $validated['branch_id'] ?? null,
+            ]))
+            ->with('success', 'Cuenta por pagar creada correctamente.');
     }
 
     public function showPayable(AccountPayable $payable)
@@ -569,6 +607,22 @@ class FinanceController extends Controller
         return $query;
     }
 
+    protected function pendingPayablesByBranchQuery($branchId = null)
+    {
+        $query = AccountPayable::query()
+            ->whereIn('status', ['pending', 'partial']);
+
+        if ($branchId !== null && $branchId !== '') {
+            if ($branchId === 'general') {
+                $query->whereNull('branch_id');
+            } else {
+                $query->where('branch_id', (int) $branchId);
+            }
+        }
+
+        return $query;
+    }
+
     protected function buildSummary($branchId = null): array
     {
         $completedIncome = (float) Transaction::query()
@@ -596,13 +650,17 @@ class FinanceController extends Controller
             ->sum('amount');
 
         $pendingCollectionAmount = (float) $this->pendingCollectionsByBranchQuery($branchId)->sum('balance_due');
-
         $pendingCollectionsCount = (int) $this->pendingCollectionsByBranchQuery($branchId)->count();
+
+        $pendingPayableAmount = (float) $this->pendingPayablesByBranchQuery($branchId)->sum('balance_due');
+        $pendingPayablesCount = (int) $this->pendingPayablesByBranchQuery($branchId)->count();
 
         return [
             'completedIncome' => $completedIncome,
             'completedExpenses' => $completedExpenses,
             'pendingCollectionAmount' => $pendingCollectionAmount,
+            'pendingPayableAmount' => $pendingPayableAmount,
+            'pendingPayablesCount' => $pendingPayablesCount,
             'netBalance' => $completedIncome - $completedExpenses,
             'pendingCollectionsCount' => $pendingCollectionsCount,
         ];

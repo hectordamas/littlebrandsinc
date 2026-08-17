@@ -1,0 +1,59 @@
+Aquí tienes un resumen detallado y estructurado de todos los cambios realizados en el sistema durante esta sesión, para que puedas pegarlo en un nuevo chat y continuar el trabajo sin perder contexto:
+
+---
+
+# Resumen de Cambios y Estado del Sistema
+
+### 1. Requerimientos del Cliente (Mauricio)
+- **Cuentas Independientes por Curso:** Cada clase/curso inscrito en una misma matrícula debe gestionarse de forma independiente (si se edita el monto del Curso 1, no debe alterar el del Curso 2).
+- **Inscripciones Canceladas:** No deben mostrar deudas falsas si el estudiante ya había realizado abonos previos; el saldo de la cuenta por cobrar debe mantenerse en `$0.00` y conservar el historial de transacciones.
+- **Formato Limpio de Montos:** Eliminar los centavos o fracciones decimales extrañas (ej. `$69.09` / `$50.91`) derivadas de asignaciones proporcionales de pagos.
+
+---
+
+### 2. Cambios en Base de Datos y Backend
+
+- **Base de Datos (Migración):**
+  - Archivo: `database/migrations/2026_08_15_000001_add_custom_amount_to_enrollment_course_table.php`
+  - Se agregó la columna `custom_amount` (`decimal 10,2 nullable`) en la tabla pivote `enrollment_course` para guardar el monto personalizado de cada curso.
+
+- **Modelo `Enrollment.php` (`app/Models/Enrollment.php`):**
+  - Se actualizó la relación `courses()` agregando `withPivot('custom_amount')`.
+  - Se implementó `getCourseAmount($course, $index)` para calcular automáticamente el costo base por clase o devolver su `custom_amount`.
+  - Se ajustó `syncReceivable()` declarando la variable `$enrollmentFee` y garantizando que las inscripciones canceladas con pagos mantengan `balance_due = 0.0` y estado `paid`.
+
+- **Controlador `EnrollmentController.php` (`app/Http/Controllers/EnrollmentController.php`):**
+  - **`updateCourseAmount()`:** Actualiza el campo `custom_amount` en la pivote para un curso específico y resincroniza el total de la cuenta.
+  - **`storeCoursePayment()`:** Imputa pagos directamente asociados al `course_id` del curso seleccionado y resincroniza los saldos.
+
+- **Rutas (`routes/web.php`):**
+  - `PATCH enrollment/{enrollment}/course/{course}/amount` (`enrollment.course.update-amount`)
+  - `POST enrollment/{enrollment}/course/{course}/payment` (`enrollment.course.payment`)
+
+---
+
+### 3. Cambios en las Vistas y Frontend
+
+- **Vista `students/show.blade.php` (`resources/views/students/show.blade.php`):**
+  - **Diferenciación Clara de Columnas:**
+    - **`Estado de Inscripción`** (`payment_status`): Indica el estado del pago inicial de inscripción del estudiante (`Pagado` / `Pendiente`).
+    - **`Cuenta por Cobrar`** (`balance_due`): Indica el saldo corriente pendiente a cobrar en esa clase específica (ej. `Pendiente $70.00` / `Pendiente $140.00`).
+  - **Asignación Secuencial de Pagos:** Se imputan abonos en secuencia por curso para garantizar montos enteros sin céntimos residuales.
+  - **Historial de Abonos por Curso:** Modales e iconos de reloj (`payments-modal-{{ $enrollment->id }}-{{ $course->id }}`) dedicados por clase.
+  - **Unificación de Botón de Pago:** Un **único botón "Registrar Pago" por clase**.
+  - **Modal de Pago por Clase:** Muestra el *Monto Total de la Clase*, *Ya Abonado a la Clase* y *Saldo Pendiente de la Clase*.
+  - **Corrección de Estructura HTML:** Se corrigió el `</div>` no cerrado en el modal `#edit-course-amount-modal`.
+
+- **Vista `courses/edit.blade.php` (`resources/views/courses/edit.blade.php`):**
+  - Mantendida la separación entre **`Estado de Inscripción`** (pago inicial) y **`Cuenta por Cobrar`** (`$cxcBalanceDue` de esa clase específica).
+  - Se desbloqueó el botón/desplegable de **Registrar Pago** en la lista de estudiantes inscritos para inscripciones activas.
+
+---
+
+### 4. Archivos Modificados en el Proyecto
+1. `database/migrations/2026_08_15_000001_add_custom_amount_to_enrollment_course_table.php`
+2. `app/Models/Enrollment.php`
+3. `app/Http/Controllers/EnrollmentController.php`
+4. `routes/web.php`
+5. `resources/views/students/show.blade.php`
+6. `resources/views/courses/edit.blade.php`
