@@ -309,7 +309,7 @@ class CoursesController extends Controller
     public function edit($id)
     {
         $course = Course::with(['enrollments' => function ($q) {
-            $q->where('status', '!=', 'cancelled')->with(['student', 'parent', 'program', 'courses', 'receivable']);
+            $q->where('status', '!=', 'cancelled')->with(['student', 'parent', 'program', 'courses', 'receivable', 'transactions']);
         }])->findOrFail($id);
 
         foreach ($course->enrollments as $enrollment) {

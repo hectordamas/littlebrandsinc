@@ -94,18 +94,26 @@ class Enrollment extends Model
 
     public function getCourseAmount($course, int $courseIndex = 0): float
     {
-        if ($course->pivot && $course->pivot->custom_amount !== null) {
-            return (float) $course->pivot->custom_amount;
+        $courseModel = $course;
+        if (is_object($course) && (!$course->pivot || $course->pivot->custom_amount === null) && $this->relationLoaded('courses')) {
+            $matched = $this->courses->firstWhere('id', $course->id);
+            if ($matched && $matched->pivot) {
+                $courseModel = $matched;
+            }
+        }
+
+        if (is_object($courseModel) && $courseModel->pivot && $courseModel->pivot->custom_amount !== null) {
+            return (float) $courseModel->pivot->custom_amount;
         }
 
         $months = 1;
-        if ($course->start_date && $course->end_date) {
-            $start = \Carbon\Carbon::parse($course->start_date)->startOfMonth();
-            $end = \Carbon\Carbon::parse($course->end_date)->startOfMonth();
+        if ($courseModel->start_date && $courseModel->end_date) {
+            $start = \Carbon\Carbon::parse($courseModel->start_date)->startOfMonth();
+            $end = \Carbon\Carbon::parse($courseModel->end_date)->startOfMonth();
             $months = max(1, $start->diffInMonths($end) + 1);
         }
 
-        $amount = (float) ($course->monthly_fee ?? 0) * $months;
+        $amount = (float) ($courseModel->monthly_fee ?? 0) * $months;
 
         if ($courseIndex === 0) {
             $amount += $this->getEnrollmentFee();

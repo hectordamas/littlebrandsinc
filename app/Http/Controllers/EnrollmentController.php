@@ -246,6 +246,8 @@ class EnrollmentController extends Controller
 
     public function downloadReceipt(Enrollment $enrollment)
     {
+        $enrollment->syncReceivable();
+
         $enrollment->loadMissing([
             'student.user',
             'program',
@@ -254,6 +256,8 @@ class EnrollmentController extends Controller
             'courses.classes' => function ($query) {
                 $query->with('coach')->orderBy('date')->orderBy('start_time');
             },
+            'receivable',
+            'transactions.account',
         ]);
 
         foreach ($enrollment->courses as $course) {
@@ -267,7 +271,7 @@ class EnrollmentController extends Controller
             'generatedAt' => now(),
         ])->setPaper('a4');
 
-        return $pdf->download('comprobante-Inscripción-'.$enrollment->id.'.pdf');
+        return $pdf->download('comprobante-inscripcion-'.$enrollment->id.'.pdf');
     }
 
     public function update(Request $request, Enrollment $enrollment)

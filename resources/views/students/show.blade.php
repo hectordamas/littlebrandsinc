@@ -258,6 +258,10 @@
                                                         </button>
                                                     @endif
 
+                                                    <a href="{{ route('enrollment.receipt', $enrollment->id) }}" class="btn btn-xs btn-outline-danger" title="Descargar comprobante PDF de la inscripción y estado de cuenta" target="_blank">
+                                                        <i class="fas fa-file-pdf me-1"></i> Comprobante
+                                                    </a>
+
                                                     @if ($enrollment->status !== 'cancelled' && $enrollment->is_free_trial)
                                                         <button type="button" class="btn btn-xs btn-outline-info convert-to-paid-btn" data-url="{{ route('enrollment.update', $enrollment->id) }}" title="Convertir a inscripción de pago">
                                                             <i class="fas fa-dollar-sign"></i> Convertir a Pago
@@ -334,18 +338,17 @@
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                             </div>
                                             <div class="modal-body text-start">
-                                                <div class="p-2 bg-light rounded border mb-3">
-                                                    <div class="d-flex justify-content-between small mb-1">
-                                                        <span class="text-muted">Clase:</span>
-                                                        <span class="fw-semibold text-dark">{{ $course->title }}</span>
+                                                <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded border mb-3 flex-wrap gap-2">
+                                                    <div>
+                                                        <div class="small text-muted mb-1">Clase: <strong class="text-dark">{{ $course->title }}</strong></div>
+                                                        <div class="small">Monto Cuenta Clase: <span class="fw-bold text-primary">${{ number_format($courseAmount, 2) }}</span></div>
                                                     </div>
-                                                    <div class="d-flex justify-content-between small">
-                                                        <span class="text-muted">Monto Cuenta Clase:</span>
-                                                        <span class="fw-bold text-primary">${{ number_format($courseAmount, 2) }}</span>
-                                                    </div>
+                                                    <a href="{{ route('enrollment.receipt', $enrollment->id) }}" target="_blank" class="btn btn-sm btn-outline-danger">
+                                                        <i class="fas fa-file-pdf me-1"></i> Comprobante General (PDF)
+                                                    </a>
                                                 </div>
                                                 <div class="table-responsive">
-                                                    <table class="table table-sm table-bordered mb-0 small">
+                                                    <table class="table table-sm table-bordered mb-0 small align-middle">
                                                         <thead>
                                                             <tr class="table-secondary text-muted">
                                                                 <th>Fecha</th>
@@ -353,7 +356,7 @@
                                                                 <th>Cuenta</th>
                                                                 <th>Método</th>
                                                                 <th>Referencia</th>
-                                                                <th>Comprobante</th>
+                                                                <th>Adjunto</th>
                                                                 <th class="text-center">Acciones</th>
                                                             </tr>
                                                         </thead>
@@ -367,7 +370,7 @@
                                                                     <td>{{ $transaction->reference ?? 'N/A' }}</td>
                                                                     <td>
                                                                         @if ($transaction->payment_receipt_path)
-                                                                            <a href="{{ asset($transaction->payment_receipt_path) }}" target="_blank" class="btn btn-xs btn-outline-info">
+                                                                            <a href="{{ asset($transaction->payment_receipt_path) }}" target="_blank" class="btn btn-xs btn-outline-info" title="Ver archivo adjunto">
                                                                                 <i class="fas fa-file-download me-1"></i> Ver
                                                                             </a>
                                                                         @else
@@ -376,6 +379,9 @@
                                                                     </td>
                                                                     <td class="text-center">
                                                                         <div class="d-flex justify-content-center gap-1">
+                                                                            <a href="{{ route('finance.transactions.receipt', $transaction->id) }}" target="_blank" class="btn btn-xs btn-outline-danger" title="Descargar comprobante de este abono">
+                                                                                <i class="fas fa-file-pdf"></i>
+                                                                            </a>
                                                                             <button type="button" class="btn btn-xs btn-outline-warning" data-bs-toggle="modal" data-bs-target="#edit-transaction-modal-{{ $transaction->id }}" title="Editar Abono">
                                                                                 <i class="fas fa-edit"></i>
                                                                             </button>
@@ -394,7 +400,10 @@
                                                     </table>
                                                 </div>
                                             </div>
-                                            <div class="modal-footer bg-light">
+                                            <div class="modal-footer bg-light d-flex justify-content-between">
+                                                <a href="{{ route('enrollment.receipt', $enrollment->id) }}" target="_blank" class="btn btn-sm btn-danger">
+                                                    <i class="fas fa-file-pdf me-1"></i> Descargar Comprobante y Estado de Cuenta
+                                                </a>
                                                 <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                                             </div>
                                         </div>

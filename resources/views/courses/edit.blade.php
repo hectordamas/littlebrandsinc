@@ -559,11 +559,14 @@
                                                         <th>Representante</th>
                                                         <th>Teléfono / Correo</th>
                                                         <th class="text-center text-nowrap">Estado de Inscripción</th>
+                                                        <th class="text-center text-nowrap">Monto Cuenta</th>
+                                                        <th class="text-center text-nowrap">Abonado</th>
                                                         <th class="text-center text-nowrap">Cuenta por Cobrar</th>
                                                         <th class="text-center text-nowrap">Acciones</th>
                                                     </tr>
                                                 </thead>
-                                                                               @foreach($course->enrollments as $index => $enrollment)
+                                                <tbody>
+                                                @foreach($course->enrollments as $index => $enrollment)
                                                         @php
                                                             $cxcIsTrial = (bool) $enrollment->is_free_trial;
                                                             $cxcAmount = 0.00;
@@ -572,13 +575,15 @@
 
                                                             if (!$cxcIsTrial) {
                                                                 $courseIdx = 0;
+                                                                $targetCourse = $course;
                                                                 foreach ($enrollment->courses as $idx => $c) {
                                                                     if ($c->id == $course->id) {
                                                                         $courseIdx = $idx;
+                                                                        $targetCourse = $c;
                                                                         break;
                                                                     }
                                                                 }
-                                                                $cxcAmount = $enrollment->getCourseAmount($course, $courseIdx);
+                                                                $cxcAmount = $enrollment->getCourseAmount($targetCourse, $courseIdx);
 
                                                                 $totalPaidIncome = (float) $enrollment->transactions
                                                                     ->where('status', 'completed')
@@ -649,7 +654,21 @@
                                                                         </button>
                                                                     </div>
                                                                 @endif
-                                                            </td>                          </td>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                @if($cxcIsTrial)
+                                                                    <span class="text-muted small">Prueba Gratis</span>
+                                                                @else
+                                                                    <span class="fw-semibold text-dark">${{ number_format($cxcAmount, 2) }}</span>
+                                                                @endif
+                                                            </td>
+                                                            <td class="text-center">
+                                                                @if($cxcIsTrial)
+                                                                    <span class="text-muted small">-</span>
+                                                                @else
+                                                                    <span class="fw-semibold text-dark">${{ number_format($cxcPaid, 2) }}</span>
+                                                                @endif
+                                                            </td>
                                                             <td class="text-center">
                                                                 @if($cxcIsTrial)
                                                                     <span class="text-muted small">-</span>
@@ -678,7 +697,7 @@
                                                         </tr>
                                                         @if($enrollment->status !== 'cancelled')
                                                             <tr class="collapse" id="attach-payment-{{ $enrollment->id }}">
-                                                                <td colspan="8" class="bg-light p-0">
+                                                                <td colspan="10" class="bg-light p-0">
                                                                     <div class="p-3 border rounded m-2 bg-white shadow-sm">
                                                                         <form action="{{ route('enrollment.attach-payment', $enrollment->id) }}" method="POST" enctype="multipart/form-data">
                                                                             @csrf

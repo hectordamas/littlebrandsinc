@@ -3,235 +3,465 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Comprobante de Inscripción #{{ $enrollment->id }}</title>
+    <title>Comprobante de Inscripción y Estado de Cuenta #{{ $enrollment->id }}</title>
     <style>
         body {
             font-family: DejaVu Sans, sans-serif;
-            color: #1f2937;
-            font-size: 12px;
-            line-height: 1.45;
-            margin: 28px;
-        }
-
-        .header {
-            border-bottom: 2px solid #d1d5db;
-            padding-bottom: 10px;
-            margin-bottom: 16px;
-        }
-
-        .title {
-            font-size: 20px;
-            font-weight: 700;
-            margin: 0;
-            color: #111827;
-        }
-
-        .subtitle {
-            margin-top: 4px;
-            color: #4b5563;
-        }
-
-        .meta {
-            margin-top: 6px;
+            color: #1e293b;
             font-size: 11px;
-            color: #6b7280;
+            line-height: 1.4;
+            margin: 20px;
+        }
+
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-bottom: 2px solid #0284c7;
+            padding-bottom: 12px;
+            margin-bottom: 14px;
+        }
+
+        .header-table td {
+            border: none;
+            padding: 0;
+            vertical-align: middle;
+        }
+
+        .company-logo {
+            max-height: 52px;
+            max-width: 180px;
+            margin-bottom: 4px;
+        }
+
+        .branch-logo {
+            max-height: 48px;
+            max-width: 130px;
+            margin-bottom: 4px;
+        }
+
+        .company-name {
+            font-size: 14px;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .doc-title {
+            font-size: 15px;
+            font-weight: 800;
+            color: #0369a1;
+            margin: 2px 0;
+            text-transform: uppercase;
+        }
+
+        .doc-meta {
+            font-size: 10px;
+            color: #64748b;
         }
 
         .section {
-            margin-top: 14px;
-            border: 1px solid #e5e7eb;
+            margin-top: 12px;
+            border: 1px solid #cbd5e1;
             border-radius: 6px;
-            padding: 10px;
+            padding: 9px 12px;
+            background-color: #ffffff;
         }
 
-        .section h3 {
-            margin: 0 0 8px;
-            font-size: 13px;
-            color: #111827;
+        .section-title {
+            margin: 0 0 7px 0;
+            font-size: 11.5px;
+            font-weight: 800;
+            color: #0f172a;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 4px;
         }
 
-        .row {
-            margin-bottom: 4px;
+        .two-col-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .two-col-table td {
+            border: none;
+            padding: 2px 4px;
+            font-size: 10.5px;
+            vertical-align: top;
         }
 
         .label {
             font-weight: 700;
-            color: #374151;
+            color: #334155;
         }
 
-        table {
+        /* Financial summary card */
+        .summary-box {
+            margin-top: 12px;
+            border: 1.5px solid #0284c7;
+            background-color: #f8fafc;
+            border-radius: 6px;
+            padding: 8px 10px;
+        }
+
+        .summary-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 6px;
+            text-align: center;
         }
 
-        th,
-        td {
-            border: 1px solid #e5e7eb;
-            padding: 6px;
+        .summary-table td {
+            border: 1px solid #e2e8f0;
+            padding: 7px 6px;
+            background: #ffffff;
+            vertical-align: middle;
+        }
+
+        .summary-label {
+            font-size: 9.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-bottom: 3px;
+        }
+
+        .summary-val {
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .val-total {
+            color: #0f172a;
+        }
+
+        .val-paid {
+            color: #059669;
+        }
+
+        .val-due {
+            color: #dc2626;
+        }
+
+        .val-zero {
+            color: #059669;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 7px;
+            font-size: 9.5px;
+            font-weight: 700;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .badge-paid {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-cancelled {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Standard data tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
+        }
+
+        .data-table th,
+        .data-table td {
+            border: 1px solid #cbd5e1;
+            padding: 5px 6px;
+            font-size: 10px;
             text-align: left;
-            font-size: 11px;
         }
 
-        th {
-            background: #f3f4f6;
-            color: #111827;
+        .data-table th {
+            background-color: #f1f5f9;
+            color: #1e293b;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 9.5px;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
         }
 
         .footer {
-            margin-top: 20px;
-            font-size: 10px;
-            color: #6b7280;
+            margin-top: 18px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 8px;
+            font-size: 9px;
+            color: #64748b;
+            text-align: center;
         }
     </style>
 </head>
 
 <body>
     @php
+        $companyLogoPath = null;
+        $possibleLogos = [
+            public_path('assets/img/logo-littlebrandsinc.png'),
+            public_path('landing_page/logos/logo-littlebrandsinc.png'),
+            public_path('assets/img/lbinc-admin.png'),
+        ];
+        foreach ($possibleLogos as $p) {
+            if (file_exists($p)) {
+                $companyLogoPath = $p;
+                break;
+            }
+        }
+
         $firstCourse = $enrollment->courses->first();
         $branch = optional($firstCourse)->branch;
         $branchLogo = null;
-
         if ($branch && !empty($branch->logo) && !str_starts_with($branch->logo, 'http://') && !str_starts_with($branch->logo, 'https://')) {
-            $branchLogoPath = public_path(ltrim((string) $branch->logo, '/'));
-            if (file_exists($branchLogoPath)) {
-                $branchLogo = $branchLogoPath;
+            $bLogoPath = public_path(ltrim((string) $branch->logo, '/'));
+            if (file_exists($bLogoPath)) {
+                $branchLogo = $bLogoPath;
             }
+        }
+
+        // Calculate Totals and Allocations
+        $isFreeTrial = (bool) $enrollment->is_free_trial;
+        $totalAccountAmount = 0.00;
+        $coursesBreakdown = [];
+
+        if (!$isFreeTrial) {
+            foreach ($enrollment->courses as $idx => $c) {
+                $cAmount = $enrollment->getCourseAmount($c, $idx);
+                $totalAccountAmount += $cAmount;
+                $coursesBreakdown[] = [
+                    'course' => $c,
+                    'amount' => $cAmount,
+                    'paid' => 0.00,
+                    'balance' => 0.00,
+                ];
+            }
+        }
+
+        $totalPaidIncome = (float) $enrollment->transactions
+            ->where('status', 'completed')
+            ->where('type', 'income')
+            ->sum('amount');
+
+        $allocatedTemp = $totalPaidIncome;
+        foreach ($coursesBreakdown as $idx => &$item) {
+            $p = min($item['amount'], max(0.00, $allocatedTemp));
+            $allocatedTemp = max(0.00, $allocatedTemp - $p);
+            $item['paid'] = $p;
+            if ($enrollment->status === 'cancelled') {
+                $item['balance'] = 0.00;
+            } else {
+                $item['balance'] = max(0.00, $item['amount'] - $p);
+            }
+        }
+        unset($item);
+
+        if ($enrollment->status === 'cancelled') {
+            $totalBalanceDue = 0.00;
+        } else {
+            $totalBalanceDue = max(0.00, $totalAccountAmount - $totalPaidIncome);
         }
     @endphp
 
-    <div class="header">
-        <table style="border: 0; margin: 0; width: 100%;">
+    <!-- Encabezado con Logo y Datos de la Empresa -->
+    <table class="header-table">
+        <tr>
+            <td style="width: 58%;">
+                @if ($companyLogoPath)
+                    <img src="{{ $companyLogoPath }}" class="company-logo" alt="Little Brands Inc">
+                @else
+                    <div class="company-name">LITTLE BRANDS INC</div>
+                @endif
+                <div class="doc-title">Comprobante de Inscripción</div>
+                <div class="doc-meta">
+                    <strong>Folio:</strong> #INS-{{ str_pad($enrollment->id, 5, '0', STR_PAD_LEFT) }} &nbsp;|&nbsp;
+                    <strong>Fecha de Emisión:</strong> {{ $generatedAt->format('d/m/Y h:i A') }}
+                </div>
+            </td>
+            <td style="width: 42%; text-align: right;">
+                @if ($branchLogo)
+                    <img src="{{ $branchLogo }}" class="branch-logo" alt="{{ optional($branch)->name }}"><br>
+                @endif
+                <div style="font-size: 11px; font-weight: 700; color: #0f172a;">
+                    {{ optional($branch)->name ?? 'Little Brands Inc' }}
+                </div>
+                @if (optional($branch)->address)
+                    <div style="font-size: 9.5px; color: #64748b;">{{ $branch->address }}</div>
+                @endif
+                @if (optional($branch)->phone)
+                    <div style="font-size: 9.5px; color: #64748b;"><strong>Tel:</strong> {{ $branch->phone }}</div>
+                @endif
+                @if (optional($branch)->email)
+                    <div style="font-size: 9.5px; color: #64748b;"><strong>Email:</strong> {{ $branch->email }}</div>
+                @endif
+            </td>
+        </tr>
+    </table>
+
+    <!-- Tarjeta Resumen Financiero y Cuenta por Cobrar -->
+    <div class="summary-box">
+        <table class="summary-table">
             <tr>
-                <td style="border: 0; padding: 0; vertical-align: top; width: 68%;">
-                    <h1 class="title">Comprobante de Inscripción</h1>
-                    <div class="subtitle">Inscripción #{{ $enrollment->id }}</div>
-                    <div class="meta">Emitido: {{ $generatedAt->format('d/m/Y H:i') }}</div>
+                <td style="width: 25%;">
+                    <div class="summary-label">Estado Inscripción</div>
+                    @if ($enrollment->status === 'cancelled')
+                        <span class="badge badge-cancelled">Cancelado</span>
+                    @elseif ($isFreeTrial)
+                        <span class="badge badge-paid">Prueba Gratis</span>
+                    @elseif ($enrollment->payment_status === 'paid')
+                        <span class="badge badge-paid">Pagado</span>
+                    @else
+                        <span class="badge badge-pending">Pendiente</span>
+                    @endif
                 </td>
-                <td style="border: 0; padding: 0; text-align: right; vertical-align: top; width: 32%;">
-                    @if ($branchLogo)
-                        <img src="{{ $branchLogo }}" alt="Logo sede" style="max-width: 120px; max-height: 60px; margin-bottom: 6px;">
-                    @endif
-                    <div style="font-size: 11px; color: #374151;">
-                        <strong>{{ optional($branch)->name ?? env('APP_NAME') }}</strong>
-                    </div>
-                    @if (optional($branch)->address)
-                        <div style="font-size: 10px; color: #6b7280;">{{ $branch->address }}</div>
-                    @endif
-                    @if (optional($branch)->email)
-                        <div style="font-size: 10px; color: #6b7280;">{{ $branch->email }}</div>
-                    @endif
-                    @if (optional($branch)->phone)
-                        <div style="font-size: 10px; color: #6b7280;">{{ $branch->phone }}</div>
+                <td style="width: 25%;">
+                    <div class="summary-label">Monto Total Cuenta</div>
+                    <div class="summary-val val-total">${{ number_format($totalAccountAmount, 2) }}</div>
+                </td>
+                <td style="width: 25%;">
+                    <div class="summary-label">Total Abonado</div>
+                    <div class="summary-val val-paid">${{ number_format($totalPaidIncome, 2) }}</div>
+                </td>
+                <td style="width: 25%;">
+                    <div class="summary-label">Cuenta por Cobrar (Saldo)</div>
+                    @if ($totalBalanceDue > 0)
+                        <div class="summary-val val-due">${{ number_format($totalBalanceDue, 2) }}</div>
+                    @else
+                        <div class="summary-val val-zero">$0.00</div>
                     @endif
                 </td>
             </tr>
         </table>
     </div>
 
+    <!-- Datos del Estudiante y Representante -->
     <div class="section">
-        <h3>Datos de la Inscripción</h3>
-        <div class="row"><span class="label">Estado:</span> {{ ucfirst($enrollment->status ?? 'N/A') }}</div>
-        <div class="row"><span class="label">Estado de pago:</span> {{ $enrollment->payment_status === 'paid' ? 'Pagado' : 'Pendiente' }}</div>
-        <div class="row"><span class="label">Método de pago:</span> {{ ucfirst($enrollment->payment_method ?? 'N/A') }}</div>
+        <div class="section-title">Información del Estudiante y Representante</div>
+        <table class="two-col-table">
+            <tr>
+                <td style="width: 50%;">
+                    <div><span class="label">Estudiante:</span> {{ optional($enrollment->student)->name ?? 'N/A' }}</div>
+                    @if (optional($enrollment->student)->birthdate)
+                        <div><span class="label">Nacimiento / Edad:</span> {{ \Carbon\Carbon::parse($enrollment->student->birthdate)->format('d/m/Y') }} ({{ \Carbon\Carbon::parse($enrollment->student->birthdate)->age }} años)</div>
+                    @endif
+                    <div><span class="label">Programa:</span> {{ optional($enrollment->program)->name ?? 'N/A' }}</div>
+                </td>
+                <td style="width: 50%;">
+                    <div><span class="label">Representante:</span> {{ optional(optional($enrollment->student)->user)->name ?? optional($enrollment->parent)->name ?? 'N/A' }}</div>
+                    <div><span class="label">Email:</span> {{ optional(optional($enrollment->student)->user)->email ?? optional($enrollment->parent)->email ?? 'N/A' }}</div>
+                    <div><span class="label">WhatsApp / Tel:</span> {{ trim((optional(optional($enrollment->student)->user)->dial_code ?? '') . ' ' . (optional(optional($enrollment->student)->user)->whatsapp ?? '')) ?: 'N/A' }}</div>
+                </td>
+            </tr>
+        </table>
     </div>
 
+    <!-- Detalle de Clases y Cuentas por Cobrar -->
     <div class="section">
-        <h3>Programa</h3>
-        <div class="row"><span class="label">Nombre:</span> {{ optional($enrollment->program)->name ?? 'N/A' }}</div>
-        <div class="row"><span class="label">Cuota de inscripción:</span>
-            {{ optional($enrollment->program)->enrollment_fee !== null ? '$' . number_format((float) $enrollment->program->enrollment_fee, 2) : 'N/A' }}
-        </div>
-        <div class="row"><span class="label">Sede:</span> {{ optional($branch)->name ?? 'N/A' }}</div>
-        <div class="row"><span class="label">Dirección sede:</span> {{ optional($branch)->address ?? 'N/A' }}</div>
-    </div>
-
-    <div class="section">
-        <h3>Clases</h3>
-        <table>
+        <div class="section-title">Desglose de Clases y Cuentas por Cobrar</div>
+        <table class="data-table">
             <thead>
                 <tr>
-                    <th>Clase</th>
-                    <th>Sede</th>
-                    <th>Día</th>
-                    <th>Horario</th>
-                    <th>Mensualidad</th>
-                    <th>Período</th>
+                    <th style="width: 35%;">Clase / Disciplina</th>
+                    <th style="width: 20%;">Sede</th>
+                    <th class="text-right" style="width: 15%;">Monto Cuenta</th>
+                    <th class="text-right" style="width: 15%;">Abonado</th>
+                    <th class="text-right" style="width: 15%;">Cuenta por Cobrar</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse ($enrollment->courses ?? [] as $course)
-                    @php
-                        $firstClass = $course->classes->first();
-                    @endphp
+                @forelse ($coursesBreakdown as $item)
+                    @php $c = $item['course']; @endphp
                     <tr>
-                        <td>{{ $course->title }}</td>
-                        <td>{{ optional($course->branch)->name ?? 'N/A' }}</td>
-                        <td>{{ $firstClass ? \Carbon\Carbon::parse($firstClass->date)->locale('es')->dayName : 'N/A' }}</td>
-                        <td>{{ $firstClass ? \Carbon\Carbon::parse($firstClass->start_time)->format('H:i') . ' - ' . \Carbon\Carbon::parse($firstClass->end_time)->format('H:i') : 'N/A' }}</td>
-                        <td>${{ number_format((float) $course->monthly_fee, 2) }}</td>
                         <td>
-                            {{ $course->start_date ? \Carbon\Carbon::parse($course->start_date)->format('d/m/Y') : 'N/A' }} -
-                            {{ $course->end_date ? \Carbon\Carbon::parse($course->end_date)->format('d/m/Y') : 'N/A' }}
+                            <strong>{{ $c->title }}</strong>
+                            @if ($c->start_date && $c->end_date)
+                                <div style="font-size: 8.5px; color: #64748b;">
+                                    Período: {{ \Carbon\Carbon::parse($c->start_date)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($c->end_date)->format('d/m/Y') }}
+                                </div>
+                            @endif
+                        </td>
+                        <td>{{ optional($c->branch)->name ?? 'N/A' }}</td>
+                        <td class="text-right">${{ number_format($item['amount'], 2) }}</td>
+                        <td class="text-right" style="color: #059669; font-weight: 700;">${{ number_format($item['paid'], 2) }}</td>
+                        <td class="text-right" style="font-weight: 700; {{ $item['balance'] > 0 ? 'color: #dc2626;' : 'color: #059669;' }}">
+                            @if ($item['balance'] > 0)
+                                ${{ number_format($item['balance'], 2) }}
+                            @else
+                                $0.00 (Al día)
+                            @endif
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6">No hay Clases asignadas.</td>
+                        <td colspan="5" class="text-center">No hay clases registradas en esta inscripción.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
 
+    <!-- Historial de Abonos y Pagos Realizados -->
     <div class="section">
-        <h3>Estudiante y Representante</h3>
-        <div class="row"><span class="label">Estudiante:</span> {{ optional($enrollment->student)->name ?? 'N/A' }}</div>
-        <div class="row"><span class="label">Fecha de nacimiento:</span>
-            {{ optional($enrollment->student)->birthdate ? \Carbon\Carbon::parse($enrollment->student->birthdate)->format('d/m/Y') : 'N/A' }}
-        </div>
-        <div class="row"><span class="label">Representante:</span> {{ optional(optional($enrollment->student)->user)->name ?? 'N/A' }}</div>
-        <div class="row"><span class="label">Email:</span> {{ optional(optional($enrollment->student)->user)->email ?? 'N/A' }}</div>
-        <div class="row"><span class="label">WhatsApp:</span>
-            {{ trim((optional(optional($enrollment->student)->user)->dial_code ?? '') . ' ' . (optional(optional($enrollment->student)->user)->whatsapp ?? '')) ?: 'N/A' }}
-        </div>
-    </div>
-
-    <div class="section">
-        <h3>Sesiones de Clase y Horarios</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Clase</th>
-                    <th>Fecha</th>
-                    <th>Horario</th>
-                    <th>Coach</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($enrollment->courses ?? [] as $course)
-                    @forelse ($course->classes as $class)
-                        <tr>
-                            <td>{{ $course->title }}</td>
-                            <td>{{ $class->date ? \Carbon\Carbon::parse($class->date)->format('d/m/Y') : 'N/A' }}</td>
-                            <td>{{ $class->start_time ? \Carbon\Carbon::parse($class->start_time)->format('H:i') : 'N/A' }} - {{ $class->end_time ? \Carbon\Carbon::parse($class->end_time)->format('H:i') : 'N/A' }}</td>
-                            <td>{{ $class->coach_name ?? 'Sin asignar' }}</td>
-                        </tr>
-                    @empty
-                    @endforelse
-                @empty
+        <div class="section-title">Historial de Abonos y Pagos Recibidos</div>
+        @php
+            $completedTransactions = $enrollment->transactions->where('status', 'completed')->where('type', 'income');
+        @endphp
+        @if ($completedTransactions->isNotEmpty())
+            <table class="data-table">
+                <thead>
                     <tr>
-                        <td colspan="4">No hay sesiones de clase registradas.</td>
+                        <th style="width: 12%;"># Trans.</th>
+                        <th style="width: 18%;">Fecha</th>
+                        <th style="width: 20%;">Cuenta de Pago</th>
+                        <th style="width: 18%;">Método</th>
+                        <th style="width: 17%;">Referencia</th>
+                        <th class="text-right" style="width: 15%;">Monto Abonado</th>
                     </tr>
-                @endforelse
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach ($completedTransactions as $tx)
+                        <tr>
+                            <td>#{{ $tx->id }}</td>
+                            <td>{{ $tx->created_at ? $tx->created_at->format('d/m/Y h:i A') : 'N/A' }}</td>
+                            <td>{{ optional($tx->account)->name ?? 'Caja General' }}</td>
+                            <td>{{ ucfirst($tx->payment_method ?? 'Transferencia') }}</td>
+                            <td>{{ $tx->reference ?? 'S/R' }}</td>
+                            <td class="text-right" style="font-weight: 800; color: #059669;">
+                                ${{ number_format((float) $tx->amount, 2) }}
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @else
+            <div style="font-size: 10px; color: #64748b; padding: 4px 0;">
+                No se registran abonos o pagos recibidos para esta inscripción hasta la fecha.
+            </div>
+        @endif
     </div>
 
     <div class="footer">
-        Documento generado desde el sistema administrativo {{ env('APP_NAME') }}.
+        Comprobante oficial emitido por <strong>Little Brands Inc</strong>. Documento de control administrativo y financiero.
         @if ($branch)
-            Sede emisora: {{ $branch->name }}{{ $branch->phone ? ' | ' . $branch->phone : '' }}{{ $branch->email ? ' | ' . $branch->email : '' }}.
+            <br>Sede: {{ $branch->name }} &bull; {{ $branch->phone }} &bull; {{ $branch->email }}
         @endif
     </div>
 </body>

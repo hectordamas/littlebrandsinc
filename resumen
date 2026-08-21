@@ -50,10 +50,39 @@ Aquí tienes un resumen detallado y estructurado de todos los cambios realizados
 
 ---
 
-### 4. Archivos Modificados en el Proyecto
+### 4. Filtrado por Sede y Módulo de Finanzas (Movimientos, CxC y CxP)
+
+- **Controlador `FinanceController.php` (`app/Http/Controllers/FinanceController.php`):**
+  - **`collections()` & `payables()`:** Reciben el parámetro `branch_id` (numérico, `'general'` o todas), filtran las cuentas por cobrar y por pagar respectivamente, y calculan el monto pendiente total acorde a la sede seleccionada.
+  - **`buildSummary()`:** Se agregó `pendingPayablesByBranchQuery()` para calcular el monto pendiente de cuentas por pagar (`pendingPayableAmount` y `pendingPayablesCount`) filtrado por sede.
+  - **`storeCollection()` & `storePayable()`:** Conservan el `branch_id` al redirigir tras guardar nuevas cuentas.
+
+- **Vista `finance/index.blade.php` (`resources/views/finance/index.blade.php`):**
+  - **Nuevo Widget "Por pagar pendiente":** Widget dedicado en el dashboard para mostrar el saldo pendiente de CxP con el botón **"Ver cuentas por pagar"**.
+  - **Distribución de 5 Widgets:** Ingresos completados, Egresos completados, Cobranza pendiente (con botón *Ver cobranzas*), Por pagar pendiente (con botón *Ver cuentas por pagar*) y Balance neto.
+  - **Sincronización Dinámica en JS:** Al cambiar de sede en el filtro de movimientos, se actualiza el resumen en tiempo real vía AJAX y se actualizan dinámicamente las URLs de los botones a CxC y CxP con el parámetro `?branch_id=...`.
+
+- **Vistas `collections.blade.php` y `payables.blade.php`:**
+  - Se agregó el selector **"Filtrar por sede"** que se sincroniza automáticamente con el parámetro `branch_id`.
+  - El botón **"Volver a movimientos"** conserva la sede seleccionada (`?branch_id=...`).
+  - Los modales de creación rápida preseleccionan la sede activa.
+  - Enlaces directos entre CxC y CxP conservando el parámetro de sede.
+
+- **Vistas `collection-show.blade.php` y `payable-show.blade.php`:**
+  - Los botones para volver atrás conservan el parámetro de sede correspondiente a la cuenta.
+
+---
+
+### 5. Archivos Modificados en el Proyecto
 1. `database/migrations/2026_08_15_000001_add_custom_amount_to_enrollment_course_table.php`
 2. `app/Models/Enrollment.php`
 3. `app/Http/Controllers/EnrollmentController.php`
-4. `routes/web.php`
-5. `resources/views/students/show.blade.php`
-6. `resources/views/courses/edit.blade.php`
+4. `app/Http/Controllers/FinanceController.php`
+5. `routes/web.php`
+6. `resources/views/students/show.blade.php`
+7. `resources/views/courses/edit.blade.php`
+8. `resources/views/finance/index.blade.php`
+9. `resources/views/finance/collections.blade.php`
+10. `resources/views/finance/payables.blade.php`
+11. `resources/views/finance/collection-show.blade.php`
+12. `resources/views/finance/payable-show.blade.php`
