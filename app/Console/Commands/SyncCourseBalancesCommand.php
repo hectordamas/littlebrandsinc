@@ -15,6 +15,7 @@ class SyncCourseBalancesCommand extends Command
                             {--add-months= : Alias de --months (por defecto 1)}
                             {--exclude-students= : IDs de estudiantes a excluir separados por comas (ej: --exclude-students=19,25)}
                             {--exclude-enrollments= : IDs de inscripciones a excluir separados por comas (ej: --exclude-enrollments=15,19)}
+                            {--exclude-names= : Nombres de estudiantes a excluir separados por comas (ej: --exclude-names="Andres Quintero,Derek Blanco")}
                             {--dry-run : Ejecuta una simulación sin modificar la base de datos}';
 
     protected $description = 'Sincroniza retroactivamente los montos de cursos extendidos y las cuentas por cobrar (CxC) de los estudiantes, sumando las mensualidades pendientes.';
@@ -37,11 +38,20 @@ class SyncCourseBalancesCommand extends Command
             ->filter(fn($id) => $id > 0)
             ->all();
 
+        $excludedNames = collect(explode(',', (string) ($this->option('exclude-names') ?? '')))
+            ->map(fn($name) => mb_strtolower(trim($name)))
+            ->filter(fn($name) => !empty($name))
+            ->values()
+            ->all();
+
         $this->info($isDryRun 
             ? '🔍 MODO SIMULACIÓN (DRY-RUN): No se aplicarán cambios reales en la base de datos.' 
             : '🚀 APLICANDO CAMBIOS EN BASE DE DATOS...'
         );
 
+        if (!empty($excludedNames)) {
+            $this->comment('🚫 Nombres excluidos: ' . implode(', ', $excludedNames));
+        }
         if (!empty($excludedStudents)) {
             $this->comment('🚫 Estudiantes excluidos (IDs): ' . implode(', ', $excludedStudents));
         }
@@ -82,7 +92,16 @@ class SyncCourseBalancesCommand extends Command
             $feeToAdd = $monthsToAdd * $monthlyFee;
 
             foreach ($course->enrollments as $enrollment) {
-                if (in_array((int) $enrollment->id, $excludedEnrollments, true) || in_array((int) $enrollment->student_id, $excludedStudents, true)) {
+                $studentName = mb_strtolower(trim($enrollment->student?->name ?? ''));
+                $isNameExcluded = false;
+                foreach ($excludedNames as $exName) {
+                    if ($exName !== '' && str_contains($studentName, $exName)) {
+                        $isNameExcluded = true;
+                        break;
+                    }
+                }
+
+                if ($isNameExcluded || in_array((int) $enrollment->id, $excludedEnrollments, true) || in_array((int) $enrollment->student_id, $excludedStudents, true)) {
                     continue;
                 }
 
