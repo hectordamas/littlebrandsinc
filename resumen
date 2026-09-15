@@ -1,88 +1,85 @@
-Aquí tienes un resumen detallado y estructurado de todos los cambios realizados en el sistema durante esta sesión, para que puedas pegarlo en un nuevo chat y continuar el trabajo sin perder contexto:
+# Resumen de Cambios y Estado del Sistema - Little Brands Inc
 
 ---
 
-# Resumen de Cambios y Estado del Sistema
+## 1. Contexto y Objetivos Resueltos
 
-### 1. Requerimientos del Cliente (Mauricio)
-- **Cuentas Independientes por Curso:** Cada clase/curso inscrito en una misma matrícula debe gestionarse de forma independiente (si se edita el monto del Curso 1, no debe alterar el del Curso 2).
-- **Inscripciones Canceladas:** No deben mostrar deudas falsas si el estudiante ya había realizado abonos previos; el saldo de la cuenta por cobrar debe mantenerse en `$0.00` y conservar el historial de transacciones.
-- **Formato Limpio de Montos:** Eliminar los centavos o fracciones decimales extrañas (ej. `$69.09` / `$50.91`) derivadas de asignaciones proporcionales de pagos.
+1. **Actualización Web de Cursos (Extensión de Duración):**
+   - Cuando el administrador edita un curso en la interfaz web y amplía la fecha final (sumando 1 o más meses), las cuentas por cobrar (CxC) de los estudiantes se incrementan de forma automática sumando el valor de la nueva mensualidad.
+   - Los abonos y transacciones existentes se mantienen **100% intactos**.
+   - Solo aumenta el saldo pendiente de cobro de la CxC.
 
----
+2. **Comando de Sincronización Retroactiva para Producción (`courses:sync-balances`):**
+   - Comando Artisan para aplicar los cambios retroactivos en producción a los cursos cuyas fechas se modificaron previamente.
+   - Incluye simulación con `--dry-run`.
+   - Soporte para excluir estudiantes o matrículas específicas con `--exclude-students` y `--exclude-enrollments`.
 
-### 2. Cambios en Base de Datos y Backend
-
-- **Base de Datos (Migración):**
-  - Archivo: `database/migrations/2026_08_15_000001_add_custom_amount_to_enrollment_course_table.php`
-  - Se agregó la columna `custom_amount` (`decimal 10,2 nullable`) en la tabla pivote `enrollment_course` para guardar el monto personalizado de cada curso.
-
-- **Modelo `Enrollment.php` (`app/Models/Enrollment.php`):**
-  - Se actualizó la relación `courses()` agregando `withPivot('custom_amount')`.
-  - Se implementó `getCourseAmount($course, $index)` para calcular automáticamente el costo base por clase o devolver su `custom_amount`.
-  - Se ajustó `syncReceivable()` declarando la variable `$enrollmentFee` y garantizando que las inscripciones canceladas con pagos mantengan `balance_due = 0.0` y estado `paid`.
-
-- **Controlador `EnrollmentController.php` (`app/Http/Controllers/EnrollmentController.php`):**
-  - **`updateCourseAmount()`:** Actualiza el campo `custom_amount` en la pivote para un curso específico y resincroniza el total de la cuenta.
-  - **`storeCoursePayment()`:** Imputa pagos directamente asociados al `course_id` del curso seleccionado y resincroniza los saldos.
-
-- **Rutas (`routes/web.php`):**
-  - `PATCH enrollment/{enrollment}/course/{course}/amount` (`enrollment.course.update-amount`)
-  - `POST enrollment/{enrollment}/course/{course}/payment` (`enrollment.course.payment`)
+3. **Corrección de Abonos en Matrículas con Múltiples Cursos (Caso Sebastián Fernández):**
+   - Se corrigió la asignación de pagos generales/iniciales de inscripciones multicurso para que se distribuyan de forma proporcional según las mensualidades de cada clase, evitando que un solo curso absorba indebidamente el abono de otra clase.
 
 ---
 
-### 3. Cambios en las Vistas y Frontend
+## 2. Archivos Modificados y Creados
 
-- **Vista `students/show.blade.php` (`resources/views/students/show.blade.php`):**
-  - **Diferenciación Clara de Columnas:**
-    - **`Estado de Inscripción`** (`payment_status`): Indica el estado del pago inicial de inscripción del estudiante (`Pagado` / `Pendiente`).
-    - **`Cuenta por Cobrar`** (`balance_due`): Indica el saldo corriente pendiente a cobrar en esa clase específica (ej. `Pendiente $70.00` / `Pendiente $140.00`).
-  - **Asignación Secuencial de Pagos:** Se imputan abonos en secuencia por curso para garantizar montos enteros sin céntimos residuales.
-  - **Historial de Abonos por Curso:** Modales e iconos de reloj (`payments-modal-{{ $enrollment->id }}-{{ $course->id }}`) dedicados por clase.
-  - **Unificación de Botón de Pago:** Un **único botón "Registrar Pago" por clase**.
-  - **Modal de Pago por Clase:** Muestra el *Monto Total de la Clase*, *Ya Abonado a la Clase* y *Saldo Pendiente de la Clase*.
-  - **Corrección de Estructura HTML:** Se corrigió el `</div>` no cerrado en el modal `#edit-course-amount-modal`.
+### A. Controlador de Cursos ([CoursesController.php](file:///d:/Proyectos%20en%20Curso/littlebrandsinc/app/Http/Controllers/CoursesController.php))
+- **Método `update()`:**
+  - Al cambiar `start_date`, `end_date` o `monthly_fee`:
+    - Calcula la diferencia de meses (`$diffMonths = $newMonths - $oldMonths`).
+    - Si el estudiante tiene monto personalizado (`custom_amount !== null`), actualiza el pivote sumando `diffMonths * monthly_fee`.
+    - Si tiene monto estándar (`custom_amount === null`), la cuenta escala naturalmente con la nueva duración.
+    - Ejecuta `syncReceivable()` en cada inscripción activa, recalculando el total de la cuenta y el saldo pendiente (`balance_due`) sin tocar ninguna transacción previa.
 
-- **Vista `courses/edit.blade.php` (`resources/views/courses/edit.blade.php`):**
-  - Mantendida la separación entre **`Estado de Inscripción`** (pago inicial) y **`Cuenta por Cobrar`** (`$cxcBalanceDue` de esa clase específica).
-  - Se desbloqueó el botón/desplegable de **Registrar Pago** en la lista de estudiantes inscritos para inscripciones activas.
+### B. Comando de Sincronización ([SyncCourseBalancesCommand.php](file:///d:/Proyectos%20en%20Curso/littlebrandsinc/app/Console/Commands/SyncCourseBalancesCommand.php))
+- **Firma:**
+  ```bash
+  php artisan courses:sync-balances 
+      {--course= : ID de un curso específico}
+      {--months=1 : Cantidad de mensualidades a sumar (por defecto 1)}
+      {--add-months=1 : Alias de --months}
+      {--exclude-students= : IDs de estudiantes a excluir (ej. 19,25)}
+      {--exclude-enrollments= : IDs de inscripciones a excluir (ej. 15,19)}
+      {--dry-run : Ejecuta una simulación sin modificar la base de datos}
+  ```
+- **Funcionalidad:**
+  - Desvincula de forma segura las transacciones iniciales multi-curso que tenían asignado el ID del primer curso para tratarlas como pagos generales de la matrícula.
+  - Distribuye los pagos generales de forma proporcional por clase.
+  - Suma las mensualidades correspondientes al `custom_amount` y ejecuta `syncReceivable()`.
+  - Muestra una tabla detallada con: ID Inscripción, Estudiante, Curso, Monto Anterior ➔ Nuevo, Abonado (intacto) y Saldo CxC Anterior ➔ Nuevo.
 
----
-
-### 4. Filtrado por Sede y Módulo de Finanzas (Movimientos, CxC y CxP)
-
-- **Controlador `FinanceController.php` (`app/Http/Controllers/FinanceController.php`):**
-  - **`collections()` & `payables()`:** Reciben el parámetro `branch_id` (numérico, `'general'` o todas), filtran las cuentas por cobrar y por pagar respectivamente, y calculan el monto pendiente total acorde a la sede seleccionada.
-  - **`buildSummary()`:** Se agregó `pendingPayablesByBranchQuery()` para calcular el monto pendiente de cuentas por pagar (`pendingPayableAmount` y `pendingPayablesCount`) filtrado por sede.
-  - **`storeCollection()` & `storePayable()`:** Conservan el `branch_id` al redirigir tras guardar nuevas cuentas.
-
-- **Vista `finance/index.blade.php` (`resources/views/finance/index.blade.php`):**
-  - **Nuevo Widget "Por pagar pendiente":** Widget dedicado en el dashboard para mostrar el saldo pendiente de CxP con el botón **"Ver cuentas por pagar"**.
-  - **Distribución de 5 Widgets:** Ingresos completados, Egresos completados, Cobranza pendiente (con botón *Ver cobranzas*), Por pagar pendiente (con botón *Ver cuentas por pagar*) y Balance neto.
-  - **Sincronización Dinámica en JS:** Al cambiar de sede en el filtro de movimientos, se actualiza el resumen en tiempo real vía AJAX y se actualizan dinámicamente las URLs de los botones a CxC y CxP con el parámetro `?branch_id=...`.
-
-- **Vistas `collections.blade.php` y `payables.blade.php`:**
-  - Se agregó el selector **"Filtrar por sede"** que se sincroniza automáticamente con el parámetro `branch_id`.
-  - El botón **"Volver a movimientos"** conserva la sede seleccionada (`?branch_id=...`).
-  - Los modales de creación rápida preseleccionan la sede activa.
-  - Enlaces directos entre CxC y CxP conservando el parámetro de sede.
-
-- **Vistas `collection-show.blade.php` y `payable-show.blade.php`:**
-  - Los botones para volver atrás conservan el parámetro de sede correspondiente a la cuenta.
+### C. Vistas de Cursos y Estudiantes
+- **Modal de Estudiantes del Curso ([resources/views/courses/edit.blade.php](file:///d:/Proyectos%20en%20Curso/littlebrandsinc/resources/views/courses/edit.blade.php)):**
+  - Distribución proporcional de abonos generales entre los cursos del estudiante.
+  - Muestra claramente: `Monto Cuenta`, `Abonado` (fijo sin inflarse) y `Cuenta por Cobrar` (con el incremento del mes).
+- **Perfil del Estudiante ([resources/views/students/show.blade.php](file:///d:/Proyectos%20en%20Curso/littlebrandsinc/resources/views/students/show.blade.php)):**
+  - Sincronizada la misma fórmula de asignación proporcional para garantizar consistencia total en ambas vistas.
 
 ---
 
-### 5. Archivos Modificados en el Proyecto
-1. `database/migrations/2026_08_15_000001_add_custom_amount_to_enrollment_course_table.php`
-2. `app/Models/Enrollment.php`
-3. `app/Http/Controllers/EnrollmentController.php`
-4. `app/Http/Controllers/FinanceController.php`
-5. `routes/web.php`
-6. `resources/views/students/show.blade.php`
-7. `resources/views/courses/edit.blade.php`
-8. `resources/views/finance/index.blade.php`
-9. `resources/views/finance/collections.blade.php`
-10. `resources/views/finance/payables.blade.php`
-11. `resources/views/finance/collection-show.blade.php`
-12. `resources/views/finance/payable-show.blade.php`
+## 3. Guía de Ejecución para Producción
+
+### Paso 1: Simulación previa en Producción (Recomendado)
+Para simular un curso en específico (ejemplo Curso 7):
+```bash
+php artisan courses:sync-balances --course=7 --dry-run
+```
+
+Para simular todos los cursos:
+```bash
+php artisan courses:sync-balances --dry-run
+```
+
+Para simular con exclusiones:
+```bash
+php artisan courses:sync-balances --course=7 --exclude-enrollments=19 --dry-run
+```
+
+### Paso 2: Aplicar los Cambios Definitivos
+Para el Curso 7:
+```bash
+php artisan courses:sync-balances --course=7
+```
+
+Para todos los cursos:
+```bash
+php artisan courses:sync-balances
+```

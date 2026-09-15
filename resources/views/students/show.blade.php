@@ -151,13 +151,6 @@
                             </thead>
                             <tbody>
                                 @forelse ($student->enrollments as $enrollment)
-                                    @php
-                                        $totalPaidIncome = (float) $enrollment->transactions
-                                            ->where('status', 'completed')
-                                            ->where('type', 'income')
-                                            ->sum('amount');
-                                        $allocatedPaid = $totalPaidIncome;
-                                    @endphp
                                     @foreach ($enrollment->courses as $index => $course)
                                         @php
                                             $isFreeTrial = (bool) $enrollment->is_free_trial;
@@ -168,13 +161,37 @@
                                             if (!$isFreeTrial) {
                                                 $courseAmount = $enrollment->getCourseAmount($course, $index);
 
+                                                $completedTxs = $enrollment->transactions
+                                                    ->where('status', 'completed')
+                                                    ->where('type', 'income');
+
+                                                $directPaid = (float) $completedTxs
+                                                    ->where('course_id', $course->id)
+                                                    ->sum('amount');
+
+                                                $generalPaid = (float) $completedTxs
+                                                    ->whereNull('course_id')
+                                                    ->sum('amount');
+
+                                                $allocatedGeneral = 0.0;
+                                                if ($generalPaid > 0) {
+                                                    $totalCourseWeights = 0.0;
+                                                    foreach ($enrollment->courses as $c) {
+                                                        $totalCourseWeights += (float) ($c->monthly_fee ?? 70.0);
+                                                    }
+                                                    if ($totalCourseWeights > 0) {
+                                                        $courseWeight = (float) ($course->monthly_fee ?? 70.0);
+                                                        $allocatedGeneral = ($courseWeight / $totalCourseWeights) * $generalPaid;
+                                                    } else {
+                                                        $allocatedGeneral = $generalPaid / max(1, $enrollment->courses->count());
+                                                    }
+                                                }
+
+                                                $coursePaid = $directPaid + $allocatedGeneral;
+
                                                 if ($enrollment->status === 'cancelled') {
-                                                    $coursePaid = min($courseAmount, max(0.00, $allocatedPaid));
-                                                    $allocatedPaid = max(0.00, $allocatedPaid - $coursePaid);
                                                     $courseBalance = 0.00;
                                                 } else {
-                                                    $coursePaid = min($courseAmount, max(0.00, $allocatedPaid));
-                                                    $allocatedPaid = max(0.00, $allocatedPaid - $coursePaid);
                                                     $courseBalance = max(0.00, $courseAmount - $coursePaid);
                                                 }
                                             }
@@ -507,21 +524,35 @@
                             </div>
                             <!-- Modal Registrar Pago por Curso -->
                             @php
-                                $totalPaidIncome = (float) $enrollment->transactions
+                                $completedTxs = $enrollment->transactions
                                     ->where('status', 'completed')
-                                    ->where('type', 'income')
+                                    ->where('type', 'income');
+
+                                $directPaidInModal = (float) $completedTxs
+                                    ->where('course_id', $course->id)
                                     ->sum('amount');
-                                $allocatedPaidTemp = $totalPaidIncome;
-                                $coursePaidInModal = 0.0;
-                                foreach ($enrollment->courses as $idx => $c) {
-                                    $cAmount = $enrollment->getCourseAmount($c, $idx);
-                                    $p = min($cAmount, max(0.00, $allocatedPaidTemp));
-                                    $allocatedPaidTemp = max(0.00, $allocatedPaidTemp - $p);
-                                    if ($idx === $index) {
-                                        $coursePaidInModal = $p;
-                                        break;
+
+                                $generalPaidInModal = (float) $completedTxs
+                                    ->whereNull('course_id')
+                                    ->sum('amount');
+
+                                $allocatedGeneralInModal = 0.0;
+                                if ($generalPaidInModal > 0) {
+                                    $tempGeneral = $generalPaidInModal;
+                                    foreach ($enrollment->courses as $idx => $c) {
+                                        $cDirect = (float) $completedTxs->where('course_id', $c->id)->sum('amount');
+                                        $cTotal = $enrollment->getCourseAmount($c, $idx);
+                                        $cNeeded = max(0.00, $cTotal - $cDirect);
+                                        $p = min($cNeeded, max(0.00, $tempGeneral));
+                                        $tempGeneral = max(0.00, $tempGeneral - $p);
+                                        if ($c->id == $course->id) {
+                                            $allocatedGeneralInModal = $p;
+                                            break;
+                                        }
                                     }
                                 }
+
+                                $coursePaidInModal = $directPaidInModal + $allocatedGeneralInModal;
                                 $coursePendingInModal = max(0.00, $courseAmount - $coursePaidInModal);
                             @endphp
                             <div class="modal fade" id="register-course-payment-modal-{{ $enrollment->id }}-{{ $course->id }}" tabindex="-1" aria-hidden="true">

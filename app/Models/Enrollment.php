@@ -195,13 +195,9 @@ class Enrollment extends Model
         $enrollmentFee = $this->getEnrollmentFee();
 
         // Calculate amount total as sum of course amounts
-        if ($receivable && $receivable->is_custom_amount) {
-            $amountTotal = (float) $receivable->amount_total;
-        } else {
-            $amountTotal = 0.0;
-            foreach ($courses as $index => $course) {
-                $amountTotal += $this->getCourseAmount($course, $index);
-            }
+        $amountTotal = 0.0;
+        foreach ($courses as $index => $course) {
+            $amountTotal += $this->getCourseAmount($course, $index);
         }
 
         $courseTitles = $courses->pluck('title')->join(', ');
@@ -222,13 +218,10 @@ class Enrollment extends Model
                 $updateData = [
                     'branch_id' => $firstCourse->branch_id,
                     'currency' => 'USD',
+                    'title' => $title,
+                    'amount_total' => $amountTotal,
                     'status' => 'pending',
                 ];
-                if (!$receivable->is_custom_amount) {
-                    $updateData['title'] = $title;
-                    $updateData['amount_total'] = $amountTotal;
-                    $updateData['balance_due'] = $amountTotal;
-                }
                 $receivable->update($updateData);
             }
         } else {
@@ -247,11 +240,9 @@ class Enrollment extends Model
                 $updateData = [
                     'branch_id' => $firstCourse->branch_id,
                     'currency' => 'USD',
+                    'title' => $title,
+                    'amount_total' => $amountTotal,
                 ];
-                if (!$receivable->is_custom_amount) {
-                    $updateData['title'] = $title;
-                    $updateData['amount_total'] = $amountTotal;
-                }
                 $receivable->update($updateData);
             }
         }

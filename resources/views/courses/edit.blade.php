@@ -585,21 +585,33 @@
                                                                 }
                                                                 $cxcAmount = $enrollment->getCourseAmount($targetCourse, $courseIdx);
 
-                                                                $totalPaidIncome = (float) $enrollment->transactions
+                                                                $completedTxs = $enrollment->transactions
                                                                     ->where('status', 'completed')
-                                                                    ->where('type', 'income')
+                                                                    ->where('type', 'income');
+
+                                                                $directPaid = (float) $completedTxs
+                                                                    ->where('course_id', $course->id)
                                                                     ->sum('amount');
-                                                                
-                                                                $allocatedPaidTemp = $totalPaidIncome;
-                                                                foreach ($enrollment->courses as $idx => $c) {
-                                                                    $cAmount = $enrollment->getCourseAmount($c, $idx);
-                                                                    $p = min($cAmount, max(0.00, $allocatedPaidTemp));
-                                                                    $allocatedPaidTemp = max(0.00, $allocatedPaidTemp - $p);
-                                                                    if ($idx === $courseIdx) {
-                                                                        $cxcPaid = $p;
-                                                                        break;
+
+                                                                $generalPaid = (float) $completedTxs
+                                                                    ->whereNull('course_id')
+                                                                    ->sum('amount');
+
+                                                                $allocatedGeneral = 0.0;
+                                                                if ($generalPaid > 0) {
+                                                                    $totalCourseWeights = 0.0;
+                                                                    foreach ($enrollment->courses as $c) {
+                                                                        $totalCourseWeights += (float) ($c->monthly_fee ?? 70.0);
+                                                                    }
+                                                                    if ($totalCourseWeights > 0) {
+                                                                        $courseWeight = (float) ($targetCourse->monthly_fee ?? 70.0);
+                                                                        $allocatedGeneral = ($courseWeight / $totalCourseWeights) * $generalPaid;
+                                                                    } else {
+                                                                        $allocatedGeneral = $generalPaid / max(1, $enrollment->courses->count());
                                                                     }
                                                                 }
+
+                                                                $cxcPaid = $directPaid + $allocatedGeneral;
 
                                                                 if ($enrollment->status === 'cancelled') {
                                                                     $cxcBalanceDue = 0.00;

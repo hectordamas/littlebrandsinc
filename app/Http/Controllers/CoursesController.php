@@ -459,6 +459,35 @@ class CoursesController extends Controller
                     }
                 }
             }
+
+            // 3. If date range or monthly fee changed, adjust enrollments and resynchronize accounts
+            $oldStart = $oldStartDate ? \Carbon\Carbon::parse($oldStartDate)->startOfMonth() : null;
+            $oldEnd = $oldEndDate ? \Carbon\Carbon::parse($oldEndDate)->startOfMonth() : null;
+            $oldMonths = ($oldStart && $oldEnd) ? max(1, $oldStart->diffInMonths($oldEnd) + 1) : 1;
+
+            $newStart = $course->start_date ? \Carbon\Carbon::parse($course->start_date)->startOfMonth() : null;
+            $newEnd = $course->end_date ? \Carbon\Carbon::parse($course->end_date)->startOfMonth() : null;
+            $newMonths = ($newStart && $newEnd) ? max(1, $newStart->diffInMonths($newEnd) + 1) : 1;
+
+            $diffMonths = $newMonths - $oldMonths;
+            $monthlyFee = (float) ($course->monthly_fee ?? 0);
+
+            $activeEnrollments = $course->enrollments()->where('status', '!=', 'cancelled')->with(['courses', 'transactions'])->get();
+            foreach ($activeEnrollments as $enrollment) {
+                if ($diffMonths !== 0) {
+                    $targetCourse = $enrollment->courses->firstWhere('id', $course->id);
+                    $pivot = $targetCourse?->pivot;
+                    
+                    if ($pivot && $pivot->custom_amount !== null) {
+                        $currentAmount = (float) $pivot->custom_amount;
+                        $newAmount = max(0.00, $currentAmount + ($diffMonths * $monthlyFee));
+                        $enrollment->courses()->updateExistingPivot($course->id, ['custom_amount' => $newAmount]);
+                    }
+                }
+
+                $enrollment->refresh();
+                $enrollment->syncReceivable();
+            }
         });
 
         return redirect()->back()->with('success', 'Curso actualizado exitosamente');

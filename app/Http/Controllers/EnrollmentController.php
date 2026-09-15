@@ -565,7 +565,7 @@ class EnrollmentController extends Controller
             ->first();
 
         $firstCourse = $enrollment->courses->first();
-        $courseId = $firstCourse ? $firstCourse->id : null;
+        $courseId = ($firstCourse && $enrollment->courses->count() === 1) ? $firstCourse->id : null;
         $branchId = $firstCourse ? $firstCourse->branch_id : null;
 
         $courseTitles = $enrollment->courses->pluck('title')->join(', ');
@@ -637,129 +637,9 @@ class EnrollmentController extends Controller
 
     protected function syncEnrollmentReceivableState(Enrollment $enrollment): void
     {
-        $enrollment->loadMissing(['program', 'courses']);
-
-        // Handle cancelled enrollment (student removal)
-        if ($enrollment->status === 'cancelled') {
-            $receivable = AccountReceivable::query()
-                ->where('enrollment_id', $enrollment->id)
-                ->first();
-
-            if ($receivable) {
-                Transaction::query()
-                    ->where('enrollment_id', $enrollment->id)
-                    ->where('type', 'income')
-                    ->whereNull('account_receivable_id')
-                    ->update(['account_receivable_id' => $receivable->id]);
-
-                $paidAmount = (float) $receivable->transactions()->where('status', 'completed')->sum('amount');
-                if ($paidAmount <= 0) {
-                    $paidAmount = (float) $enrollment->transactions()->where('status', 'completed')->where('type', 'income')->sum('amount');
-                }
-                if ($paidAmount <= 0) {
-                    $receivable->delete();
-                } else {
-                    $receivable->update([
-                        'amount_total' => $paidAmount,
-                        'balance_due' => 0.0,
-                        'status' => 'paid',
-                    ]);
-                }
-            }
-
-            // Cancel/delete pending installments
-            $enrollment->installments()->where('status', 'pending')->delete();
-
-            return;
-        }
-
-        if ($enrollment->is_free_trial) {
-            AccountReceivable::query()
-                ->where('enrollment_id', $enrollment->id)
-                ->delete();
-
-            return;
-        }
-
-        if (! $enrollment->program || $enrollment->courses->isEmpty()) {
-            return;
-        }
-
-        $firstCourse = $enrollment->courses->first();
-        if ($firstCourse->branch_id === null) {
-            return;
-        }
-
-        $receivable = AccountReceivable::query()
-            ->where('enrollment_id', $enrollment->id)
-            ->first();
-
-        if ($receivable && $receivable->is_custom_amount) {
-            $amountTotal = (float) $receivable->amount_total;
-        } else {
-            $amountTotal = $this->calculateEnrollmentReceivableTotal($enrollment->program, $enrollment->courses, $enrollment);
-        }
-
-        $courseTitles = $enrollment->courses->pluck('title')->join(', ');
-        $programName = $enrollment->program->name;
-        $title = 'Inscripción + mensualidades #'.$enrollment->id.' - '.$programName.' ('.$courseTitles.')';
-
-        if ($enrollment->payment_status === 'pending') {
-            if (! $receivable) {
-                $receivable = AccountReceivable::create([
-                    'branch_id' => $firstCourse->branch_id,
-                    'enrollment_id' => $enrollment->id,
-                    'title' => $title,
-                    'amount_total' => $amountTotal,
-                    'balance_due' => $amountTotal,
-                    'currency' => 'USD',
-                    'status' => 'pending',
-                ]);
-            } else {
-                $updateData = [
-                    'branch_id' => $firstCourse->branch_id,
-                    'currency' => 'USD',
-                    'status' => in_array($receivable->status, ['partial', 'paid'], true)
-                        ? $receivable->status
-                        : 'pending',
-                ];
-                if (! $receivable->is_custom_amount) {
-                    $updateData['title'] = $title;
-                    $updateData['amount_total'] = $amountTotal;
-                }
-                $receivable->update($updateData);
-            }
-
-            $this->syncInstallmentsPaymentStatus($receivable);
-            return;
-        }
-
-        if (! $receivable) {
-            return;
-        }
-
-        $paidAmount = (float) $receivable->transactions()->where('status', 'completed')->sum('amount');
-        $balance = max(0, (float) $amountTotal - $paidAmount);
-
-        $status = 'pending';
-        if ($balance <= 0) {
-            $status = 'paid';
-        } elseif ($paidAmount > 0) {
-            $status = 'partial';
-        }
-
-        $updateData = [
-            'balance_due' => $balance,
-            'status' => $status,
-        ];
-        if (! $receivable->is_custom_amount) {
-            $updateData['amount_total'] = $amountTotal;
-        }
-
-        $receivable->update($updateData);
-
-        $this->syncInstallmentsPaymentStatus($receivable);
+        $enrollment->syncReceivable();
     }
+
 
     protected function syncInstallmentsPaymentStatus(AccountReceivable $receivable): void
     {
