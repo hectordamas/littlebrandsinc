@@ -174,25 +174,12 @@ class SyncCourseBalancesCommand extends Command
                         }
                     }
 
-                    // Calcular el abono específico para este curso de forma proporcional
-                    $directPaid = (float) $cTxs->where('course_id', $course->id)->sum('amount');
-                    $generalPaid = (float) $cTxs->whereNull('course_id')->sum('amount');
-                    $allocatedGeneral = 0.0;
-                    if ($generalPaid > 0) {
-                        $totalCourseWeights = 0.0;
-                        foreach ($enrollment->courses as $c) {
-                            $totalCourseWeights += (float) ($c->monthly_fee ?? 70.0);
-                        }
-                        if ($totalCourseWeights > 0) {
-                            $courseWeight = (float) ($course->monthly_fee ?? 70.0);
-                            $allocatedGeneral = ($courseWeight / $totalCourseWeights) * $generalPaid;
-                        } else {
-                            $allocatedGeneral = $generalPaid / max(1, $enrollment->courses->count());
-                        }
-                    }
-                    $coursePaid = $directPaid + $allocatedGeneral;
+                    // Calcular el abono específico para este curso
+                    $breakdown = $enrollment->getCourseBreakdown();
+                    $financial = $breakdown[$course->id] ?? null;
+                    $coursePaid = $financial ? $financial['paid'] : 0.0;
                     $oldClassBalance = max(0.00, $currentCourseAmount - $coursePaid);
-                    $newClassBalance = max(0.00, $newCourseAmount - $coursePaid);
+                    $newClassBalance = $financial ? $financial['balance'] : max(0.00, $newCourseAmount - $coursePaid);
 
                     $reportRows[] = [
                         $enrollment->id,

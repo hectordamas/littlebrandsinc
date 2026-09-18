@@ -569,56 +569,10 @@
                                                 @foreach($course->enrollments as $index => $enrollment)
                                                         @php
                                                             $cxcIsTrial = (bool) $enrollment->is_free_trial;
-                                                            $cxcAmount = 0.00;
-                                                            $cxcPaid = 0.00;
-                                                            $cxcBalanceDue = 0.00;
-
-                                                            if (!$cxcIsTrial) {
-                                                                $courseIdx = 0;
-                                                                $targetCourse = $course;
-                                                                foreach ($enrollment->courses as $idx => $c) {
-                                                                    if ($c->id == $course->id) {
-                                                                        $courseIdx = $idx;
-                                                                        $targetCourse = $c;
-                                                                        break;
-                                                                    }
-                                                                }
-                                                                $cxcAmount = $enrollment->getCourseAmount($targetCourse, $courseIdx);
-
-                                                                $completedTxs = $enrollment->transactions
-                                                                    ->where('status', 'completed')
-                                                                    ->where('type', 'income');
-
-                                                                $directPaid = (float) $completedTxs
-                                                                    ->where('course_id', $course->id)
-                                                                    ->sum('amount');
-
-                                                                $generalPaid = (float) $completedTxs
-                                                                    ->whereNull('course_id')
-                                                                    ->sum('amount');
-
-                                                                $allocatedGeneral = 0.0;
-                                                                if ($generalPaid > 0) {
-                                                                    $totalCourseWeights = 0.0;
-                                                                    foreach ($enrollment->courses as $c) {
-                                                                        $totalCourseWeights += (float) ($c->monthly_fee ?? 70.0);
-                                                                    }
-                                                                    if ($totalCourseWeights > 0) {
-                                                                        $courseWeight = (float) ($targetCourse->monthly_fee ?? 70.0);
-                                                                        $allocatedGeneral = ($courseWeight / $totalCourseWeights) * $generalPaid;
-                                                                    } else {
-                                                                        $allocatedGeneral = $generalPaid / max(1, $enrollment->courses->count());
-                                                                    }
-                                                                }
-
-                                                                $cxcPaid = $directPaid + $allocatedGeneral;
-
-                                                                if ($enrollment->status === 'cancelled') {
-                                                                    $cxcBalanceDue = 0.00;
-                                                                } else {
-                                                                    $cxcBalanceDue = max(0.00, $cxcAmount - $cxcPaid);
-                                                                }
-                                                            }
+                                                            $financial = $enrollment->getCourseBreakdown()[$course->id] ?? null;
+                                                            $cxcAmount = $financial ? $financial['amount'] : $enrollment->getCourseAmount($course, 0);
+                                                            $cxcPaid = ($cxcIsTrial || !$financial) ? 0.00 : $financial['paid'];
+                                                            $cxcBalanceDue = ($cxcIsTrial || !$financial) ? 0.00 : $financial['balance'];
                                                         @endphp
                                                         <tr>
                                                             <td>{{ $index + 1 }}</td>

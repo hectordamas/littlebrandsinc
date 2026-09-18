@@ -134,6 +134,53 @@ class Enrollment extends Model
         return $total;
     }
 
+    public function getCourseBreakdown(): array
+    {
+        $this->loadMissing(['courses', 'transactions']);
+
+        $completedTxs = $this->transactions
+            ->where('status', 'completed')
+            ->where('type', 'income');
+
+        $generalPaid = (float) $completedTxs->whereNull('course_id')->sum('amount');
+        $tempGeneral = $generalPaid;
+
+        $breakdown = [];
+        foreach ($this->courses as $idx => $course) {
+            $courseAmount = $this->getCourseAmount($course, $idx);
+            $directTxs = $completedTxs->where('course_id', $course->id);
+            $directPaid = (float) $directTxs->sum('amount');
+
+            $needed = max(0.00, $courseAmount - $directPaid);
+            $allocatedGeneral = min($needed, max(0.00, $tempGeneral));
+            $tempGeneral = max(0.00, $tempGeneral - $allocatedGeneral);
+
+            $coursePaid = $directPaid + $allocatedGeneral;
+            $courseBalance = ($this->status === 'cancelled' || $this->is_free_trial) ? 0.00 : max(0.00, $courseAmount - $coursePaid);
+
+            $breakdown[$course->id] = [
+                'course' => $course,
+                'index' => $idx,
+                'amount' => $courseAmount,
+                'direct_paid' => $directPaid,
+                'allocated_general' => $allocatedGeneral,
+                'paid' => $coursePaid,
+                'balance' => $courseBalance,
+            ];
+        }
+
+        if ($tempGeneral > 0 && !empty($breakdown)) {
+            $firstCourseId = array_key_first($breakdown);
+            $breakdown[$firstCourseId]['allocated_general'] += $tempGeneral;
+            $breakdown[$firstCourseId]['paid'] += $tempGeneral;
+            if ($this->status !== 'cancelled' && !$this->is_free_trial) {
+                $breakdown[$firstCourseId]['balance'] = max(0.00, $breakdown[$firstCourseId]['amount'] - $breakdown[$firstCourseId]['paid']);
+            }
+        }
+
+        return $breakdown;
+    }
+
     public function syncReceivable(): ?\App\Models\AccountReceivable
     {
         $this->loadMissing(['program', 'courses', 'installments']);

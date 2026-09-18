@@ -244,14 +244,19 @@
         $coursesBreakdown = [];
 
         if (!$isFreeTrial) {
+            $breakdown = $enrollment->getCourseBreakdown();
             foreach ($enrollment->courses as $idx => $c) {
-                $cAmount = $enrollment->getCourseAmount($c, $idx);
+                $financial = $breakdown[$c->id] ?? null;
+                $cAmount = $financial ? $financial['amount'] : $enrollment->getCourseAmount($c, $idx);
+                $cPaid = $financial ? $financial['paid'] : 0.00;
+                $cBalance = $financial ? $financial['balance'] : 0.00;
+
                 $totalAccountAmount += $cAmount;
                 $coursesBreakdown[] = [
                     'course' => $c,
                     'amount' => $cAmount,
-                    'paid' => 0.00,
-                    'balance' => 0.00,
+                    'paid' => $cPaid,
+                    'balance' => $cBalance,
                 ];
             }
         }
@@ -260,19 +265,6 @@
             ->where('status', 'completed')
             ->where('type', 'income')
             ->sum('amount');
-
-        $allocatedTemp = $totalPaidIncome;
-        foreach ($coursesBreakdown as $idx => &$item) {
-            $p = min($item['amount'], max(0.00, $allocatedTemp));
-            $allocatedTemp = max(0.00, $allocatedTemp - $p);
-            $item['paid'] = $p;
-            if ($enrollment->status === 'cancelled') {
-                $item['balance'] = 0.00;
-            } else {
-                $item['balance'] = max(0.00, $item['amount'] - $p);
-            }
-        }
-        unset($item);
 
         if ($enrollment->status === 'cancelled') {
             $totalBalanceDue = 0.00;
