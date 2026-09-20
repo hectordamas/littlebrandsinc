@@ -247,16 +247,23 @@
             $breakdown = $enrollment->getCourseBreakdown();
             foreach ($enrollment->courses as $idx => $c) {
                 $financial = $breakdown[$c->id] ?? null;
+                $isCancelled = ($financial['is_cancelled'] ?? false) || $enrollment->status === 'cancelled';
                 $cAmount = $financial ? $financial['amount'] : $enrollment->getCourseAmount($c, $idx);
                 $cPaid = $financial ? $financial['paid'] : 0.00;
                 $cBalance = $financial ? $financial['balance'] : 0.00;
 
-                $totalAccountAmount += $cAmount;
+                if (!$isCancelled) {
+                    $totalAccountAmount += $cAmount;
+                } else {
+                    $totalAccountAmount += $cPaid;
+                }
+
                 $coursesBreakdown[] = [
                     'course' => $c,
                     'amount' => $cAmount,
                     'paid' => $cPaid,
                     'balance' => $cBalance,
+                    'is_cancelled' => $isCancelled,
                 ];
             }
         }
@@ -318,7 +325,7 @@
                         <span class="badge badge-cancelled">Cancelado</span>
                     @elseif ($isFreeTrial)
                         <span class="badge badge-paid">Prueba Gratis</span>
-                    @elseif ($enrollment->payment_status === 'paid')
+                    @elseif ($totalBalanceDue <= 0 && $totalPaidIncome > 0)
                         <span class="badge badge-paid">Pagado</span>
                     @else
                         <span class="badge badge-pending">Pendiente</span>
@@ -384,6 +391,9 @@
                     <tr>
                         <td>
                             <strong>{{ $c->title }}</strong>
+                            @if ($item['is_cancelled'])
+                                <span class="badge badge-cancelled" style="margin-left: 4px;">Cancelado</span>
+                            @endif
                             @if ($c->start_date && $c->end_date)
                                 <div style="font-size: 8.5px; color: #64748b;">
                                     Período: {{ \Carbon\Carbon::parse($c->start_date)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($c->end_date)->format('d/m/Y') }}
@@ -394,7 +404,9 @@
                         <td class="text-right">${{ number_format($item['amount'], 2) }}</td>
                         <td class="text-right" style="color: #059669; font-weight: 700;">${{ number_format($item['paid'], 2) }}</td>
                         <td class="text-right" style="font-weight: 700; {{ $item['balance'] > 0 ? 'color: #dc2626;' : 'color: #059669;' }}">
-                            @if ($item['balance'] > 0)
+                            @if ($item['is_cancelled'])
+                                <span style="color: #64748b;">$0.00 (Cancelado)</span>
+                            @elseif ($item['balance'] > 0)
                                 ${{ number_format($item['balance'], 2) }}
                             @else
                                 $0.00 (Al día)

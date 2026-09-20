@@ -41,7 +41,15 @@ class Enrollment extends Model
     public function courses()
     {
         return $this->belongsToMany(Course::class, 'enrollment_course')
-            ->withPivot('custom_amount')
+            ->withPivot(['custom_amount', 'status'])
+            ->withTimestamps();
+    }
+
+    public function activeCourses()
+    {
+        return $this->belongsToMany(Course::class, 'enrollment_course')
+            ->wherePivot('status', '!=', 'cancelled')
+            ->withPivot(['custom_amount', 'status'])
             ->withTimestamps();
     }
 
@@ -147,6 +155,9 @@ class Enrollment extends Model
 
         $breakdown = [];
         foreach ($this->courses as $idx => $course) {
+            $pivotStatus = $course->pivot->status ?? 'active';
+            $isCancelled = ($this->status === 'cancelled' || $pivotStatus === 'cancelled');
+
             $courseAmount = $this->getCourseAmount($course, $idx);
             $directTxs = $completedTxs->where('course_id', $course->id);
             $directPaid = (float) $directTxs->sum('amount');
@@ -156,11 +167,13 @@ class Enrollment extends Model
             $tempGeneral = max(0.00, $tempGeneral - $allocatedGeneral);
 
             $coursePaid = $directPaid + $allocatedGeneral;
-            $courseBalance = ($this->status === 'cancelled' || $this->is_free_trial) ? 0.00 : max(0.00, $courseAmount - $coursePaid);
+            $courseBalance = ($isCancelled || $this->is_free_trial) ? 0.00 : max(0.00, $courseAmount - $coursePaid);
 
             $breakdown[$course->id] = [
                 'course' => $course,
                 'index' => $idx,
+                'status' => $isCancelled ? 'cancelled' : 'active',
+                'is_cancelled' => $isCancelled,
                 'amount' => $courseAmount,
                 'direct_paid' => $directPaid,
                 'allocated_general' => $allocatedGeneral,
@@ -170,11 +183,18 @@ class Enrollment extends Model
         }
 
         if ($tempGeneral > 0 && !empty($breakdown)) {
-            $firstCourseId = array_key_first($breakdown);
-            $breakdown[$firstCourseId]['allocated_general'] += $tempGeneral;
-            $breakdown[$firstCourseId]['paid'] += $tempGeneral;
-            if ($this->status !== 'cancelled' && !$this->is_free_trial) {
-                $breakdown[$firstCourseId]['balance'] = max(0.00, $breakdown[$firstCourseId]['amount'] - $breakdown[$firstCourseId]['paid']);
+            $firstActiveId = null;
+            foreach ($breakdown as $cId => $info) {
+                if (!$info['is_cancelled']) {
+                    $firstActiveId = $cId;
+                    break;
+                }
+            }
+            $targetId = $firstActiveId ?? array_key_first($breakdown);
+            $breakdown[$targetId]['allocated_general'] += $tempGeneral;
+            $breakdown[$targetId]['paid'] += $tempGeneral;
+            if (!$breakdown[$targetId]['is_cancelled'] && !$this->is_free_trial) {
+                $breakdown[$targetId]['balance'] = max(0.00, $breakdown[$targetId]['amount'] - $breakdown[$targetId]['paid']);
             }
         }
 
@@ -183,7 +203,7 @@ class Enrollment extends Model
 
     public function syncReceivable(): ?\App\Models\AccountReceivable
     {
-        $this->loadMissing(['program', 'courses', 'installments']);
+        $this->load(['program', 'courses', 'installments']);
 
         $receivable = $this->receivable ?: \App\Models\AccountReceivable::where('enrollment_id', $this->id)->first();
 
@@ -195,7 +215,12 @@ class Enrollment extends Model
                 ->update(['account_receivable_id' => $receivable->id]);
         }
 
-        if ($this->status === 'cancelled') {
+        $activeCourses = $this->courses->filter(function ($course) {
+            return ($course->pivot->status ?? 'active') !== 'cancelled';
+        });
+
+        // If enrollment is cancelled OR all courses in enrollment are cancelled
+        if ($this->status === 'cancelled' || ($this->courses->isNotEmpty() && $activeCourses->isEmpty())) {
             if ($receivable) {
                 $paidAmount = (float) $receivable->transactions()->where('status', 'completed')->sum('amount');
                 if ($paidAmount <= 0) {
@@ -234,64 +259,46 @@ class Enrollment extends Model
             return null;
         }
 
-        $firstCourse = $courses->first();
+        $firstCourse = $activeCourses->first() ?: $courses->first();
         if (!$firstCourse || $firstCourse->branch_id === null) {
             return null;
         }
 
         $enrollmentFee = $this->getEnrollmentFee();
 
-        // Calculate amount total as sum of course amounts
+        // Calculate amount total as sum of active course amounts + any paid amount on cancelled courses
+        $completedTxs = $this->transactions()->where('status', 'completed')->where('type', 'income')->get();
         $amountTotal = 0.0;
         foreach ($courses as $index => $course) {
-            $amountTotal += $this->getCourseAmount($course, $index);
+            $isCourseCancelled = ($course->pivot->status ?? 'active') === 'cancelled';
+            if (!$isCourseCancelled) {
+                $amountTotal += $this->getCourseAmount($course, $index);
+            } else {
+                $coursePaid = (float) $completedTxs->where('course_id', $course->id)->sum('amount');
+                $amountTotal += $coursePaid;
+            }
         }
 
-        $courseTitles = $courses->pluck('title')->join(', ');
-        $title = 'Inscripción + mensualidades #' . $this->id . ' - ' . ($program->name ?? 'Programa') . ' (' . $courseTitles . ')';
+        $activeTitles = $activeCourses->pluck('title')->join(', ');
+        $title = 'Inscripción + mensualidades #' . $this->id . ' - ' . ($program->name ?? 'Programa') . ($activeTitles ? ' (' . $activeTitles . ')' : '');
 
-        if ($this->payment_status === 'pending') {
-            if (!$receivable) {
-                $receivable = \App\Models\AccountReceivable::create([
-                    'branch_id' => $firstCourse->branch_id,
-                    'enrollment_id' => $this->id,
-                    'title' => $title,
-                    'amount_total' => $amountTotal,
-                    'balance_due' => $amountTotal,
-                    'currency' => 'USD',
-                    'status' => 'pending',
-                ]);
-            } else {
-                $updateData = [
-                    'branch_id' => $firstCourse->branch_id,
-                    'currency' => 'USD',
-                    'title' => $title,
-                    'amount_total' => $amountTotal,
-                    'status' => 'pending',
-                ];
-                $receivable->update($updateData);
-            }
+        if (!$receivable) {
+            $receivable = \App\Models\AccountReceivable::create([
+                'branch_id' => $firstCourse->branch_id,
+                'enrollment_id' => $this->id,
+                'title' => $title,
+                'amount_total' => $amountTotal,
+                'balance_due' => $amountTotal,
+                'currency' => 'USD',
+                'status' => 'pending',
+            ]);
         } else {
-            // payment_status is paid
-            if (!$receivable) {
-                $receivable = \App\Models\AccountReceivable::create([
-                    'branch_id' => $firstCourse->branch_id,
-                    'enrollment_id' => $this->id,
-                    'title' => $title,
-                    'amount_total' => $amountTotal,
-                    'balance_due' => $amountTotal,
-                    'currency' => 'USD',
-                    'status' => 'pending',
-                ]);
-            } else {
-                $updateData = [
-                    'branch_id' => $firstCourse->branch_id,
-                    'currency' => 'USD',
-                    'title' => $title,
-                    'amount_total' => $amountTotal,
-                ];
-                $receivable->update($updateData);
-            }
+            $receivable->update([
+                'branch_id' => $firstCourse->branch_id,
+                'currency' => 'USD',
+                'title' => $title,
+                'amount_total' => $amountTotal,
+            ]);
         }
 
         // Link transactions if not done yet

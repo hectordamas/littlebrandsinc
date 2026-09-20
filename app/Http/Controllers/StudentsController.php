@@ -148,7 +148,9 @@ class StudentsController extends Controller
         $upcomingClasses = $student->enrollments
             ->where('status', '!=', 'cancelled')
             ->flatMap(function ($enrollment) {
-                return $enrollment->courses->flatMap(fn ($course) => $course->classes ?? collect());
+                return $enrollment->courses
+                    ->filter(fn ($course) => ($course->pivot->status ?? 'active') !== 'cancelled')
+                    ->flatMap(fn ($course) => $course->classes ?? collect());
             })
             ->filter(function ($class) {
                 return $class->date && Carbon::parse($class->date)->greaterThanOrEqualTo(now()->startOfDay());

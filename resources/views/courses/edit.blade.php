@@ -603,14 +603,16 @@
                                                                 <small class="text-muted">{{ $enrollment->parent->email ?? '' }}</small>
                                                             </td>
                                                             <td class="text-center">
-                                                                @if($enrollment->is_free_trial)
+                                                                @php
+                                                                    $isCourseCancelled = ($financial['is_cancelled'] ?? false) || $enrollment->status === 'cancelled';
+                                                                @endphp
+                                                                @if($isCourseCancelled)
+                                                                    <span class="badge bg-danger px-3 py-2 text-white">Cancelado</span>
+                                                                @elseif($enrollment->is_free_trial)
                                                                     <span class="badge bg-info px-3 py-2 text-white">Clase de prueba gratis</span>
                                                                 @elseif($enrollment->payment_status === 'paid')
                                                                     <div>
                                                                         <span class="badge bg-success px-3 py-2 text-white d-inline-block mb-1">Pagado</span>
-                                                                        <button class="btn btn-xs btn-outline-primary d-block mx-auto mt-1" type="button" data-bs-toggle="collapse" data-bs-target="#attach-payment-{{ $enrollment->id }}" aria-expanded="false" aria-controls="attach-payment-{{ $enrollment->id }}">
-                                                                            <i class="fas fa-file-invoice-dollar me-1"></i> Registrar Pago
-                                                                        </button>
                                                                     </div>
                                                                 @else
                                                                     <div>
@@ -638,6 +640,11 @@
                                                             <td class="text-center">
                                                                 @if($cxcIsTrial)
                                                                     <span class="text-muted small">-</span>
+                                                                @elseif($isCourseCancelled)
+                                                                    <div>
+                                                                        <span class="badge bg-secondary text-white px-2.5 py-1" title="Inscripción a este curso cancelada">Cancelado</span>
+                                                                        <div class="text-muted small mt-1">$0.00</div>
+                                                                    </div>
                                                                 @elseif($cxcBalanceDue > 0)
                                                                     <div>
                                                                         <span class="badge bg-warning text-dark px-2.5 py-1" title="Cuenta por cobrar pendiente">Pendiente</span>
@@ -651,14 +658,25 @@
                                                                 @endif
                                                             </td>
                                                             <td class="text-center">
-                                                                <form action="{{ route('enrollment.status', $enrollment->id) }}" method="POST" class="d-inline">
-                                                                    @csrf
-                                                                    @method('PATCH')
-                                                                    <input type="hidden" name="status" value="cancelled">
-                                                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Seguro que deseas retirar a {{ $enrollment->student->name }} de este curso? Su inscripción se marcará como cancelada.')" title="Retirar estudiante del curso">
-                                                                        <i class="fas fa-user-minus"></i> Retirar
-                                                                    </button>
-                                                                </form>
+                                                                @if(!$isCourseCancelled)
+                                                                    <form action="{{ route('enrollment.course.status', [$enrollment->id, $course->id]) }}" method="POST" class="d-inline">
+                                                                        @csrf
+                                                                        @method('PATCH')
+                                                                        <input type="hidden" name="status" value="cancelled">
+                                                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Seguro que deseas retirar a {{ $enrollment->student->name }} de esta clase?')" title="Retirar estudiante de esta clase">
+                                                                            <i class="fas fa-user-minus"></i> Retirar
+                                                                        </button>
+                                                                    </form>
+                                                                @else
+                                                                    <form action="{{ route('enrollment.course.status', [$enrollment->id, $course->id]) }}" method="POST" class="d-inline">
+                                                                        @csrf
+                                                                        @method('PATCH')
+                                                                        <input type="hidden" name="status" value="active">
+                                                                        <button type="submit" class="btn btn-sm btn-outline-success" onclick="return confirm('¿Deseas reactivar la inscripción de {{ $enrollment->student->name }} en esta clase?')" title="Reactivar estudiante en esta clase">
+                                                                            <i class="fas fa-user-plus"></i> Reactivar
+                                                                        </button>
+                                                                    </form>
+                                                                @endif
                                                             </td>
                                                         </tr>
                                                         @if($enrollment->status !== 'cancelled')

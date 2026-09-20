@@ -438,6 +438,43 @@ class EnrollmentController extends Controller
         return redirect()->back()->with('success', 'Monto de la cuenta por cobrar del curso actualizado correctamente.');
     }
 
+    public function updateCourseStatus(Request $request, Enrollment $enrollment, Course $course): RedirectResponse
+    {
+        $validated = $request->validate([
+            'status' => ['required', Rule::in(['active', 'cancelled'])],
+        ]);
+
+        $newStatus = $validated['status'];
+
+        DB::transaction(function () use ($enrollment, $course, $newStatus): void {
+            $enrollment->courses()->updateExistingPivot($course->id, [
+                'status' => $newStatus,
+            ]);
+
+            $enrollment->load('courses');
+            $allCancelled = $enrollment->courses->every(function ($c) {
+                return ($c->pivot->status ?? 'active') === 'cancelled';
+            });
+
+            if ($allCancelled) {
+                $enrollment->status = 'cancelled';
+            } else {
+                if ($enrollment->status === 'cancelled') {
+                    $enrollment->status = 'completed';
+                }
+            }
+            $enrollment->save();
+
+            $enrollment->syncReceivable();
+        });
+
+        $msg = $newStatus === 'cancelled'
+            ? 'El estudiante ha sido retirado de la clase "' . $course->title . '".'
+            : 'La inscripción a la clase "' . $course->title . '" ha sido reactivada.';
+
+        return redirect()->back()->with('success', $msg);
+    }
+
     public function storeCoursePayment(Request $request, Enrollment $enrollment, Course $course): RedirectResponse
     {
         $validated = $request->validate([

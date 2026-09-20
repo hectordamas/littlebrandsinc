@@ -53,14 +53,25 @@ class CoachPortalController extends Controller
             $course = $class->course;
             $students = optional($course)->enrollments
                 ? $course->enrollments
-                    ->where('status', '!=', 'cancelled')
-                    ->map(function ($enrollment) use ($class) {
+                    ->filter(function ($enrollment) {
+                        if ($enrollment->status === 'cancelled') {
+                            return false;
+                        }
+                        if (($enrollment->pivot->status ?? 'active') === 'cancelled') {
+                            return false;
+                        }
+                        return true;
+                    })
+                    ->map(function ($enrollment) use ($class, $course) {
                         $student = $enrollment->student;
                         $attendance = $class->attendances->firstWhere('student_id', optional($student)->id);
 
                         $cxcBalanceDue = 0.00;
                         if (! $enrollment->is_free_trial) {
-                            if ($enrollment->receivable) {
+                            $financial = $enrollment->getCourseBreakdown()[$course->id] ?? null;
+                            if ($financial) {
+                                $cxcBalanceDue = (float) $financial['balance'];
+                            } elseif ($enrollment->receivable) {
                                 $cxcBalanceDue = (float) $enrollment->receivable->balance_due;
                             } else {
                                 $cxcBalanceDue = (float) $enrollment->getInitialChargeAmount();

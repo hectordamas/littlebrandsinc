@@ -32,7 +32,7 @@ class Course extends Model
     public function enrollments()
     {
         return $this->belongsToMany(Enrollment::class, 'enrollment_course', 'course_id', 'enrollment_id')
-            ->withPivot('custom_amount')
+            ->withPivot(['custom_amount', 'status'])
             ->withTimestamps();
     }
 
@@ -40,7 +40,8 @@ class Course extends Model
     {
         return $this->belongsToMany(Enrollment::class, 'enrollment_course', 'course_id', 'enrollment_id')
             ->where('enrollments.status', '!=', 'cancelled')
-            ->withPivot('custom_amount')
+            ->wherePivot('status', '!=', 'cancelled')
+            ->withPivot(['custom_amount', 'status'])
             ->withTimestamps();
     }
 

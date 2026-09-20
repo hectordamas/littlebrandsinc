@@ -53,6 +53,7 @@ Route::middleware(['auth', 'role:Administrador'])->group(function () {
     Route::get('enrollment/{enrollment}', [EnrollmentController::class, 'show'])->name('enrollment.show');
     Route::get('enrollment/{enrollment}/receipt', [EnrollmentController::class, 'downloadReceipt'])->name('enrollment.receipt');
     Route::patch('enrollment/{enrollment}/course/{course}/amount', [EnrollmentController::class, 'updateCourseAmount'])->name('enrollment.course.update-amount');
+    Route::patch('enrollment/{enrollment}/course/{course}/status', [EnrollmentController::class, 'updateCourseStatus'])->name('enrollment.course.status');
     Route::post('enrollment/{enrollment}/course/{course}/payment', [EnrollmentController::class, 'storeCoursePayment'])->name('enrollment.course.payment');
     Route::patch('enrollment/{enrollment}', [EnrollmentController::class, 'update'])->name('enrollment.update');
 
