@@ -34,7 +34,7 @@ class WaitlistController extends Controller
         }
 
         $course->loadCount(['enrollments' => function ($q) {
-            $q->where('status', '!=', 'cancelled');
+            $q->where('enrollments.status', '!=', 'cancelled');
         }]);
 
         if ((int) $course->enrollments_count + 1 > (int) $course->capacity) {

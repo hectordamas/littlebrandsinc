@@ -64,7 +64,7 @@ class SyncCourseBalancesCommand extends Command
             ->whereNotNull('end_date')
             ->where('monthly_fee', '>', 0)
             ->with(['enrollments' => function ($q) {
-                $q->where('status', '!=', 'cancelled')
+                $q->where('enrollments.status', '!=', 'cancelled')
                   ->where('is_free_trial', false)
                   ->with(['student', 'courses', 'receivable', 'transactions']);
             }]);

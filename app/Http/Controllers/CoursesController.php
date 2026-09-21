@@ -15,7 +15,7 @@ class CoursesController extends Controller
     public function occupancy($id)
     {
         $course = Course::withCount(['enrollments' => function ($q) {
-            $q->where('status', '!=', 'cancelled');
+            $q->where('enrollments.status', '!=', 'cancelled');
         }])->findOrFail($id);
         $capacity = $course->capacity ?? 0;
         $enrolled = $course->enrollments_count;
@@ -51,10 +51,10 @@ class CoursesController extends Controller
                 'course' => function ($query) {
                     $query->withCount([
                         'enrollments as active_enrollments_count' => function ($enrollmentsQuery) {
-                            $enrollmentsQuery->where('status', '!=', 'cancelled');
+                            $enrollmentsQuery->where('enrollments.status', '!=', 'cancelled');
                         },
                     ])->with(['enrollments' => function ($eq) {
-                        $eq->where('status', '!=', 'cancelled')->with(['student', 'parent', 'receivable']);
+                        $eq->where('enrollments.status', '!=', 'cancelled')->with(['student', 'parent', 'receivable']);
                     }, 'program', 'coaches']);
                 },
                 'branch',
@@ -309,7 +309,7 @@ class CoursesController extends Controller
     public function edit($id)
     {
         $course = Course::with(['enrollments' => function ($q) {
-            $q->where('status', '!=', 'cancelled')->with(['student', 'parent', 'program', 'courses', 'receivable', 'transactions']);
+            $q->where('enrollments.status', '!=', 'cancelled')->with(['student', 'parent', 'program', 'courses', 'receivable', 'transactions']);
         }])->findOrFail($id);
 
         foreach ($course->enrollments as $enrollment) {
@@ -472,7 +472,7 @@ class CoursesController extends Controller
             $diffMonths = $newMonths - $oldMonths;
             $monthlyFee = (float) ($course->monthly_fee ?? 0);
 
-            $activeEnrollments = $course->enrollments()->where('status', '!=', 'cancelled')->with(['courses', 'transactions'])->get();
+            $activeEnrollments = $course->enrollments()->where('enrollments.status', '!=', 'cancelled')->with(['courses', 'transactions'])->get();
             foreach ($activeEnrollments as $enrollment) {
                 if ($diffMonths !== 0) {
                     $targetCourse = $enrollment->courses->firstWhere('id', $course->id);

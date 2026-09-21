@@ -25,7 +25,7 @@ class EnrollmentController extends Controller
             ->get();
         $courses = Course::query()
             ->withCount(['enrollments' => function ($q) {
-                $q->where('status', '!=', 'cancelled');
+                $q->where('enrollments.status', '!=', 'cancelled');
             }])
             ->with(['branch', 'classes' => function ($q) {
                 $q->orderBy('date')->orderBy('start_time');
@@ -106,7 +106,7 @@ class EnrollmentController extends Controller
             $courseIds = collect($request->input('course_ids'))->map(fn ($id) => (int) $id)->unique()->values();
             $courses = Course::query()
                 ->withCount(['enrollments' => function ($q) {
-                    $q->where('status', '!=', 'cancelled');
+                    $q->where('enrollments.status', '!=', 'cancelled');
                 }])
                 ->where('active', true)
                 ->whereDate('end_date', '>=', now()->toDateString())
@@ -229,7 +229,7 @@ class EnrollmentController extends Controller
 
         foreach ($enrollment->courses as $course) {
             $course->loadCount(['enrollments' => function ($q) {
-                $q->where('status', '!=', 'cancelled');
+                $q->where('enrollments.status', '!=', 'cancelled');
             }]);
         }
 
@@ -262,7 +262,7 @@ class EnrollmentController extends Controller
 
         foreach ($enrollment->courses as $course) {
             $course->loadCount(['enrollments' => function ($q) {
-                $q->where('status', '!=', 'cancelled');
+                $q->where('enrollments.status', '!=', 'cancelled');
             }]);
         }
 

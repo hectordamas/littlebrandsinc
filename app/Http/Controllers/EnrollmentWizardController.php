@@ -404,7 +404,7 @@ class EnrollmentWizardController extends Controller
         $program = Program::findOrFail($programId);
 
         $courses = Course::withCount(['enrollments' => function ($q) {
-            $q->where('status', '!=', 'cancelled');
+            $q->where('enrollments.status', '!=', 'cancelled');
         }])
             ->whereIn('id', $courseIds)
             ->get();
@@ -663,7 +663,7 @@ class EnrollmentWizardController extends Controller
         $student = Student::find($studentId);
         $program = Program::find($programId);
         $courses = Course::withCount(['enrollments' => function ($q) {
-            $q->where('status', '!=', 'cancelled');
+            $q->where('enrollments.status', '!=', 'cancelled');
         }])->whereIn('id', $courseIds)->get();
 
         if (! $student || ! $program || $courses->isEmpty()) {
@@ -1034,7 +1034,7 @@ class EnrollmentWizardController extends Controller
             ->where('active', true)
             ->whereDate('end_date', '>=', now()->toDateString())
             ->withCount(['enrollments' => function ($q) {
-                $q->where('status', '!=', 'cancelled');
+                $q->where('enrollments.status', '!=', 'cancelled');
             }])
             ->with(['program', 'branch']);
 
@@ -1119,7 +1119,7 @@ class EnrollmentWizardController extends Controller
         $courseIds = $request->session()->get('selected_course_ids', []);
         $selectedCourseModels = ! empty($courseIds)
             ? Course::withCount(['enrollments' => function ($q) {
-                $q->where('status', '!=', 'cancelled');
+                $q->where('enrollments.status', '!=', 'cancelled');
             }])->whereIn('id', $courseIds)->get()
             : collect();
 
