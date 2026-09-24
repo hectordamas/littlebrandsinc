@@ -27,8 +27,8 @@ class CoachPortalController extends Controller
 
         $classes = LBClass::query()
             ->with([
-                'course.enrollments.student',
-                'course.enrollments.receivable',
+                'course.activeEnrollments.student',
+                'course.activeEnrollments.receivable',
                 'course.coaches',
                 'branch',
                 'attendances',
@@ -51,17 +51,8 @@ class CoachPortalController extends Controller
 
         $events = $classes->map(function (LBClass $class) {
             $course = $class->course;
-            $students = optional($course)->enrollments
-                ? $course->enrollments
-                    ->filter(function ($enrollment) {
-                        if ($enrollment->status === 'cancelled') {
-                            return false;
-                        }
-                        if (($enrollment->pivot->status ?? 'active') === 'cancelled') {
-                            return false;
-                        }
-                        return true;
-                    })
+            $students = optional($course)->activeEnrollments
+                ? $course->activeEnrollments
                     ->map(function ($enrollment) use ($class, $course) {
                         $student = $enrollment->student;
                         $attendance = $class->attendances->firstWhere('student_id', optional($student)->id);
@@ -78,12 +69,14 @@ class CoachPortalController extends Controller
                             }
                         }
 
+                        $resolvedPaymentStatus = ($cxcBalanceDue <= 0.00 || $enrollment->payment_status === 'paid') ? 'paid' : 'pending';
+
                         return [
                             'student_id' => optional($student)->id,
                             'student_name' => optional($student)->name ?? 'Sin nombre',
                             'check_in' => $attendance->status ?? 'pending',
                             'notes' => $attendance->notes ?? null,
-                            'payment_status' => $enrollment->payment_status,
+                            'payment_status' => $resolvedPaymentStatus,
                             'is_free_trial' => (bool) $enrollment->is_free_trial,
                             'image_consent' => (bool) $enrollment->image_consent_accepted,
                             'cxc_balance_due' => $cxcBalanceDue,

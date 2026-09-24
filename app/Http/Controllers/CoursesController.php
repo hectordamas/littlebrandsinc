@@ -14,11 +14,9 @@ class CoursesController extends Controller
      */
     public function occupancy($id)
     {
-        $course = Course::withCount(['enrollments' => function ($q) {
-            $q->where('enrollments.status', '!=', 'cancelled');
-        }])->findOrFail($id);
+        $course = Course::withCount('activeEnrollments')->findOrFail($id);
         $capacity = $course->capacity ?? 0;
-        $enrolled = $course->enrollments_count;
+        $enrolled = $course->active_enrollments_count;
         $percent = $capacity > 0 ? round(($enrolled / $capacity) * 100) : 0;
         return response()->json([
             'capacity' => $capacity,
@@ -50,11 +48,9 @@ class CoursesController extends Controller
             ->with([
                 'course' => function ($query) {
                     $query->withCount([
-                        'enrollments as active_enrollments_count' => function ($enrollmentsQuery) {
-                            $enrollmentsQuery->where('enrollments.status', '!=', 'cancelled');
-                        },
-                    ])->with(['enrollments' => function ($eq) {
-                        $eq->where('enrollments.status', '!=', 'cancelled')->with(['student', 'parent', 'receivable']);
+                        'activeEnrollments as active_enrollments_count',
+                    ])->with(['activeEnrollments' => function ($eq) {
+                        $eq->with(['student', 'parent', 'receivable']);
                     }, 'program', 'coaches']);
                 },
                 'branch',
@@ -94,7 +90,8 @@ class CoursesController extends Controller
             $lateCount = 0;
             $pendingCount = 0;
 
-            $enrolledStudents = optional($class->course)->enrollments ? optional($class->course)->enrollments->map(function ($enrollment) use ($attendancesMap, &$presentCount, &$absentCount, &$lateCount, &$pendingCount) {
+            $activeEnrollments = optional($class->course)->activeEnrollments ?? collect();
+            $enrolledStudents = $activeEnrollments->map(function ($enrollment) use ($attendancesMap, &$presentCount, &$absentCount, &$lateCount, &$pendingCount) {
                 $studentId = optional($enrollment->student)->id;
                 $attendance = $studentId ? $attendancesMap->get($studentId) : null;
                 $status = $attendance ? $attendance->status : 'pending';
@@ -119,6 +116,8 @@ class CoursesController extends Controller
                     }
                 }
 
+                $resolvedPaymentStatus = ($cxcBalanceDue <= 0.00 || $enrollment->payment_status === 'paid') ? 'paid' : 'pending';
+
                 return [
                     'student_id' => $studentId,
                     'student_name' => $enrollment->student->name ?? 'N/A',
@@ -126,14 +125,14 @@ class CoursesController extends Controller
                     'parent_name' => $enrollment->parent->name ?? 'N/A',
                     'parent_whatsapp' => ($enrollment->parent->dial_code ?? '') . ' ' . ($enrollment->parent->whatsapp ?? ''),
                     'parent_email' => $enrollment->parent->email ?? 'N/A',
-                    'payment_status' => $enrollment->payment_status,
+                    'payment_status' => $resolvedPaymentStatus,
                     'is_free_trial' => (bool) $enrollment->is_free_trial,
                     'image_consent' => (bool) $enrollment->image_consent_accepted,
                     'cxc_balance_due' => $cxcBalanceDue,
                     'check_in' => $status,
                     'attendance_notes' => $notes,
                 ];
-            })->filter(fn ($row) => ! empty($row['student_id']))->values()->all() : [];
+            })->filter(fn ($row) => ! empty($row['student_id']))->values()->all();
 
             return [
                 'id' => $class->id,
@@ -472,7 +471,7 @@ class CoursesController extends Controller
             $diffMonths = $newMonths - $oldMonths;
             $monthlyFee = (float) ($course->monthly_fee ?? 0);
 
-            $activeEnrollments = $course->enrollments()->where('enrollments.status', '!=', 'cancelled')->with(['courses', 'transactions'])->get();
+            $activeEnrollments = $course->activeEnrollments()->with(['courses', 'transactions'])->get();
             foreach ($activeEnrollments as $enrollment) {
                 if ($diffMonths !== 0) {
                     $targetCourse = $enrollment->courses->firstWhere('id', $course->id);

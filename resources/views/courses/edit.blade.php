@@ -546,237 +546,310 @@
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
+                                    @php
+                                        $activeEnrollments = $course->enrollments->filter(function($e) use ($course) {
+                                            $financial = $e->getCourseBreakdown()[$course->id] ?? null;
+                                            return !(($financial['is_cancelled'] ?? false) || $e->status === 'cancelled');
+                                        })->values();
+
+                                        $cancelledEnrollments = $course->enrollments->filter(function($e) use ($course) {
+                                            $financial = $e->getCourseBreakdown()[$course->id] ?? null;
+                                            return ($financial['is_cancelled'] ?? false) || $e->status === 'cancelled';
+                                        })->values();
+                                    @endphp
+
                                     @if($course->enrollments->isEmpty())
                                         <p class="text-muted text-center my-3">No hay estudiantes inscritos en esta clase todavía.</p>
                                     @else
-                                        <div class="table-responsive">
-                                            <table class="table table-hover align-middle">
-                                                <thead>
-                                                    <tr>
-                                                        <th>#</th>
-                                                        <th>Estudiante</th>
-                                                        <th class="text-center text-nowrap">Consentimiento de Imagen</th>
-                                                        <th>Representante</th>
-                                                        <th>Teléfono / Correo</th>
-                                                        <th class="text-center text-nowrap">Estado de Inscripción</th>
-                                                        <th class="text-center text-nowrap">Monto Cuenta</th>
-                                                        <th class="text-center text-nowrap">Abonado</th>
-                                                        <th class="text-center text-nowrap">Cuenta por Cobrar</th>
-                                                        <th class="text-center text-nowrap">Acciones</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                @foreach($course->enrollments as $index => $enrollment)
-                                                        @php
-                                                            $cxcIsTrial = (bool) $enrollment->is_free_trial;
-                                                            $financial = $enrollment->getCourseBreakdown()[$course->id] ?? null;
-                                                            $cxcAmount = $financial ? $financial['amount'] : $enrollment->getCourseAmount($course, 0);
-                                                            $cxcPaid = ($cxcIsTrial || !$financial) ? 0.00 : $financial['paid'];
-                                                            $cxcBalanceDue = ($cxcIsTrial || !$financial) ? 0.00 : $financial['balance'];
-                                                        @endphp
-                                                        <tr>
-                                                            <td>{{ $index + 1 }}</td>
-                                                            <td>
-                                                                <div>
-                                                                    <a href="{{ route('students.show', $enrollment->student->id) }}" target="_blank" class="text-primary text-decoration-none fw-bold" title="Ver perfil del estudiante">
-                                                                        {{ $enrollment->student->name ?? 'N/A' }} <i class="feather icon-external-link text-primary ms-1" style="font-size: 0.8rem;"></i>
-                                                                    </a>
-                                                                </div>
-                                                                @if($enrollment->student->birthdate)
-                                                                    <small class="text-muted d-block mt-1">Edad: {{ \Carbon\Carbon::parse($enrollment->student->birthdate)->age }} años</small>
-                                                                @endif
-                                                            </td>
-                                                            <td class="text-center">
-                                                                @if($enrollment->image_consent_accepted)
-                                                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1" style="font-size: 0.78rem;" title="Consentimiento de imagen otorgado">
-                                                                        <i class="fas fa-check-circle me-1"></i> Autorizado
-                                                                    </span>
-                                                                @else
-                                                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1" style="font-size: 0.78rem;" title="Sin consentimiento de uso de imagen">
-                                                                        <i class="fas fa-times-circle me-1"></i> No Autorizado
-                                                                    </span>
-                                                                @endif
-                                                            </td>
-                                                            <td>{{ $enrollment->parent->name ?? 'N/A' }}</td>
-                                                            <td>
-                                                                <div>{{ $enrollment->parent->dial_code ?? '' }} {{ $enrollment->parent->whatsapp ?? 'N/A' }}</div>
-                                                                <small class="text-muted">{{ $enrollment->parent->email ?? '' }}</small>
-                                                            </td>
-                                                            <td class="text-center">
-                                                                @php
-                                                                    $isCourseCancelled = ($financial['is_cancelled'] ?? false) || $enrollment->status === 'cancelled';
-                                                                @endphp
-                                                                @if($isCourseCancelled)
-                                                                    <span class="badge bg-danger px-3 py-2 text-white">Cancelado</span>
-                                                                @elseif($enrollment->is_free_trial)
-                                                                    <span class="badge bg-info px-3 py-2 text-white">Clase de prueba gratis</span>
-                                                                @elseif($enrollment->payment_status === 'paid')
-                                                                    <div>
-                                                                        <span class="badge bg-success px-3 py-2 text-white d-inline-block mb-1">Pagado</span>
-                                                                    </div>
-                                                                @else
-                                                                    <div>
-                                                                        <span class="badge bg-warning text-dark px-3 py-2 d-inline-block mb-1">Pendiente</span>
-                                                                        <button class="btn btn-xs btn-outline-primary d-block mx-auto mt-1" type="button" data-bs-toggle="collapse" data-bs-target="#attach-payment-{{ $enrollment->id }}" aria-expanded="false" aria-controls="attach-payment-{{ $enrollment->id }}">
-                                                                            <i class="fas fa-file-invoice-dollar me-1"></i> Registrar Pago
-                                                                        </button>
-                                                                    </div>
-                                                                @endif
-                                                            </td>
-                                                            <td class="text-center">
-                                                                @if($cxcIsTrial)
-                                                                    <span class="text-muted small">Prueba Gratis</span>
-                                                                @else
-                                                                    <span class="fw-semibold text-dark">${{ number_format($cxcAmount, 2) }}</span>
-                                                                @endif
-                                                            </td>
-                                                            <td class="text-center">
-                                                                @if($cxcIsTrial)
-                                                                    <span class="text-muted small">-</span>
-                                                                @else
-                                                                    <span class="fw-semibold text-dark">${{ number_format($cxcPaid, 2) }}</span>
-                                                                @endif
-                                                            </td>
-                                                            <td class="text-center">
-                                                                @if($cxcIsTrial)
-                                                                    <span class="text-muted small">-</span>
-                                                                @elseif($isCourseCancelled)
-                                                                    <div>
-                                                                        <span class="badge bg-secondary text-white px-2.5 py-1" title="Inscripción a este curso cancelada">Cancelado</span>
-                                                                        <div class="text-muted small mt-1">$0.00</div>
-                                                                    </div>
-                                                                @elseif($cxcBalanceDue > 0)
-                                                                    <div>
-                                                                        <span class="badge bg-warning text-dark px-2.5 py-1" title="Cuenta por cobrar pendiente">Pendiente</span>
-                                                                        <div class="fw-bold text-danger mt-1">${{ number_format($cxcBalanceDue, 2) }}</div>
-                                                                    </div>
-                                                                @else
-                                                                    <div>
-                                                                        <span class="badge bg-success text-white px-2.5 py-1" title="Cuenta por cobrar al día">Pagado</span>
-                                                                        <div class="text-muted small mt-1">$0.00</div>
-                                                                    </div>
-                                                                @endif
-                                                            </td>
-                                                            <td class="text-center">
-                                                                @if(!$isCourseCancelled)
-                                                                    <form action="{{ route('enrollment.course.status', [$enrollment->id, $course->id]) }}" method="POST" class="d-inline">
-                                                                        @csrf
-                                                                        @method('PATCH')
-                                                                        <input type="hidden" name="status" value="cancelled">
-                                                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Seguro que deseas retirar a {{ $enrollment->student->name }} de esta clase?')" title="Retirar estudiante de esta clase">
-                                                                            <i class="fas fa-user-minus"></i> Retirar
-                                                                        </button>
-                                                                    </form>
-                                                                @else
-                                                                    <form action="{{ route('enrollment.course.status', [$enrollment->id, $course->id]) }}" method="POST" class="d-inline">
-                                                                        @csrf
-                                                                        @method('PATCH')
-                                                                        <input type="hidden" name="status" value="active">
-                                                                        <button type="submit" class="btn btn-sm btn-outline-success" onclick="return confirm('¿Deseas reactivar la inscripción de {{ $enrollment->student->name }} en esta clase?')" title="Reactivar estudiante en esta clase">
-                                                                            <i class="fas fa-user-plus"></i> Reactivar
-                                                                        </button>
-                                                                    </form>
-                                                                @endif
-                                                            </td>
-                                                        </tr>
-                                                        @if($enrollment->status !== 'cancelled')
-                                                            <tr class="collapse" id="attach-payment-{{ $enrollment->id }}">
-                                                                <td colspan="10" class="bg-light p-0">
-                                                                    <div class="p-3 border rounded m-2 bg-white shadow-sm">
-                                                                        <form action="{{ route('enrollment.attach-payment', $enrollment->id) }}" method="POST" enctype="multipart/form-data">
-                                                                            @csrf
-                                                                            
-                                                                            <!-- Visualización de montos -->
-                                                                            <div class="row g-3 mb-3">
-                                                                                <div class="col-md-12 text-start">
-                                                                                    @php
-                                                                                        $enrollmentFee = $enrollment->getEnrollmentFee();
-                                                                                        $monthlyFees = 0.0;
-                                                                                        foreach ($enrollment->courses as $c) {
-                                                                                            $monthlyFees += (float) ($c->monthly_fee ?? 0);
-                                                                                        }
-                                                                                        $suggestedTotal = $enrollmentFee + $monthlyFees;
-                                                                                    @endphp
-                                                                                    <div class="p-3 border rounded bg-light mb-0" style="border-left: 4px solid #0d6efd !important;">
-                                                                                        <h6 class="fw-bold mb-2 small text-dark"><i class="fas fa-file-invoice-dollar text-primary me-1"></i> Detalle de la Factura (Monto Sugerido)</h6>
-                                                                                        <div class="d-flex justify-content-between small mb-1">
-                                                                                            <span class="text-muted">Inscripción:</span>
-                                                                                            <span class="fw-semibold">${{ number_format($enrollmentFee, 2) }}</span>
-                                                                                        </div>
-                                                                                        <div class="d-flex justify-content-between small mb-1">
-                                                                                            <span class="text-muted">Mensualidad:</span>
-                                                                                            <span class="fw-semibold">${{ number_format($monthlyFees, 2) }}</span>
-                                                                                        </div>
-                                                                                        <div class="d-flex justify-content-between small mb-1 text-primary fw-bold">
-                                                                                            <span>Total Sugerido:</span>
-                                                                                            <span>${{ number_format($suggestedTotal, 2) }}</span>
-                                                                                        </div>
-                                                                                        @if($enrollment->receivable)
-                                                                                            <hr class="my-1">
-                                                                                            <div class="d-flex justify-content-between small mb-0 text-danger fw-bold">
-                                                                                                <span>Saldo Total Pendiente:</span>
-                                                                                                <span>${{ number_format($enrollment->receivable->balance_due, 2) }}</span>
-                                                                                            </div>
-                                                                                        @endif
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
+                                        <ul class="nav nav-pills mb-3" id="enrolledStudentsTabs" role="tablist">
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link active fw-bold" id="active-students-tab" data-bs-toggle="pill" data-bs-target="#active-students-content" type="button" role="tab" aria-controls="active-students-content" aria-selected="true">
+                                                    <i class="fas fa-user-check me-1 text-success"></i> Estudiantes Activos <span class="badge bg-success ms-1">{{ $activeEnrollments->count() }}</span>
+                                                </button>
+                                            </li>
+                                            @if($cancelledEnrollments->isNotEmpty())
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link text-danger fw-bold" id="cancelled-students-tab" data-bs-toggle="pill" data-bs-target="#cancelled-students-content" type="button" role="tab" aria-controls="cancelled-students-content" aria-selected="false">
+                                                        <i class="fas fa-user-minus me-1 text-danger"></i> Retirados / Cancelados <span class="badge bg-danger ms-1">{{ $cancelledEnrollments->count() }}</span>
+                                                    </button>
+                                                </li>
+                                            @endif
+                                        </ul>
 
-                                                                            <!-- Opciones de pago -->
-                                                                            <div class="row g-3 mb-3">
-                                                                                <div class="col-md-12 text-start">
-                                                                                    <label class="form-label small fw-bold d-block">Costo de Inscripción</label>
-                                                                                    <div class="form-check form-check-inline">
-                                                                                        <input class="form-check-input payment-option-radio" type="radio" name="amount_option" id="amount_opt_suggested_{{ $enrollment->id }}" value="suggested" checked data-enrollment-id="{{ $enrollment->id }}">
-                                                                                        <label class="form-check-label" for="amount_opt_suggested_{{ $enrollment->id }}">
-                                                                                            Monto sugerido (${{ number_format($suggestedTotal, 2) }})
-                                                                                        </label>
-                                                                                    </div>
-                                                                                    <div class="form-check form-check-inline">
-                                                                                        <input class="form-check-input payment-option-radio" type="radio" name="amount_option" id="amount_opt_custom_{{ $enrollment->id }}" value="custom" data-enrollment-id="{{ $enrollment->id }}">
-                                                                                        <label class="form-check-label" for="amount_opt_custom_{{ $enrollment->id }}">
-                                                                                            Monto total personalizado
-                                                                                        </label>
-                                                                                    </div>
-                                                                                    
-                                                                                    <div class="mt-2 d-none" id="custom-amount-container-{{ $enrollment->id }}">
-                                                                                        <label class="form-label small fw-bold">Monto personalizado ($)</label>
-                                                                                        <input type="number" name="custom_amount" id="custom_amount_{{ $enrollment->id }}" class="form-control form-control-sm w-50" step="0.01" min="0.01" max="{{ $enrollment->receivable ? $enrollment->receivable->balance_due : '' }}" placeholder="Ingrese el monto personalizado">
-                                                                                    </div>
-                                                                                </div>
+                                        <div class="tab-content" id="enrolledStudentsTabsContent">
+                                            <!-- Tab Activos -->
+                                            <div class="tab-pane fade show active" id="active-students-content" role="tabpanel" aria-labelledby="active-students-tab">
+                                                @if($activeEnrollments->isEmpty())
+                                                    <p class="text-muted text-center my-3">No hay estudiantes activos en esta clase actualmente.</p>
+                                                @else
+                                                    <div class="table-responsive">
+                                                        <table class="table table-hover align-middle">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>#</th>
+                                                                    <th>Estudiante</th>
+                                                                    <th class="text-center text-nowrap">Consentimiento de Imagen</th>
+                                                                    <th>Representante</th>
+                                                                    <th>Teléfono / Correo</th>
+                                                                    <th class="text-center text-nowrap">Estado de Inscripción</th>
+                                                                    <th class="text-center text-nowrap">Monto Cuenta</th>
+                                                                    <th class="text-center text-nowrap">Abonado</th>
+                                                                    <th class="text-center text-nowrap">Cuenta por Cobrar</th>
+                                                                    <th class="text-center text-nowrap">Acciones</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                            @foreach($activeEnrollments as $index => $enrollment)
+                                                                    @php
+                                                                        $cxcIsTrial = (bool) $enrollment->is_free_trial;
+                                                                        $financial = $enrollment->getCourseBreakdown()[$course->id] ?? null;
+                                                                        $cxcAmount = $financial ? $financial['amount'] : $enrollment->getCourseAmount($course, 0);
+                                                                        $cxcPaid = ($cxcIsTrial || !$financial) ? 0.00 : $financial['paid'];
+                                                                        $cxcBalanceDue = ($cxcIsTrial || !$financial) ? 0.00 : $financial['balance'];
+                                                                        $isCourseCancelled = false;
+                                                                        $isCoursePaid = !$cxcIsTrial && ($cxcBalanceDue <= 0.00 || $enrollment->payment_status === 'paid');
+                                                                    @endphp
+                                                                    <tr>
+                                                                        <td>{{ $index + 1 }}</td>
+                                                                        <td>
+                                                                            <div>
+                                                                                <a href="{{ route('students.show', $enrollment->student->id) }}" target="_blank" class="text-primary text-decoration-none fw-bold" title="Ver perfil del estudiante">
+                                                                                    {{ $enrollment->student->name ?? 'N/A' }} <i class="feather icon-external-link text-primary ms-1" style="font-size: 0.8rem;"></i>
+                                                                                </a>
                                                                             </div>
-
-                                                                            <div class="row g-3">
-                                                                                <div class="col-md-4 text-start">
-                                                                                    <label class="form-label small fw-bold">Cuenta de Pago</label>
-                                                                                    <select name="account_id" class="form-control form-control-sm" required>
-                                                                                        @foreach ($accounts ?? [] as $account)
-                                                                                            <option value="{{ $account->id }}">{{ $account->name }}</option>
-                                                                                        @endforeach
-                                                                                    </select>
+                                                                            @if($enrollment->student->birthdate)
+                                                                                <small class="text-muted d-block mt-1">Edad: {{ \Carbon\Carbon::parse($enrollment->student->birthdate)->age }} años</small>
+                                                                            @endif
+                                                                        </td>
+                                                                        <td class="text-center">
+                                                                            @if($enrollment->image_consent_accepted)
+                                                                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1" style="font-size: 0.78rem;" title="Consentimiento de imagen otorgado">
+                                                                                    <i class="fas fa-check-circle me-1"></i> Autorizado
+                                                                                </span>
+                                                                            @else
+                                                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1" style="font-size: 0.78rem;" title="Sin consentimiento de uso de imagen">
+                                                                                    <i class="fas fa-times-circle me-1"></i> No Autorizado
+                                                                                </span>
+                                                                            @endif
+                                                                        </td>
+                                                                        <td>{{ $enrollment->parent->name ?? 'N/A' }}</td>
+                                                                        <td>
+                                                                            <div>{{ $enrollment->parent->dial_code ?? '' }} {{ $enrollment->parent->whatsapp ?? 'N/A' }}</div>
+                                                                            <small class="text-muted">{{ $enrollment->parent->email ?? '' }}</small>
+                                                                        </td>
+                                                                        <td class="text-center">
+                                                                            @if($enrollment->is_free_trial)
+                                                                                <span class="badge bg-info px-3 py-2 text-white">Clase de prueba gratis</span>
+                                                                            @elseif($isCoursePaid)
+                                                                                <div>
+                                                                                    <span class="badge bg-success px-3 py-2 text-white d-inline-block mb-1">Pagado</span>
                                                                                 </div>
-                                                                                <div class="col-md-4 text-start">
-                                                                                    <label class="form-label small fw-bold">Referencia / Observación</label>
-                                                                                    <input type="text" name="reference" class="form-control form-control-sm" placeholder="Ej. Transacción 1234">
-                                                                                </div>
-                                                                                <div class="col-md-4 text-start">
-                                                                                    <label class="form-label small fw-bold">Comprobante de Pago</label>
-                                                                                    <input type="file" name="payment_receipt" class="form-control form-control-sm" accept="image/*,.pdf">
-                                                                                </div>
-                                                                                <div class="col-md-12 text-end mt-2">
-                                                                                    <button type="submit" class="btn btn-sm btn-primary">
-                                                                                        <i class="fas fa-check"></i> Registrar Pago y Confirmar
+                                                                            @else
+                                                                                <div>
+                                                                                    <span class="badge bg-warning text-dark px-3 py-2 d-inline-block mb-1">Pendiente</span>
+                                                                                    <button class="btn btn-xs btn-outline-primary d-block mx-auto mt-1" type="button" data-bs-toggle="collapse" data-bs-target="#attach-payment-{{ $enrollment->id }}" aria-expanded="false" aria-controls="attach-payment-{{ $enrollment->id }}">
+                                                                                        <i class="fas fa-file-invoice-dollar me-1"></i> Registrar Pago
                                                                                     </button>
                                                                                 </div>
-                                                                            </div>
+                                                                            @endif
+                                                                        </td>
+                                                                        <td class="text-center">
+                                                                            @if($cxcIsTrial)
+                                                                                <span class="text-muted small">Prueba Gratis</span>
+                                                                            @else
+                                                                                <span class="fw-semibold text-dark">${{ number_format($cxcAmount, 2) }}</span>
+                                                                            @endif
+                                                                        </td>
+                                                                        <td class="text-center">
+                                                                            @if($cxcIsTrial)
+                                                                                <span class="text-muted small">-</span>
+                                                                            @else
+                                                                                <span class="fw-semibold text-dark">${{ number_format($cxcPaid, 2) }}</span>
+                                                                            @endif
+                                                                        </td>
+                                                                        <td class="text-center">
+                                                                            @if($cxcIsTrial)
+                                                                                <span class="text-muted small">-</span>
+                                                                            @elseif($cxcBalanceDue > 0)
+                                                                                <div>
+                                                                                    <span class="badge bg-warning text-dark px-2.5 py-1" title="Cuenta por cobrar pendiente">Pendiente</span>
+                                                                                    <div class="fw-bold text-danger mt-1">${{ number_format($cxcBalanceDue, 2) }}</div>
+                                                                                </div>
+                                                                            @else
+                                                                                <div>
+                                                                                    <span class="badge bg-success text-white px-2.5 py-1" title="Cuenta por cobrar al día">Pagado</span>
+                                                                                    <div class="text-muted small mt-1">$0.00</div>
+                                                                                </div>
+                                                                            @endif
+                                                                        </td>
+                                                                        <td class="text-center">
+                                                                            <form action="{{ route('enrollment.course.status', [$enrollment->id, $course->id]) }}" method="POST" class="d-inline">
+                                                                                @csrf
+                                                                                @method('PATCH')
+                                                                                <input type="hidden" name="status" value="cancelled">
+                                                                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Seguro que deseas retirar a {{ $enrollment->student->name }} de esta clase?')" title="Retirar estudiante de esta clase">
+                                                                                    <i class="fas fa-user-minus"></i> Retirar
+                                                                                </button>
+                                                                            </form>
+                                                                        </td>
+                                                                    </tr>
+                                                                    @if($enrollment->status !== 'cancelled' && !$isCoursePaid)
+                                                                        <tr class="collapse" id="attach-payment-{{ $enrollment->id }}">
+                                                                            <td colspan="10" class="bg-light p-0">
+                                                                                <div class="p-3 border rounded m-2 bg-white shadow-sm">
+                                                                                    <form action="{{ route('enrollment.attach-payment', $enrollment->id) }}" method="POST" enctype="multipart/form-data">
+                                                                                        @csrf
+                                                                                        
+                                                                                        <!-- Visualización de montos -->
+                                                                                        <div class="row g-3 mb-3">
+                                                                                            <div class="col-md-12 text-start">
+                                                                                                @php
+                                                                                                    $enrollmentFee = $enrollment->getEnrollmentFee();
+                                                                                                    $monthlyFees = 0.0;
+                                                                                                    foreach ($enrollment->courses as $c) {
+                                                                                                        $monthlyFees += (float) ($c->monthly_fee ?? 0);
+                                                                                                    }
+                                                                                                    $suggestedTotal = $enrollmentFee + $monthlyFees;
+                                                                                                @endphp
+                                                                                                <div class="p-3 border rounded bg-light mb-0" style="border-left: 4px solid #0d6efd !important;">
+                                                                                                    <h6 class="fw-bold mb-2 small text-dark"><i class="fas fa-file-invoice-dollar text-primary me-1"></i> Detalle de la Factura (Monto Sugerido)</h6>
+                                                                                                    <div class="d-flex justify-content-between small mb-1">
+                                                                                                        <span class="text-muted">Inscripción:</span>
+                                                                                                        <span class="fw-semibold">${{ number_format($enrollmentFee, 2) }}</span>
+                                                                                                    </div>
+                                                                                                    <div class="d-flex justify-content-between small mb-1">
+                                                                                                        <span class="text-muted">Mensualidad:</span>
+                                                                                                        <span class="fw-semibold">${{ number_format($monthlyFees, 2) }}</span>
+                                                                                                    </div>
+                                                                                                    <div class="d-flex justify-content-between small mb-1 text-primary fw-bold">
+                                                                                                        <span>Total Sugerido:</span>
+                                                                                                        <span>${{ number_format($suggestedTotal, 2) }}</span>
+                                                                                                    </div>
+                                                                                                    @if($enrollment->receivable)
+                                                                                                        <hr class="my-1">
+                                                                                                        <div class="d-flex justify-content-between small mb-0 text-danger fw-bold">
+                                                                                                            <span>Saldo Total Pendiente:</span>
+                                                                                                            <span>${{ number_format($enrollment->receivable->balance_due, 2) }}</span>
+                                                                                                        </div>
+                                                                                                    @endif
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+
+                                                                                        <!-- Opciones de pago -->
+                                                                                        <div class="row g-3 mb-3">
+                                                                                            <div class="col-md-12 text-start">
+                                                                                                <label class="form-label small fw-bold d-block">Costo de Inscripción</label>
+                                                                                                <div class="form-check form-check-inline">
+                                                                                                    <input class="form-check-input payment-option-radio" type="radio" name="amount_option" id="amount_opt_suggested_{{ $enrollment->id }}" value="suggested" checked data-enrollment-id="{{ $enrollment->id }}">
+                                                                                                    <label class="form-check-label" for="amount_opt_suggested_{{ $enrollment->id }}">
+                                                                                                        Monto sugerido (${{ number_format($suggestedTotal, 2) }})
+                                                                                                    </label>
+                                                                                                </div>
+                                                                                                <div class="form-check form-check-inline">
+                                                                                                    <input class="form-check-input payment-option-radio" type="radio" name="amount_option" id="amount_opt_custom_{{ $enrollment->id }}" value="custom" data-enrollment-id="{{ $enrollment->id }}">
+                                                                                                    <label class="form-check-label" for="amount_opt_custom_{{ $enrollment->id }}">
+                                                                                                        Monto total personalizado
+                                                                                                    </label>
+                                                                                                </div>
+                                                                                                
+                                                                                                <div class="mt-2 d-none" id="custom-amount-container-{{ $enrollment->id }}">
+                                                                                                    <label class="form-label small fw-bold">Monto personalizado ($)</label>
+                                                                                                    <input type="number" name="custom_amount" id="custom_amount_{{ $enrollment->id }}" class="form-control form-control-sm w-50" step="0.01" min="0.01" max="{{ $enrollment->receivable ? $enrollment->receivable->balance_due : '' }}" placeholder="Ingrese el monto personalizado">
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+
+                                                                                        <div class="row g-3">
+                                                                                            <div class="col-md-4 text-start">
+                                                                                                <label class="form-label small fw-bold">Cuenta de Pago</label>
+                                                                                                <select name="account_id" class="form-control form-control-sm" required>
+                                                                                                    @foreach ($accounts ?? [] as $account)
+                                                                                                        <option value="{{ $account->id }}">{{ $account->name }}</option>
+                                                                                                    @endforeach
+                                                                                                </select>
+                                                                                            </div>
+                                                                                            <div class="col-md-4 text-start">
+                                                                                                <label class="form-label small fw-bold">Referencia / Observación</label>
+                                                                                                <input type="text" name="reference" class="form-control form-control-sm" placeholder="Ej. Transacción 1234">
+                                                                                            </div>
+                                                                                            <div class="col-md-4 text-start">
+                                                                                                <label class="form-label small fw-bold">Comprobante de Pago</label>
+                                                                                                <input type="file" name="payment_receipt" class="form-control form-control-sm" accept="image/*,.pdf">
+                                                                                            </div>
+                                                                                            <div class="col-md-12 text-end mt-2">
+                                                                                                <button type="submit" class="btn btn-sm btn-primary">
+                                                                                                    <i class="fas fa-check"></i> Registrar Pago y Confirmar
+                                                                                                </button>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </form>
+                                                                                </div>
+                                                                            </td>
+                                                                        </tr>
+                                                                    @endif
+                                                            @endforeach
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                @endif
+                                            </div>
+
+                                            <!-- Tab Retirados -->
+                                            @if($cancelledEnrollments->isNotEmpty())
+                                                <div class="tab-pane fade" id="cancelled-students-content" role="tabpanel" aria-labelledby="cancelled-students-tab">
+                                                    <div class="table-responsive">
+                                                        <table class="table table-hover align-middle table-sm">
+                                                            <thead class="table-light">
+                                                                <tr>
+                                                                    <th>#</th>
+                                                                    <th>Estudiante</th>
+                                                                    <th>Representante</th>
+                                                                    <th>Teléfono / Correo</th>
+                                                                    <th class="text-center">Estado</th>
+                                                                    <th class="text-center">Monto Pagado</th>
+                                                                    <th class="text-center">Acciones</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                            @foreach($cancelledEnrollments as $cIndex => $enrollment)
+                                                                @php
+                                                                    $financial = $enrollment->getCourseBreakdown()[$course->id] ?? null;
+                                                                    $cxcPaid = $financial ? $financial['paid'] : 0.00;
+                                                                @endphp
+                                                                <tr class="table-light text-muted">
+                                                                    <td>{{ $cIndex + 1 }}</td>
+                                                                    <td>
+                                                                        <a href="{{ route('students.show', $enrollment->student->id) }}" target="_blank" class="text-secondary text-decoration-none fw-semibold">
+                                                                            {{ $enrollment->student->name ?? 'N/A' }} <i class="feather icon-external-link ms-1" style="font-size: 0.75rem;"></i>
+                                                                        </a>
+                                                                    </td>
+                                                                    <td>{{ $enrollment->parent->name ?? 'N/A' }}</td>
+                                                                    <td>
+                                                                        <div>{{ $enrollment->parent->dial_code ?? '' }} {{ $enrollment->parent->whatsapp ?? 'N/A' }}</div>
+                                                                        <small class="text-muted">{{ $enrollment->parent->email ?? '' }}</small>
+                                                                    </td>
+                                                                    <td class="text-center">
+                                                                        <span class="badge bg-danger text-white px-2.5 py-1">Retirado / Cancelado</span>
+                                                                    </td>
+                                                                    <td class="text-center font-monospace">${{ number_format($cxcPaid, 2) }}</td>
+                                                                    <td class="text-center">
+                                                                        <form action="{{ route('enrollment.course.status', [$enrollment->id, $course->id]) }}" method="POST" class="d-inline">
+                                                                            @csrf
+                                                                            @method('PATCH')
+                                                                            <input type="hidden" name="status" value="active">
+                                                                            <button type="submit" class="btn btn-xs btn-outline-success" onclick="return confirm('¿Deseas reactivar la inscripción de {{ $enrollment->student->name }} en esta clase?')" title="Reactivar estudiante en esta clase">
+                                                                                <i class="fas fa-user-plus me-1"></i> Reactivar
+                                                                            </button>
                                                                         </form>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        @endif
-                                                    @endforeach
-                                                </tbody>
-                                            </table>
+                                                                    </td>
+                                                                </tr>
+                                                            @endforeach
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            @endif
                                         </div>
                                     @endif
                                 </div>

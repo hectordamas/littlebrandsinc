@@ -40,7 +40,10 @@ class Course extends Model
     {
         return $this->belongsToMany(Enrollment::class, 'enrollment_course', 'course_id', 'enrollment_id')
             ->where('enrollments.status', '!=', 'cancelled')
-            ->wherePivot('status', '!=', 'cancelled')
+            ->where(function ($query) {
+                $query->whereNull('enrollment_course.status')
+                    ->orWhere('enrollment_course.status', '!=', 'cancelled');
+            })
             ->withPivot(['custom_amount', 'status'])
             ->withTimestamps();
     }

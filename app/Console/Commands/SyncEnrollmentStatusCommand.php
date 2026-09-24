@@ -80,7 +80,7 @@ class SyncEnrollmentStatusCommand extends Command
             $newPaymentStatus = $oldPaymentStatus;
             if ($enrollment->is_free_trial) {
                 $newPaymentStatus = 'paid';
-            } elseif ($totalPaid > 0) {
+            } elseif ($totalPaid > 0 || ($enrollment->receivable && (float) $enrollment->receivable->balance_due <= 0.00)) {
                 $newPaymentStatus = 'paid';
             }
 

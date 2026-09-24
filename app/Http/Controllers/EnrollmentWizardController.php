@@ -403,9 +403,7 @@ class EnrollmentWizardController extends Controller
 
         $program = Program::findOrFail($programId);
 
-        $courses = Course::withCount(['enrollments' => function ($q) {
-            $q->where('enrollments.status', '!=', 'cancelled');
-        }])
+        $courses = Course::withCount('activeEnrollments as enrollments_count')
             ->whereIn('id', $courseIds)
             ->get();
 
@@ -662,9 +660,7 @@ class EnrollmentWizardController extends Controller
 
         $student = Student::find($studentId);
         $program = Program::find($programId);
-        $courses = Course::withCount(['enrollments' => function ($q) {
-            $q->where('enrollments.status', '!=', 'cancelled');
-        }])->whereIn('id', $courseIds)->get();
+        $courses = Course::withCount('activeEnrollments as enrollments_count')->whereIn('id', $courseIds)->get();
 
         if (! $student || ! $program || $courses->isEmpty()) {
             return $this->wizardJsonOrRedirect($request, [
@@ -688,7 +684,13 @@ class EnrollmentWizardController extends Controller
             $existingEnrollment = Enrollment::query()
                 ->where('student_id', $student->id)
                 ->where('status', '!=', 'cancelled')
-                ->whereHas('courses', fn($q) => $q->where('course_id', $course->id))
+                ->whereHas('courses', function ($q) use ($course) {
+                    $q->where('courses.id', $course->id)
+                        ->where(function ($sq) {
+                            $sq->whereNull('enrollment_course.status')
+                                ->orWhere('enrollment_course.status', '!=', 'cancelled');
+                        });
+                })
                 ->where('is_free_trial', false)
                 ->exists();
 
@@ -1033,9 +1035,7 @@ class EnrollmentWizardController extends Controller
         $q = Course::query()
             ->where('active', true)
             ->whereDate('end_date', '>=', now()->toDateString())
-            ->withCount(['enrollments' => function ($q) {
-                $q->where('enrollments.status', '!=', 'cancelled');
-            }])
+            ->withCount('activeEnrollments as enrollments_count')
             ->with(['program', 'branch']);
 
         if ($lockedCourseId) {
@@ -1118,9 +1118,7 @@ class EnrollmentWizardController extends Controller
 
         $courseIds = $request->session()->get('selected_course_ids', []);
         $selectedCourseModels = ! empty($courseIds)
-            ? Course::withCount(['enrollments' => function ($q) {
-                $q->where('enrollments.status', '!=', 'cancelled');
-            }])->whereIn('id', $courseIds)->get()
+            ? Course::withCount('activeEnrollments as enrollments_count')->whereIn('id', $courseIds)->get()
             : collect();
 
         $courseSchedules = [];

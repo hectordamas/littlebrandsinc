@@ -33,11 +33,9 @@ class WaitlistController extends Controller
             return redirect()->back()->with('error', 'La entrada de lista de espera no tiene curso o estudiante asociado.');
         }
 
-        $course->loadCount(['enrollments' => function ($q) {
-            $q->where('enrollments.status', '!=', 'cancelled');
-        }]);
+        $course->loadCount('activeEnrollments');
 
-        if ((int) $course->enrollments_count + 1 > (int) $course->capacity) {
+        if ((int) $course->active_enrollments_count + 1 > (int) $course->capacity) {
             return redirect()->back()->with('error', 'El curso "' . $course->title . '" no tiene cupos disponibles.');
         }
 
@@ -56,7 +54,11 @@ class WaitlistController extends Controller
         $alreadyEnrolled = Enrollment::where('student_id', $student->id)
             ->where('status', '!=', 'cancelled')
             ->whereHas('courses', function ($query) use ($course) {
-                $query->where('courses.id', $course->id);
+                $query->where('courses.id', $course->id)
+                    ->where(function ($q) {
+                        $q->whereNull('enrollment_course.status')
+                            ->orWhere('enrollment_course.status', '!=', 'cancelled');
+                    });
             })
             ->exists();
 

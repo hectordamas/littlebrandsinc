@@ -177,11 +177,15 @@
                                                 </div>
                                             </td>
                                             <td class="text-center">
-                                                @if (($financial['is_cancelled'] ?? false) || $enrollment->status === 'cancelled')
+                                                @php
+                                                    $isCourseCancelled = ($financial['is_cancelled'] ?? false) || $enrollment->status === 'cancelled';
+                                                    $isCoursePaid = !$isCourseCancelled && !$isFreeTrial && ($courseBalance <= 0.00 || $enrollment->payment_status === 'paid');
+                                                @endphp
+                                                @if ($isCourseCancelled)
                                                     <span class="badge bg-danger" title="Inscripción a este curso cancelada">Cancelado</span>
                                                 @elseif ($isFreeTrial)
                                                     <span class="badge bg-info text-white" title="Prueba Gratis">Prueba Gratis</span>
-                                                @elseif ($enrollment->payment_status === 'paid')
+                                                @elseif ($isCoursePaid)
                                                     <span class="badge bg-success" title="Pago de inscripción completado">Pagado</span>
                                                 @else
                                                     <span class="badge bg-warning text-dark" title="Pago de inscripción pendiente">Pendiente</span>
@@ -244,11 +248,7 @@
                                             </td>
                                             <td class="text-center">
                                                 <div class="d-flex justify-content-center align-items-center gap-2">
-                                                    @php
-                                                        $isCourseCancelled = ($financial['is_cancelled'] ?? false) || $enrollment->status === 'cancelled';
-                                                    @endphp
-
-                                                    @if (!$isCourseCancelled && !$isFreeTrial)
+                                                    @if (!$isCourseCancelled && !$isFreeTrial && !$isCoursePaid)
                                                         <button class="btn btn-xs btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#register-course-payment-modal-{{ $enrollment->id }}-{{ $course->id }}" title="Registrar Pago de esta clase">
                                                             <i class="fas fa-file-invoice-dollar me-1"></i> Registrar Pago
                                                         </button>

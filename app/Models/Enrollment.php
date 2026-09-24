@@ -329,6 +329,17 @@ class Enrollment extends Model
             'status' => $status,
         ]);
 
+        $enrollmentUpdates = [];
+        if ($balance <= 0 && $this->payment_status !== 'paid') {
+            $enrollmentUpdates['payment_status'] = 'paid';
+        }
+        if ($balance <= 0 && $this->status === 'pending') {
+            $enrollmentUpdates['status'] = 'completed';
+        }
+        if (!empty($enrollmentUpdates)) {
+            $this->update($enrollmentUpdates);
+        }
+
         // Sync installments status
         $remainingPaid = max(0.0, $paidAmount - $enrollmentFee);
         $installments = $this->installments()->orderBy('due_date')->get();
