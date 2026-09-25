@@ -116,7 +116,7 @@ class CoursesController extends Controller
                     }
                 }
 
-                $resolvedPaymentStatus = ($cxcBalanceDue <= 0.00 || $enrollment->payment_status === 'paid') ? 'paid' : 'pending';
+                $resolvedPaymentStatus = ($cxcBalanceDue <= 0.00) ? 'paid' : 'pending';
 
                 return [
                     'student_id' => $studentId,

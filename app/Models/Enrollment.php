@@ -330,11 +330,17 @@ class Enrollment extends Model
         ]);
 
         $enrollmentUpdates = [];
-        if ($balance <= 0 && $this->payment_status !== 'paid') {
-            $enrollmentUpdates['payment_status'] = 'paid';
-        }
-        if ($balance <= 0 && $this->status === 'pending') {
-            $enrollmentUpdates['status'] = 'completed';
+        if ($balance <= 0) {
+            if ($this->payment_status !== 'paid') {
+                $enrollmentUpdates['payment_status'] = 'paid';
+            }
+            if ($this->status === 'pending') {
+                $enrollmentUpdates['status'] = 'completed';
+            }
+        } else {
+            if ($this->payment_status === 'paid') {
+                $enrollmentUpdates['payment_status'] = ($paidAmount > 0) ? 'partial' : 'pending';
+            }
         }
         if (!empty($enrollmentUpdates)) {
             $this->update($enrollmentUpdates);

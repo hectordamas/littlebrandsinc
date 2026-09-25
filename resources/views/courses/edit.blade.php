@@ -607,7 +607,7 @@
                                                                         $cxcPaid = ($cxcIsTrial || !$financial) ? 0.00 : $financial['paid'];
                                                                         $cxcBalanceDue = ($cxcIsTrial || !$financial) ? 0.00 : $financial['balance'];
                                                                         $isCourseCancelled = false;
-                                                                        $isCoursePaid = !$cxcIsTrial && ($cxcBalanceDue <= 0.00 || $enrollment->payment_status === 'paid');
+                                                                        $isCoursePaid = !$cxcIsTrial && ($cxcBalanceDue <= 0.00);
                                                                     @endphp
                                                                     <tr>
                                                                         <td>{{ $index + 1 }}</td>

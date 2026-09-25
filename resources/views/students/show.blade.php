@@ -179,7 +179,7 @@
                                             <td class="text-center">
                                                 @php
                                                     $isCourseCancelled = ($financial['is_cancelled'] ?? false) || $enrollment->status === 'cancelled';
-                                                    $isCoursePaid = !$isCourseCancelled && !$isFreeTrial && ($courseBalance <= 0.00 || $enrollment->payment_status === 'paid');
+                                                    $isCoursePaid = !$isCourseCancelled && !$isFreeTrial && ($courseBalance <= 0.00);
                                                 @endphp
                                                 @if ($isCourseCancelled)
                                                     <span class="badge bg-danger" title="Inscripción a este curso cancelada">Cancelado</span>
@@ -949,6 +949,22 @@
                         }
                     }
                 });
+            });
+
+            $(document).on('show.bs.modal', '.modal', function () {
+                const zIndex = 1050 + (10 * $('.modal:visible').length);
+                $(this).css('z-index', zIndex);
+                setTimeout(function() {
+                    $('.modal-backdrop').not('.modal-stack').css('z-index', zIndex - 1).addClass('modal-stack');
+                }, 0);
+            });
+
+            $(document).on('hidden.bs.modal', '.modal', function () {
+                if ($('.modal:visible').length > 0) {
+                    setTimeout(function() {
+                        $(document.body).addClass('modal-open');
+                    }, 0);
+                }
             });
         });
     </script>
