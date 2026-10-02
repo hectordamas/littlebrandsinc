@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\{Account, AccountPayable, AccountReceivable, Branch, Enrollment, ParentPayment, Program, Transaction};
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,9 +18,17 @@ class FinanceController extends Controller
     {
         $validated = Validator::make($request->all(), [
             'branch_id' => ['nullable', 'string'],
+            'period' => ['nullable', 'string'],
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date'],
         ])->validate();
 
         $branchId = isset($validated['branch_id']) && $validated['branch_id'] !== '' ? $validated['branch_id'] : null;
+        $period = $validated['period'] ?? null;
+        $startDateInput = $validated['start_date'] ?? null;
+        $endDateInput = $validated['end_date'] ?? null;
+
+        [$startDate, $endDate, $resolvedPeriod] = $this->resolveDateRange($period, $startDateInput, $endDateInput);
 
         $accounts = Account::query()
             ->withCount('transactions')
@@ -33,13 +42,16 @@ class FinanceController extends Controller
 
         $this->syncEnrollmentReceivables();
 
-        $summary = $this->buildSummary($branchId);
+        $summary = $this->buildSummary($branchId, $startDate, $endDate);
 
         if ($request->ajax() || $request->input('format') === 'json') {
-            $transactions = $this->transactionsQuery($branchId)->get();
+            $transactions = $this->transactionsQuery($branchId, $startDate, $endDate)->get();
 
             return response()->json([
                 'branch_id' => $branchId,
+                'period' => $resolvedPeriod,
+                'start_date' => $startDateInput,
+                'end_date' => $endDateInput,
                 'summary' => $summary,
                 'transactions' => $this->serializeTransactions($transactions),
             ]);
@@ -49,6 +61,9 @@ class FinanceController extends Controller
             'accounts' => $accounts,
             'branches' => $branches,
             'selectedBranchId' => $branchId,
+            'selectedPeriod' => $resolvedPeriod,
+            'selectedStartDate' => $startDateInput,
+            'selectedEndDate' => $endDateInput,
             'completedIncome' => $summary['completedIncome'],
             'completedExpenses' => $summary['completedExpenses'],
             'pendingCollectionAmount' => $summary['pendingCollectionAmount'],
@@ -68,6 +83,12 @@ class FinanceController extends Controller
             $branchId = null;
         }
 
+        $period = $request->input('period');
+        $startDateInput = $request->input('start_date');
+        $endDateInput = $request->input('end_date');
+
+        [$startDate, $endDate, $resolvedPeriod] = $this->resolveDateRange($period, $startDateInput, $endDateInput);
+
         $query = AccountReceivable::query()
             ->with(['branch', 'enrollment.courses', 'enrollment.student', 'enrollment.program'])
             ->whereIn('status', ['pending', 'partial']);
@@ -79,6 +100,8 @@ class FinanceController extends Controller
                 $query->where('branch_id', (int) $branchId);
             }
         }
+
+        $this->applyDateFilter($query, $startDate, $endDate, 'created_at');
 
         $receivables = $query->orderByDesc('id')->get();
 
@@ -94,6 +117,9 @@ class FinanceController extends Controller
             'branches' => $branches,
             'accounts' => $accounts,
             'selectedBranchId' => $branchId,
+            'selectedPeriod' => $resolvedPeriod,
+            'selectedStartDate' => $startDateInput,
+            'selectedEndDate' => $endDateInput,
             'pendingCollectionAmount' => (float) $receivables->sum('balance_due'),
         ]);
     }
@@ -245,6 +271,12 @@ class FinanceController extends Controller
             $branchId = null;
         }
 
+        $period = $request->input('period');
+        $startDateInput = $request->input('start_date');
+        $endDateInput = $request->input('end_date');
+
+        [$startDate, $endDate, $resolvedPeriod] = $this->resolveDateRange($period, $startDateInput, $endDateInput);
+
         $query = AccountPayable::query()
             ->with(['branch']);
 
@@ -256,6 +288,8 @@ class FinanceController extends Controller
             }
         }
 
+        $this->applyDateFilter($query, $startDate, $endDate, 'created_at');
+
         $payables = $query->orderByDesc('id')->get();
 
         $branches = Branch::query()->orderBy('name')->get();
@@ -264,6 +298,9 @@ class FinanceController extends Controller
             'payables' => $payables,
             'branches' => $branches,
             'selectedBranchId' => $branchId,
+            'selectedPeriod' => $resolvedPeriod,
+            'selectedStartDate' => $startDateInput,
+            'selectedEndDate' => $endDateInput,
             'pendingPayableAmount' => (float) $payables->whereIn('status', ['pending', 'partial'])->sum('balance_due'),
         ]);
     }
@@ -575,7 +612,7 @@ class FinanceController extends Controller
         return $pdf->download('comprobante-movimiento-'.$transaction->id.'.pdf');
     }
 
-    protected function transactionsQuery($branchId = null)
+    protected function transactionsQuery($branchId = null, ?Carbon $startDate = null, ?Carbon $endDate = null)
     {
         $query = Transaction::with(['account', 'branch', 'enrollment', 'student', 'course'])
             ->orderBy('created_at', 'desc');
@@ -588,10 +625,12 @@ class FinanceController extends Controller
             }
         }
 
+        $this->applyDateFilter($query, $startDate, $endDate, 'created_at');
+
         return $query;
     }
 
-    protected function pendingCollectionsByBranchQuery($branchId = null)
+    protected function pendingCollectionsByBranchQuery($branchId = null, ?Carbon $startDate = null, ?Carbon $endDate = null)
     {
         $query = AccountReceivable::query()
             ->whereIn('status', ['pending', 'partial']);
@@ -604,10 +643,12 @@ class FinanceController extends Controller
             }
         }
 
+        $this->applyDateFilter($query, $startDate, $endDate, 'created_at');
+
         return $query;
     }
 
-    protected function pendingPayablesByBranchQuery($branchId = null)
+    protected function pendingPayablesByBranchQuery($branchId = null, ?Carbon $startDate = null, ?Carbon $endDate = null)
     {
         $query = AccountPayable::query()
             ->whereIn('status', ['pending', 'partial']);
@@ -620,12 +661,14 @@ class FinanceController extends Controller
             }
         }
 
+        $this->applyDateFilter($query, $startDate, $endDate, 'created_at');
+
         return $query;
     }
 
-    protected function buildSummary($branchId = null): array
+    protected function buildSummary($branchId = null, ?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
-        $completedIncome = (float) Transaction::query()
+        $completedIncomeQuery = Transaction::query()
             ->when($branchId !== null && $branchId !== '', function ($query) use ($branchId) {
                 if ($branchId === 'general') {
                     $query->whereNull('branch_id');
@@ -634,10 +677,11 @@ class FinanceController extends Controller
                 }
             })
             ->where('type', 'income')
-            ->where('status', 'completed')
-            ->sum('amount');
+            ->where('status', 'completed');
+        $this->applyDateFilter($completedIncomeQuery, $startDate, $endDate, 'created_at');
+        $completedIncome = (float) $completedIncomeQuery->sum('amount');
 
-        $completedExpenses = (float) Transaction::query()
+        $completedExpensesQuery = Transaction::query()
             ->when($branchId !== null && $branchId !== '', function ($query) use ($branchId) {
                 if ($branchId === 'general') {
                     $query->whereNull('branch_id');
@@ -646,14 +690,17 @@ class FinanceController extends Controller
                 }
             })
             ->where('type', 'expense')
-            ->where('status', 'completed')
-            ->sum('amount');
+            ->where('status', 'completed');
+        $this->applyDateFilter($completedExpensesQuery, $startDate, $endDate, 'created_at');
+        $completedExpenses = (float) $completedExpensesQuery->sum('amount');
 
-        $pendingCollectionAmount = (float) $this->pendingCollectionsByBranchQuery($branchId)->sum('balance_due');
-        $pendingCollectionsCount = (int) $this->pendingCollectionsByBranchQuery($branchId)->count();
+        $pendingCollectionsQuery = $this->pendingCollectionsByBranchQuery($branchId, $startDate, $endDate);
+        $pendingCollectionAmount = (float) $pendingCollectionsQuery->sum('balance_due');
+        $pendingCollectionsCount = (int) $pendingCollectionsQuery->count();
 
-        $pendingPayableAmount = (float) $this->pendingPayablesByBranchQuery($branchId)->sum('balance_due');
-        $pendingPayablesCount = (int) $this->pendingPayablesByBranchQuery($branchId)->count();
+        $pendingPayablesQuery = $this->pendingPayablesByBranchQuery($branchId, $startDate, $endDate);
+        $pendingPayableAmount = (float) $pendingPayablesQuery->sum('balance_due');
+        $pendingPayablesCount = (int) $pendingPayablesQuery->count();
 
         return [
             'completedIncome' => $completedIncome,
@@ -664,6 +711,73 @@ class FinanceController extends Controller
             'netBalance' => $completedIncome - $completedExpenses,
             'pendingCollectionsCount' => $pendingCollectionsCount,
         ];
+    }
+
+    protected function resolveDateRange(?string $period, ?string $startDate, ?string $endDate): array
+    {
+        $start = null;
+        $end = null;
+        $resolvedPeriod = $period ?: '';
+
+        if ($period === 'today') {
+            $start = Carbon::today()->startOfDay();
+            $end = Carbon::today()->endOfDay();
+        } elseif ($period === 'yesterday') {
+            $start = Carbon::yesterday()->startOfDay();
+            $end = Carbon::yesterday()->endOfDay();
+        } elseif ($period === 'this_week') {
+            $start = Carbon::now()->startOfWeek()->startOfDay();
+            $end = Carbon::now()->endOfWeek()->endOfDay();
+        } elseif ($period === 'last_week') {
+            $start = Carbon::now()->subWeek()->startOfWeek()->startOfDay();
+            $end = Carbon::now()->subWeek()->endOfWeek()->endOfDay();
+        } elseif ($period === 'this_month') {
+            $start = Carbon::now()->startOfMonth()->startOfDay();
+            $end = Carbon::now()->endOfMonth()->endOfDay();
+        } elseif ($period === 'last_month') {
+            $start = Carbon::now()->subMonth()->startOfMonth()->startOfDay();
+            $end = Carbon::now()->subMonth()->endOfMonth()->endOfDay();
+        } elseif ($period === 'this_quarter') {
+            $start = Carbon::now()->startOfQuarter()->startOfDay();
+            $end = Carbon::now()->endOfQuarter()->endOfDay();
+        } elseif ($period === 'this_year') {
+            $start = Carbon::now()->startOfYear()->startOfDay();
+            $end = Carbon::now()->endOfYear()->endOfDay();
+        } elseif ($period === 'last_year') {
+            $start = Carbon::now()->subYear()->startOfYear()->startOfDay();
+            $end = Carbon::now()->subYear()->endOfYear()->endOfDay();
+        } elseif ($period === 'custom' || (!empty($startDate) || !empty($endDate))) {
+            $resolvedPeriod = 'custom';
+            if (!empty($startDate)) {
+                try {
+                    $start = Carbon::parse($startDate)->startOfDay();
+                } catch (\Exception $e) {
+                    $start = null;
+                }
+            }
+            if (!empty($endDate)) {
+                try {
+                    $end = Carbon::parse($endDate)->endOfDay();
+                } catch (\Exception $e) {
+                    $end = null;
+                }
+            }
+        }
+
+        return [$start, $end, $resolvedPeriod];
+    }
+
+    protected function applyDateFilter($query, ?Carbon $start, ?Carbon $end, string $column = 'created_at')
+    {
+        if ($start && $end) {
+            $query->whereBetween($column, [$start->toDateTimeString(), $end->toDateTimeString()]);
+        } elseif ($start) {
+            $query->where($column, '>=', $start->toDateTimeString());
+        } elseif ($end) {
+            $query->where($column, '<=', $end->toDateTimeString());
+        }
+
+        return $query;
     }
 
     protected function serializeTransactions($transactions): array

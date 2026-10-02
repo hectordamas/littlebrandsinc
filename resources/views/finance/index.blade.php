@@ -350,23 +350,65 @@
     </div>
 
     <div class="col-md-12">
-        <div class="finance-toolbar">
-            <div class="form-group">
-                <label for="financeBranchFilter" class="form-label">Filtrar por sede</label>
-                <select id="financeBranchFilter" class="form-control">
-                    <option value="">Todas las sedes</option>
-                    <option value="general" @selected($selectedBranchId === 'general')>Gastos e Ingresos Generales</option>
-                    @foreach ($branches as $branch)
-                        <option value="{{ $branch->id }}" @selected((string) $selectedBranchId === (string) $branch->id)>{{ $branch->name }}</option>
-                    @endforeach
-                </select>
-            </div>
+        <div class="card mb-3 shadow-sm border-0" style="background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); border-radius: 0.9rem;">
+            <div class="card-body p-3">
+                <div class="row g-2 align-items-end">
+                    <div class="col-12 col-md-4 col-lg-3">
+                        <label for="financeBranchFilter" class="form-label small fw-bold text-muted mb-1">
+                            <i class="fas fa-building me-1 text-primary"></i> Filtrar por sede
+                        </label>
+                        <select id="financeBranchFilter" class="form-control form-control-sm">
+                            <option value="">Todas las sedes</option>
+                            <option value="general" @selected($selectedBranchId === 'general')>Gastos e Ingresos Generales</option>
+                            @foreach ($branches as $branch)
+                                <option value="{{ $branch->id }}" @selected((string) $selectedBranchId === (string) $branch->id)>{{ $branch->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
 
-            <div id="financeFilterSpinner" class="finance-filter-spinner" aria-live="polite">
-                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                <span>Filtrando movimientos...</span>
-            </div>
+                    <div class="col-12 col-md-4 col-lg-3">
+                        <label for="financePeriodFilter" class="form-label small fw-bold text-muted mb-1">
+                            <i class="fas fa-calendar-alt me-1 text-primary"></i> Período de tiempo
+                        </label>
+                        <select id="financePeriodFilter" class="form-control form-control-sm">
+                            <option value="" @selected(empty($selectedPeriod))>Todo el histórico</option>
+                            <option value="today" @selected($selectedPeriod === 'today')>Hoy</option>
+                            <option value="yesterday" @selected($selectedPeriod === 'yesterday')>Ayer</option>
+                            <option value="this_week" @selected($selectedPeriod === 'this_week')>Esta semana</option>
+                            <option value="last_week" @selected($selectedPeriod === 'last_week')>Semana anterior</option>
+                            <option value="this_month" @selected($selectedPeriod === 'this_month')>Este mes</option>
+                            <option value="last_month" @selected($selectedPeriod === 'last_month')>Mes anterior</option>
+                            <option value="this_quarter" @selected($selectedPeriod === 'this_quarter')>Este trimestre</option>
+                            <option value="this_year" @selected($selectedPeriod === 'this_year')>Este año</option>
+                            <option value="last_year" @selected($selectedPeriod === 'last_year')>Año anterior</option>
+                            <option value="custom" @selected($selectedPeriod === 'custom')>Rango personalizado...</option>
+                        </select>
+                    </div>
 
+                    <div class="col-12 col-md-4 col-lg-4" id="customDateRangeContainer" style="{{ $selectedPeriod === 'custom' ? '' : 'display: none;' }}">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label for="financeStartDate" class="form-label small fw-bold text-muted mb-1">Desde</label>
+                                <input type="date" id="financeStartDate" class="form-control form-control-sm" value="{{ $selectedStartDate }}">
+                            </div>
+                            <div class="col-6">
+                                <label for="financeEndDate" class="form-label small fw-bold text-muted mb-1">Hasta</label>
+                                <input type="date" id="financeEndDate" class="form-control form-control-sm" value="{{ $selectedEndDate }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-auto ms-auto d-flex align-items-center gap-2">
+                        <div id="financeFilterSpinner" class="finance-filter-spinner" aria-live="polite">
+                            <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
+                            <span class="small">Filtrando...</span>
+                        </div>
+                        <button type="button" id="btnResetFilters" class="btn btn-sm btn-outline-secondary" title="Limpiar filtros">
+                            <i class="fas fa-undo me-1"></i> Limpiar
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-5 g-3 mb-3" id="finance-dashboard">
@@ -387,7 +429,7 @@
                     <div class="finance-card-label">Cobranza pendiente</div>
                     <div class="finance-card-value" data-summary-field="pendingCollectionAmount">${{ number_format($pendingCollectionAmount, 2) }}</div>
                     <div class="mt-2">
-                        <a href="{{ route('finance.collections', array_filter(['branch_id' => $selectedBranchId])) }}" id="btnVerCobranzas" class="btn btn-sm btn-inverse">
+                        <a href="{{ route('finance.collections', array_filter(['branch_id' => $selectedBranchId, 'period' => $selectedPeriod, 'start_date' => $selectedStartDate, 'end_date' => $selectedEndDate])) }}" id="btnVerCobranzas" class="btn btn-sm btn-inverse">
                             <i class="fas fa-money-check-dollar"></i> Ver cobranzas
                         </a>
                     </div>
@@ -398,7 +440,7 @@
                     <div class="finance-card-label">Por pagar pendiente</div>
                     <div class="finance-card-value" data-summary-field="pendingPayableAmount">${{ number_format($pendingPayableAmount, 2) }}</div>
                     <div class="mt-2">
-                        <a href="{{ route('finance.payables', array_filter(['branch_id' => $selectedBranchId])) }}" id="btnVerPayables" class="btn btn-sm btn-inverse">
+                        <a href="{{ route('finance.payables', array_filter(['branch_id' => $selectedBranchId, 'period' => $selectedPeriod, 'start_date' => $selectedStartDate, 'end_date' => $selectedEndDate])) }}" id="btnVerPayables" class="btn btn-sm btn-inverse">
                             <i class="fas fa-file-invoice"></i> Ver cuentas por pagar
                         </a>
                     </div>
@@ -636,22 +678,32 @@
             $('#transactionsTableBody').html(rowsHtml);
         }
 
-        function loadFinanceData(branchId) {
-            const filter = $('#financeBranchFilter');
+        function getCurrentFilterParams() {
+            return {
+                branch_id: $('#financeBranchFilter').val() || '',
+                period: $('#financePeriodFilter').val() || '',
+                start_date: $('#financeStartDate').val() || '',
+                end_date: $('#financeEndDate').val() || '',
+            };
+        }
+
+        function loadFinanceData() {
+            const params = getCurrentFilterParams();
             const spinner = $('#financeFilterSpinner');
             const tableLoading = $('#financeTableLoading');
-            const requestData = branchId ? {
-                branch_id: branchId,
-                format: 'json'
-            } : {
-                format: 'json'
+
+            const requestData = {
+                format: 'json',
+                branch_id: params.branch_id,
+                period: params.period,
+                start_date: params.start_date,
+                end_date: params.end_date,
             };
 
             if (financeFilterRequest) {
                 financeFilterRequest.abort();
             }
 
-            filter.prop('disabled', true);
             spinner.addClass('is-visible');
             tableLoading.addClass('is-visible').attr('aria-hidden', 'false');
 
@@ -681,7 +733,7 @@
                         Swal.fire({
                             icon: 'error',
                             title: 'No se pudo actualizar la tabla',
-                            text: 'La sede se filtró, pero ocurrió un error al renderizar los movimientos.'
+                            text: 'Ocurrió un error al renderizar los movimientos.'
                         });
                     }
                 })
@@ -693,11 +745,10 @@
                     Swal.fire({
                         icon: 'error',
                         title: 'No se pudo filtrar',
-                        text: 'No fue posible actualizar la información financiera para la sede seleccionada.'
+                        text: 'No fue posible actualizar la información financiera para los filtros seleccionados.'
                     });
                 })
                 .always(function() {
-                    filter.prop('disabled', false);
                     spinner.removeClass('is-visible');
                     tableLoading.removeClass('is-visible').attr('aria-hidden', 'true');
                     financeFilterRequest = null;
@@ -705,17 +756,21 @@
         }
 
         $(document).ready(function() {
-            function updateFinanceNavigationLinks(branchId) {
+            function updateFinanceNavigationLinks() {
+                const params = getCurrentFilterParams();
                 const collectionsBaseUrl = "{{ route('finance.collections') }}";
                 const payablesBaseUrl = "{{ route('finance.payables') }}";
 
-                if (branchId) {
-                    $('#btnVerCobranzas').attr('href', collectionsBaseUrl + '?branch_id=' + encodeURIComponent(branchId));
-                    $('#btnVerPayables').attr('href', payablesBaseUrl + '?branch_id=' + encodeURIComponent(branchId));
-                } else {
-                    $('#btnVerCobranzas').attr('href', collectionsBaseUrl);
-                    $('#btnVerPayables').attr('href', payablesBaseUrl);
-                }
+                const queryParams = new URLSearchParams();
+                if (params.branch_id) queryParams.set('branch_id', params.branch_id);
+                if (params.period) queryParams.set('period', params.period);
+                if (params.start_date) queryParams.set('start_date', params.start_date);
+                if (params.end_date) queryParams.set('end_date', params.end_date);
+
+                const queryString = queryParams.toString() ? '?' + queryParams.toString() : '';
+
+                $('#btnVerCobranzas').attr('href', collectionsBaseUrl + queryString);
+                $('#btnVerPayables').attr('href', payablesBaseUrl + queryString);
             }
 
             function updateModalGeneralBranchOption() {
@@ -729,14 +784,45 @@
             $('select[name="type"]').on('change', updateModalGeneralBranchOption);
             updateModalGeneralBranchOption();
 
-            updateFinanceNavigationLinks($('#financeBranchFilter').val());
-            loadFinanceData($('#financeBranchFilter').val());
+            updateFinanceNavigationLinks();
+            loadFinanceData();
 
             $('#financeBranchFilter').on('change', function() {
                 const selectedVal = $(this).val();
                 $('#transactionReturnBranchId').val(selectedVal);
-                updateFinanceNavigationLinks(selectedVal);
-                loadFinanceData(selectedVal);
+                updateFinanceNavigationLinks();
+                loadFinanceData();
+            });
+
+            $('#financePeriodFilter').on('change', function() {
+                const period = $(this).val();
+                if (period === 'custom') {
+                    $('#customDateRangeContainer').stop(true, true).slideDown(200);
+                } else {
+                    $('#customDateRangeContainer').stop(true, true).slideUp(200);
+                    $('#financeStartDate').val('');
+                    $('#financeEndDate').val('');
+                }
+                updateFinanceNavigationLinks();
+                loadFinanceData();
+            });
+
+            $('#financeStartDate, #financeEndDate').on('change', function() {
+                if ($('#financePeriodFilter').val() === 'custom') {
+                    updateFinanceNavigationLinks();
+                    loadFinanceData();
+                }
+            });
+
+            $('#btnResetFilters').on('click', function() {
+                $('#financeBranchFilter').val('');
+                $('#financePeriodFilter').val('');
+                $('#financeStartDate').val('');
+                $('#financeEndDate').val('');
+                $('#customDateRangeContainer').hide();
+                $('#transactionReturnBranchId').val('');
+                updateFinanceNavigationLinks();
+                loadFinanceData();
             });
 
             $(document).on('click', '.js-open-details', function() {

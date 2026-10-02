@@ -91,23 +91,68 @@
     </div>
 
     <div class="col-md-12">
-        <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
-            <div class="form-group mb-0" style="min-width: 260px;">
-                <label for="collectionsBranchFilter" class="form-label fw-semibold">Filtrar por sede</label>
-                <form id="collectionsBranchFilterForm" method="GET" action="{{ route('finance.collections') }}">
-                    <select id="collectionsBranchFilter" name="branch_id" class="form-control" onchange="this.form.submit()">
-                        <option value="">Todas las sedes</option>
-                        <option value="general" @selected($selectedBranchId === 'general')>Ingresos Generales</option>
-                        @foreach ($branches as $branch)
-                            <option value="{{ $branch->id }}" @selected((string) $selectedBranchId === (string) $branch->id)>{{ $branch->name }}</option>
-                        @endforeach
-                    </select>
+        <div class="card mb-3 shadow-sm border-0" style="background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); border-radius: 0.9rem;">
+            <div class="card-body p-3">
+                <form id="collectionsFilterForm" method="GET" action="{{ route('finance.collections') }}">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-12 col-md-4 col-lg-3">
+                            <label for="collectionsBranchFilter" class="form-label small fw-bold text-muted mb-1">
+                                <i class="fas fa-building me-1 text-primary"></i> Filtrar por sede
+                            </label>
+                            <select id="collectionsBranchFilter" name="branch_id" class="form-control form-control-sm" onchange="handleCollectionsFilterChange()">
+                                <option value="">Todas las sedes</option>
+                                <option value="general" @selected($selectedBranchId === 'general')>Ingresos Generales</option>
+                                @foreach ($branches as $branch)
+                                    <option value="{{ $branch->id }}" @selected((string) $selectedBranchId === (string) $branch->id)>{{ $branch->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-4 col-lg-3">
+                            <label for="collectionsPeriodFilter" class="form-label small fw-bold text-muted mb-1">
+                                <i class="fas fa-calendar-alt me-1 text-primary"></i> Período de tiempo
+                            </label>
+                            <select id="collectionsPeriodFilter" name="period" class="form-control form-control-sm" onchange="handleCollectionsFilterChange()">
+                                <option value="" @selected(empty($selectedPeriod))>Todo el histórico</option>
+                                <option value="today" @selected($selectedPeriod === 'today')>Hoy</option>
+                                <option value="yesterday" @selected($selectedPeriod === 'yesterday')>Ayer</option>
+                                <option value="this_week" @selected($selectedPeriod === 'this_week')>Esta semana</option>
+                                <option value="last_week" @selected($selectedPeriod === 'last_week')>Semana anterior</option>
+                                <option value="this_month" @selected($selectedPeriod === 'this_month')>Este mes</option>
+                                <option value="last_month" @selected($selectedPeriod === 'last_month')>Mes anterior</option>
+                                <option value="this_quarter" @selected($selectedPeriod === 'this_quarter')>Este trimestre</option>
+                                <option value="this_year" @selected($selectedPeriod === 'this_year')>Este año</option>
+                                <option value="last_year" @selected($selectedPeriod === 'last_year')>Año anterior</option>
+                                <option value="custom" @selected($selectedPeriod === 'custom')>Rango personalizado...</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-4 col-lg-4" id="collectionsCustomDateContainer" style="{{ $selectedPeriod === 'custom' ? '' : 'display: none;' }}">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label for="collectionsStartDate" class="form-label small fw-bold text-muted mb-1">Desde</label>
+                                    <input type="date" id="collectionsStartDate" name="start_date" class="form-control form-control-sm" value="{{ $selectedStartDate }}">
+                                </div>
+                                <div class="col-6">
+                                    <label for="collectionsEndDate" class="form-label small fw-bold text-muted mb-1">Hasta</label>
+                                    <input type="date" id="collectionsEndDate" name="end_date" class="form-control form-control-sm" value="{{ $selectedEndDate }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-auto ms-auto d-flex align-items-center gap-2">
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="fas fa-filter me-1"></i> Filtrar
+                            </button>
+                            <a href="{{ route('finance.collections') }}" class="btn btn-sm btn-outline-secondary" title="Limpiar filtros">
+                                <i class="fas fa-undo me-1"></i> Limpiar
+                            </a>
+                            <a href="{{ route('finance.payables', array_filter(['branch_id' => $selectedBranchId, 'period' => $selectedPeriod, 'start_date' => $selectedStartDate, 'end_date' => $selectedEndDate])) }}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-file-invoice me-1"></i> Ir a CxP
+                            </a>
+                        </div>
+                    </div>
                 </form>
-            </div>
-            <div class="d-flex gap-2">
-                <a href="{{ route('finance.payables', array_filter(['branch_id' => $selectedBranchId])) }}" class="btn btn-outline-secondary btn-sm">
-                    <i class="fas fa-file-invoice me-1"></i> Ir a Cuentas por Pagar
-                </a>
             </div>
         </div>
 
@@ -121,7 +166,7 @@
                     <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createReceivableModal">
                         <i class="fas fa-plus"></i> Nueva CxC
                     </button>
-                    <a href="{{ route('finance.index', array_filter(['branch_id' => $selectedBranchId])) }}#finance-transactions" class="btn btn-inverse btn-sm">
+                    <a href="{{ route('finance.index', array_filter(['branch_id' => $selectedBranchId, 'period' => $selectedPeriod, 'start_date' => $selectedStartDate, 'end_date' => $selectedEndDate])) }}#finance-transactions" class="btn btn-inverse btn-sm">
                         <i class="fas fa-arrow-left"></i> Volver a movimientos
                     </a>
                 </div>
@@ -139,12 +184,14 @@
                         <thead class="table-dark">
                             <tr>
                                 <th>#</th>
+                                <th>Fecha</th>
                                 <th>Concepto</th>
                                 <th>Origen CxC</th>
                                 <th>Programa</th>
                                 <th>Sede</th>
                                 <th>Total</th>
                                 <th>Saldo</th>
+                                <th>Vencimiento</th>
                                 <th>Estado</th>
                                 <th class="text-end">Acción</th>
                             </tr>
@@ -153,6 +200,7 @@
                             @forelse ($receivables as $receivable)
                                 <tr>
                                     <td>{{ $receivable->id }}</td>
+                                    <td>{{ $receivable->created_at ? $receivable->created_at->format('d/m/Y') : 'N/A' }}</td>
                                     <td>{{ $receivable->title }}</td>
                                     <td>
                                         @if ($receivable->enrollment_id)
@@ -172,6 +220,13 @@
                                     <td>{{ $receivable->branch_id ? (optional($receivable->branch)->name ?? 'N/A') : 'Ingresos Generales' }}</td>
                                     <td>${{ number_format((float) $receivable->amount_total, 2) }}</td>
                                     <td>${{ number_format((float) $receivable->balance_due, 2) }}</td>
+                                    <td>
+                                        @if ($receivable->due_date)
+                                            <span class="text-nowrap">{{ $receivable->due_date->format('d/m/Y') }}</span>
+                                        @else
+                                            <span class="text-muted">N/A</span>
+                                        @endif
+                                    </td>
                                     <td>
                                         @if ($receivable->status === 'paid')
                                             <span class="badge bg-primary">Pagada</span>
@@ -223,7 +278,7 @@
                                 </div>
                             @empty
                                 <tr>
-                                    <td colspan="9" class="text-center text-muted">No hay cuentas por cobrar registradas.</td>
+                                    <td colspan="11" class="text-center text-muted">No hay cuentas por cobrar registradas para el período y sede seleccionados.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -236,8 +291,20 @@
 
 @section('scripts')
     <script>
+        function handleCollectionsFilterChange() {
+            const period = $('#collectionsPeriodFilter').val();
+            if (period === 'custom') {
+                $('#collectionsCustomDateContainer').stop(true, true).slideDown(200);
+            } else {
+                $('#collectionsCustomDateContainer').stop(true, true).slideUp(200);
+                $('#collectionsStartDate').val('');
+                $('#collectionsEndDate').val('');
+                $('#collectionsFilterForm').submit();
+            }
+        }
+
         function receivablesExportColumns() {
-            return [0, 1, 2, 3, 4, 5, 6, 7, 8];
+            return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
         }
 
         function buildReceivableButtons() {
@@ -293,7 +360,7 @@
                 pageLength: 10,
                 buttons: buildReceivableButtons(),
                 columnDefs: [{
-                    targets: [8],
+                    targets: [10],
                     orderable: false,
                     searchable: false
                 }],
@@ -301,6 +368,8 @@
                     search: 'Buscar:',
                     lengthMenu: 'Mostrar _MENU_ registros',
                     info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+                    emptyTable: 'No hay cuentas por cobrar registradas.',
+                    zeroRecords: 'No se encontraron resultados con los filtros aplicados.',
                     paginate: {
                         previous: 'Anterior',
                         next: 'Siguiente'
