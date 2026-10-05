@@ -135,3 +135,30 @@ test('se puede editar y eliminar un movimiento financiero', function () {
 
     expect(Transaction::find($transaction->id))->toBeNull();
 });
+
+test('se puede cambiar la fecha de un abono o movimiento financiero', function () {
+    $this->actingAs($this->admin);
+
+    $transaction = Transaction::create([
+        'branch_id' => $this->branch->id,
+        'account_id' => $this->account->id,
+        'amount' => 120.00,
+        'currency' => 'USD',
+        'type' => 'income',
+        'status' => 'completed',
+        'description' => 'Abono original',
+        'created_at' => '2026-09-01 10:00:00',
+    ]);
+
+    // Editar la fecha del abono a otra fecha
+    $responseUpdate = $this->put(route('finance.transactions.update', $transaction), [
+        'amount' => 120.00,
+        'account_id' => $this->account->id,
+        'payment_date' => '2026-09-22',
+    ]);
+
+    $responseUpdate->assertRedirect();
+
+    $transaction->refresh();
+    expect($transaction->created_at->format('Y-m-d'))->toBe('2026-09-22');
+});

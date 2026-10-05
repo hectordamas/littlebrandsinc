@@ -459,6 +459,7 @@ class FinanceController extends Controller
             'amount' => ['required', 'numeric', 'gt:0'],
             'type' => ['required', Rule::in(['income', 'expense'])],
             'status' => ['required', Rule::in(['pending', 'completed', 'failed'])],
+            'payment_date' => ['nullable', 'date'],
             'reference' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'payment_receipt' => ['bail', 'nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
@@ -476,6 +477,8 @@ class FinanceController extends Controller
             $receiptOriginalName = $file->getClientOriginalName();
         }
 
+        $paymentDate = !empty($validated['payment_date']) ? $validated['payment_date'] : now();
+
         Transaction::create([
             'branch_id' => !empty($validated['branch_id']) ? (int) $validated['branch_id'] : null,
             'account_id' => (int) $validated['account_id'],
@@ -488,6 +491,8 @@ class FinanceController extends Controller
             'description' => $validated['description'] ?? null,
             'payment_receipt_path' => $receiptPath,
             'payment_receipt_original_name' => $receiptOriginalName,
+            'created_at' => $paymentDate,
+            'updated_at' => $paymentDate,
         ]);
 
         return redirect()
@@ -549,11 +554,14 @@ class FinanceController extends Controller
         }
 
         if (!empty($validated['payment_date'])) {
-            $updateData['created_at'] = $validated['payment_date'];
-            $updateData['updated_at'] = $validated['payment_date'];
+            $updateData['created_at'] = Carbon::parse($validated['payment_date']);
         }
 
-        $transaction->update($updateData);
+        $transaction->fill($updateData);
+        if (!empty($validated['payment_date'])) {
+            $transaction->created_at = Carbon::parse($validated['payment_date']);
+        }
+        $transaction->save();
 
         if ($transaction->account_receivable_id) {
             $receivable = AccountReceivable::find($transaction->account_receivable_id);
