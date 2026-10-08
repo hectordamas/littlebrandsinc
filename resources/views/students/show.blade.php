@@ -4,6 +4,7 @@
 @endsection
 
 @section('styles')
+    <link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
     <style>
         .detail-section {
             border: 1px solid #e9ecef;
@@ -28,6 +29,30 @@
             color: #3d4b59;
             font-size: 0.75rem;
             margin-bottom: 0.5rem;
+        }
+
+        .ql-toolbar.ql-snow {
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
+            border-color: #dee2e6;
+            background: #f8fafc;
+        }
+
+        .ql-container.ql-snow {
+            border-bottom-left-radius: 0.5rem;
+            border-bottom-right-radius: 0.5rem;
+            border-color: #dee2e6;
+            font-family: inherit;
+            font-size: 0.95rem;
+            background: #fff;
+        }
+
+        #student-observations-editor .ql-editor {
+            min-height: 180px;
+        }
+
+        #modal-student-observations-editor .ql-editor {
+            min-height: 140px;
         }
     </style>
 @endsection
@@ -818,6 +843,33 @@
                         </table>
                     </div>
                 </div>
+
+                <!-- Observaciones y Notas del Estudiante (Al final de la página) -->
+                <div class="detail-section">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <span class="detail-chip"><i class="fas fa-sticky-note me-1 text-primary"></i> Observaciones</span>
+                            <div class="detail-section-title mb-0">Observaciones y Notas del Estudiante</div>
+                        </div>
+                        <button type="button" id="btn-save-observations" class="btn btn-sm btn-primary shadow-sm px-3">
+                            <i class="fas fa-save me-1"></i> Guardar Observaciones
+                        </button>
+                    </div>
+                    <p class="text-muted small mb-2">
+                        Espacio de texto enriquecido para registrar notas de seguimiento, observaciones pedagógicas, comportamiento o acuerdos.
+                    </p>
+
+                    <div id="student-observations-editor">{!! $student->comment !!}</div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i> Puedes formatear y editar el texto directamente aquí y hacer clic en <strong>Guardar Observaciones</strong>.
+                        </small>
+                        <span id="observations-save-indicator" class="badge bg-success py-1 px-2 d-none">
+                            <i class="fas fa-check me-1"></i> Guardado exitosamente
+                        </span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -865,7 +917,8 @@
                             </div>
                             <div class="col-md-12">
                                 <label class="form-label small fw-bold text-dark">Comentarios u Observaciones Internas</label>
-                                <textarea name="comment" class="form-control" rows="2" placeholder="Observaciones adicionales sobre el alumno">{{ old('comment', $student->comment) }}</textarea>
+                                <div id="modal-student-observations-editor">{!! old('comment', $student->comment) !!}</div>
+                                <input type="hidden" name="comment" id="modal-comment-input">
                             </div>
                         </div>
                     </div>
@@ -882,8 +935,118 @@
 @endsection
 
 @section('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
     <script>
         $(document).ready(function() {
+            // Quill Toolbar Options
+            const quillToolbarOptions = [
+                [{ 'header': [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ 'color': [] }, { 'background': [] }],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'align': [] }],
+                ['blockquote', 'link'],
+                ['clean']
+            ];
+
+            // Initialize main page Quill editor
+            let mainQuill = null;
+            if (document.getElementById('student-observations-editor')) {
+                mainQuill = new Quill('#student-observations-editor', {
+                    theme: 'snow',
+                    placeholder: 'Escribe aquí las observaciones o notas del estudiante...',
+                    modules: {
+                        toolbar: quillToolbarOptions
+                    }
+                });
+            }
+
+            // Initialize modal Quill editor
+            let modalQuill = null;
+            if (document.getElementById('modal-student-observations-editor')) {
+                modalQuill = new Quill('#modal-student-observations-editor', {
+                    theme: 'snow',
+                    placeholder: 'Observaciones adicionales sobre el alumno...',
+                    modules: {
+                        toolbar: quillToolbarOptions
+                    }
+                });
+            }
+
+            // Keep modal synced with main editor when opened
+            $('#editStudentModal').on('show.bs.modal', function() {
+                if (modalQuill && mainQuill) {
+                    modalQuill.root.innerHTML = mainQuill.root.innerHTML;
+                }
+            });
+
+            // Sync modal comment on modal form submit
+            $('#editStudentModal form').on('submit', function() {
+                if (modalQuill) {
+                    const isBlank = modalQuill.getText().trim().length === 0;
+                    $('#modal-comment-input').val(isBlank ? '' : modalQuill.root.innerHTML);
+                }
+            });
+
+            // Save observations directly from the card via AJAX
+            $('#btn-save-observations').on('click', async function() {
+                if (!mainQuill) return;
+
+                const $btn = $(this);
+                const originalBtnHtml = $btn.html();
+                const isBlank = mainQuill.getText().trim().length === 0;
+                const commentHtml = isBlank ? '' : mainQuill.root.innerHTML;
+
+                $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Guardando...');
+
+                try {
+                    const response = await fetch("{{ route('students.updateObservations', $student->id) }}", {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            comment: commentHtml
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.message || 'No se pudieron guardar las observaciones.');
+                    }
+
+                    if (modalQuill) {
+                        modalQuill.root.innerHTML = commentHtml;
+                    }
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Guardado!',
+                        text: 'Las observaciones se han guardado correctamente.',
+                        timer: 2000,
+                        showConfirmButton: false,
+                        toast: true,
+                        position: 'top-end'
+                    });
+
+                    $('#observations-save-indicator').removeClass('d-none').fadeIn();
+                    setTimeout(() => {
+                        $('#observations-save-indicator').fadeOut();
+                    }, 3000);
+                } catch (error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: error.message || 'Error al guardar las observaciones.'
+                    });
+                } finally {
+                    $btn.prop('disabled', false).html(originalBtnHtml);
+                }
+            });
+
             $('.payment-option-radio').on('change', function() {
                 let enrollmentId = $(this).data('enrollment-id');
                 let customContainer = $('#custom-amount-container-' + enrollmentId);

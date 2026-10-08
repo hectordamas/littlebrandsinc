@@ -175,7 +175,7 @@ class StudentsController extends Controller
             'name' => 'required|string|max:255',
             'birthdate' => 'required|date|before_or_equal:today',
             'medical_notes' => 'nullable|string|max:2000',
-            'comment' => 'nullable|string|max:2000',
+            'comment' => 'nullable|string|max:65000',
             'level' => 'nullable|string|max:255',
             'active' => 'required|boolean',
             'image_consent_accepted' => 'required|boolean',
@@ -195,6 +195,27 @@ class StudentsController extends Controller
         ]);
 
         return back()->with('success', 'Información del estudiante actualizada correctamente.');
+    }
+
+    public function updateObservations(Request $request, Student $student)
+    {
+        $validated = $request->validate([
+            'comment' => 'nullable|string|max:65000',
+        ]);
+
+        $student->update([
+            'comment' => $validated['comment'] ?? null,
+        ]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Observaciones guardadas correctamente.',
+                'comment' => $student->comment,
+            ]);
+        }
+
+        return back()->with('success', 'Observaciones del estudiante actualizadas correctamente.');
     }
 
     public function register(Request $request)

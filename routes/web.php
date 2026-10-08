@@ -62,6 +62,7 @@ Route::middleware(['auth', 'role:Administrador'])->group(function () {
     Route::post('students/import', [StudentsController::class, 'importStore'])->name('students.import.store');
     Route::get('students/{student}', [StudentsController::class, 'show'])->name('students.show');
     Route::put('students/{student}', [StudentsController::class, 'update'])->name('students.update');
+    Route::patch('students/{student}/observations', [StudentsController::class, 'updateObservations'])->name('students.updateObservations');
     Route::get('parents', [UsersController::class, 'parents'])->name('parents.index');
     Route::get('trainers', [UsersController::class, 'trainers'])->name('trainers.index');
 
