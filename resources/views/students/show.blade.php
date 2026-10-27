@@ -52,7 +52,46 @@
         }
 
         #modal-student-observations-editor .ql-editor {
-            min-height: 140px;
+            min-height: 100px;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        #editStudentModal .modal-dialog {
+            max-width: 750px;
+        }
+
+        #editStudentModal .modal-content {
+            max-height: calc(100vh - 3rem);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-radius: 0.75rem;
+            border: 0;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        #editStudentModal form {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        #editStudentModal .modal-body {
+            overflow-y: auto;
+            min-height: 0;
+            flex: 1;
+        }
+
+        #editStudentModal .modal-footer {
+            position: sticky;
+            bottom: 0;
+            background: #ffffff;
+            border-top: 1px solid #e9ecef;
+            z-index: 10;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
         }
     </style>
 @endsection
@@ -876,18 +915,18 @@
 
     <!-- Modal Editar Información del Estudiante -->
     <div class="modal fade" id="editStudentModal" tabindex="-1" aria-labelledby="editStudentModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
-                <form action="{{ route('students.update', $student->id) }}" method="POST">
+                <form action="{{ route('students.update', $student->id) }}" method="POST" id="editStudentForm" class="d-flex flex-column h-100">
                     @csrf
                     @method('PUT')
-                    <div class="modal-header">
-                        <h5 class="modal-title fw-bold text-dark" id="editStudentModalLabel">
+                    <div class="modal-header bg-light border-bottom py-3 px-4">
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="editStudentModalLabel">
                             <i class="fas fa-user-edit text-primary me-2"></i>Editar Información del Estudiante
                         </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
-                    <div class="modal-body text-start">
+                    <div class="modal-body text-start px-4 py-3">
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold text-dark">Nombre del Estudiante <span class="text-danger">*</span></label>
@@ -913,7 +952,7 @@
                             </div>
                             <div class="col-md-12">
                                 <label class="form-label small fw-bold text-dark">Notas Médicas (Alergias, condiciones, etc.)</label>
-                                <textarea name="medical_notes" class="form-control" rows="3" placeholder="Ej: Alergia al maní, asmático">{{ old('medical_notes', $student->medical_notes) }}</textarea>
+                                <textarea name="medical_notes" class="form-control" rows="2" placeholder="Ej: Alergia al maní, asmático">{{ old('medical_notes', $student->medical_notes) }}</textarea>
                             </div>
                             <div class="col-md-12">
                                 <label class="form-label small fw-bold text-dark">Comentarios u Observaciones Internas</label>
@@ -922,10 +961,12 @@
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer bg-light">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-1"></i>Guardar Cambios
+                    <div class="modal-footer bg-white border-top d-flex justify-content-between align-items-center px-4 py-3">
+                        <button type="button" class="btn btn-outline-secondary px-3" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm" id="btn-save-student-modal">
+                            <i class="fas fa-save me-1"></i> Guardar Cambios
                         </button>
                     </div>
                 </form>
